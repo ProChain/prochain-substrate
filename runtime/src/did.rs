@@ -1,10 +1,10 @@
-use support::{decl_module, decl_storage, decl_event, StorageMap, dispatch::Result, ensure};
-use support::traits::{Currency};
+use support::{decl_module, decl_storage, decl_event, StorageValue, StorageMap, dispatch::Result, ensure};
+use support::traits::{Currency, ReservableCurrency};
 use system::ensure_signed;
 use parity_codec::{Encode, Decode};
 use rstd::prelude::*;
 use runtime_io::{blake2_256};
-use runtime_primitives::traits::{As, Hash};
+use runtime_primitives::traits::{CheckedSub, CheckedAdd, As, Hash};
 
 /// The module's configuration trait.
 pub trait Trait: balances::Trait {
@@ -13,10 +13,9 @@ pub trait Trait: balances::Trait {
 
 #[cfg_attr(feature = "std", derive(Debug))]
 #[derive(Encode, Decode, Default, Clone, PartialEq)]
-pub struct MetadataRecord<AccountId> {
-	avatar: u32,
+pub struct MetadataRecord<AccountId, Hash> {
 	account: Vec<u8>,
-	superior: Vec<u8>,
+	superior: Hash,
 	account_id: AccountId,
 }
 
@@ -27,20 +26,21 @@ decl_storage! {
 		// Here we are declaring a StorageValue, `Identity` as a Option<u32>
 		// `get(identity)` is the default getter which returns either the stored `u32` or `None` if nothing stored
 		Identity get(identity): map T::AccountId => T::Hash;
-		IdentityOf get(identity_of): map T::Hash => T::AccountId;
-		Metadata get(metadata): map T::Hash => MetadataRecord<T::AccountId>;
+		IdentityOf get(identity_of): map T::Hash => Option<T::AccountId>;
+		Metadata get(metadata): map T::Hash => MetadataRecord<T::AccountId, T::Hash>;
+		AllDidCount get(all_did_count): u64;
 	}
 }
 
 decl_module! {
-	/// The module declaration.
 	pub struct Module<T: Trait> for enum Call where origin: T::Origin {
-		// Initializing events
 		// this is needed only if you are using events in your module
 		fn deposit_event<T>() = default;
 
-		fn create_did(origin, avatar: u32, pubkey: Vec<u8>, _superior: Vec<u8>) -> Result {
+		fn create(origin, pubkey: Vec<u8>, superior: T::Hash) -> Result {
 			let _sender = ensure_signed(origin)?;
+
+			// let _som = Ss58Codec::from_ss58check(&_sender).unwrap().0.into();
 			
 			// 通过公钥生成hash值
 			let mut hash = blake2_256(&pubkey);
@@ -61,9 +61,8 @@ decl_module! {
 			
 			// Replace all metadata
 			let metadata = MetadataRecord {
-					avatar,
 					account: did_ele.to_vec(),
-					superior: did_ele.to_vec(),
+					superior,
 					account_id: _sender.clone(),
 			};
 			
@@ -77,26 +76,54 @@ decl_module! {
 
 			<IdentityOf<T>>::insert(did_hash, &_sender);
 
+			let all_did_count = Self::all_did_count();
+
+			let new_count = all_did_count.checked_add(1)
+					.ok_or("Overflow adding a new did")?;
+
+			<AllDidCount<T>>::put(new_count);
+
 			Self::deposit_event(RawEvent::Created(_sender, did_hash));
 
 			Ok(())
 		}
 
-		fn update_did(origin, to: T::AccountId, did: T::Hash) -> Result {
+		fn update(origin, to: T::AccountId, did: T::Hash) -> Result {
 			let _sender = ensure_signed(origin)?;
 
-			Self::update_from(_sender, to, did)?;
+			ensure!(<Identity<T>>::exists(_sender.clone()), "this account has not did yet");
+			ensure!(<Metadata<T>>::exists(did), "did does not exsit");
+
+			// 更新account映射
+			<Identity<T>>::remove(_sender.clone());
+			<Identity<T>>::insert(to.clone(), &did);
+
+			// 更新did对应的accountid
+			<IdentityOf<T>>::insert(did.clone(), to.clone());
+
+			let mut metadata = Self::metadata(did);
+			metadata.account_id = to.clone();
+
+			<Metadata<T>>::insert(did, metadata);
+			
+			Self::update_to(_sender, to, did)?;
 
       Ok(())
 		}
 
-		fn transfer(origin, did_to: T::Hash, value: T::Balance) -> Result {
+		fn transfer(origin, to_did: T::Hash, value: T::Balance) -> Result {
 			let _sender = ensure_signed(origin)?;
 
 			let sender_balance = <balances::Module<T>>::free_balance(_sender.clone());
 			ensure!(sender_balance >= value, "you dont have enough free balance");
 
-			let to = Self::identity_of(did_to);
+			let to = Self::identity_of(to_did).ok_or("corresponding AccountId does not exsit")?;
+			ensure!(_sender != to, "you can not send money to yourself");
+
+			// check overflow
+			let _updated_from_balance = sender_balance.checked_sub(&value).ok_or("overflow in calculating balance")?;
+			let receiver_balance = <balances::Module<T>>::free_balance(to.clone());
+			let _updated_to_balance = receiver_balance.checked_add(&value).ok_or("overflow in calculating balance")?;
 
 			<balances::Module<T> as Currency<_>>::transfer(&_sender, &to, value)?;
 
@@ -118,24 +145,8 @@ decl_event! {
 }
 
 impl<T: Trait> Module<T> {
-	fn update_from(from: T::AccountId, to: T::AccountId, did: T::Hash) -> Result {
-		ensure!(<Identity<T>>::exists(from.clone()), "this account has not did yet");
-		ensure!(<Metadata<T>>::exists(did), "did does not exsit");
-
-		// 更新account映射
-    <Identity<T>>::remove(from.clone());
-		<Identity<T>>::insert(to.clone(), &did);
-
-		// 更新did对应的accountid
-    <IdentityOf<T>>::insert(did.clone(), to.clone());
-
-		let mut metadata = Self::metadata(did);
-		metadata.avatar = 31;
-		metadata.account_id = to.clone();
-
-		<Metadata<T>>::insert(did, metadata);
-
-		// 转移资金
+	fn update_to(from: T::AccountId, to: T::AccountId, did: T::Hash) -> Result {
+		// transfer funds
 		let money = <T::Balance as As<u64>>::sa(1020);
 		<balances::Module<T> as Currency<_>>::transfer(&from, &to, money)?;
 
@@ -143,6 +154,18 @@ impl<T: Trait> Module<T> {
 
     Ok(())
   }
+
+	fn _lock(from_did: T::Hash, value: T::Balance) -> Result {
+		let from = Self::identity_of(from_did).ok_or("corresponding AccountId does not exsit")?;
+		<balances::Module<T>>::reserve(&from, value)?;
+		Ok(())
+	}
+
+	fn _unlock(to_did: T::Hash, value: T::Balance) -> Result {
+		let to = Self::identity_of(to_did).ok_or("corresponding AccountId does not exsit")?;
+		<balances::Module<T>>::unreserve(&to, value);
+		Ok(())
+	}
 
 }
 
