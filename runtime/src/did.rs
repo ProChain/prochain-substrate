@@ -6,7 +6,6 @@ use rstd::prelude::*;
 use runtime_io::{blake2_256};
 use runtime_primitives::traits::{CheckedSub, CheckedAdd, As, Hash};
 
-/// The module's configuration trait.
 pub trait Trait: balances::Trait {
   type Event: From<Event<Self>> + Into<<Self as system::Trait>::Event>;
 }
@@ -14,12 +13,11 @@ pub trait Trait: balances::Trait {
 #[cfg_attr(feature = "std", derive(Debug))]
 #[derive(Encode, Decode, Default, Clone, PartialEq)]
 pub struct MetadataRecord<AccountId, Hash> {
-	account: Vec<u8>,
+	address: AccountId,
 	superior: Hash,
-	account_id: AccountId,
+	creator: AccountId,
 }
 
-/// This module's storage items.
 decl_storage! {
 	trait Store for Module<T: Trait> as DidModule {
 		// Just a dummy storage item. 
@@ -37,10 +35,9 @@ decl_module! {
 		// this is needed only if you are using events in your module
 		fn deposit_event<T>() = default;
 
-		fn create(origin, pubkey: Vec<u8>, superior: T::Hash) -> Result {
-			let _sender = ensure_signed(origin)?;
+		fn create(origin, pubkey: Vec<u8>, address: T::AccountId, superior: T::Hash) -> Result {
+			let sender = ensure_signed(origin)?;
 
-			// let _som = Ss58Codec::from_ss58check(&_sender).unwrap().0.into();
 			
 			// 通过公钥生成hash值
 			let mut hash = blake2_256(&pubkey);
@@ -61,20 +58,23 @@ decl_module! {
 			
 			// Replace all metadata
 			let metadata = MetadataRecord {
-					account: did_ele.to_vec(),
+					address: address.clone(),
 					superior,
-					account_id: _sender.clone(),
+					creator: sender.clone(),
 			};
 			
 			let mut buf = Vec::new();
 			buf.extend_from_slice(&did_ele.encode());
 			let did_hash = T::Hashing::hash(&buf[..]);
+			
+			// make sure the did is new
+			ensure!(!<Metadata<T>>::exists(&did_hash), "did alread existed");
 
 			<Metadata<T>>::insert(&did_hash, metadata);
 
-			<Identity<T>>::insert(&_sender, &did_hash);
+			<Identity<T>>::insert(&address, &did_hash);
 
-			<IdentityOf<T>>::insert(did_hash, &_sender);
+			<IdentityOf<T>>::insert(did_hash, &address);
 
 			let all_did_count = Self::all_did_count();
 
@@ -83,52 +83,81 @@ decl_module! {
 
 			<AllDidCount<T>>::put(new_count);
 
-			Self::deposit_event(RawEvent::Created(_sender, did_hash));
+			Self::deposit_event(RawEvent::Created(sender, did_hash));
 
 			Ok(())
 		}
 
-		fn update(origin, to: T::AccountId, did: T::Hash) -> Result {
-			let _sender = ensure_signed(origin)?;
+		fn update(origin, to: T::AccountId) -> Result {
+			let sender = ensure_signed(origin)?;
 
-			ensure!(<Identity<T>>::exists(_sender.clone()), "this account has not did yet");
+			ensure!(<Identity<T>>::exists(sender.clone()), "this account has no did yet");
+			
+			// get current did
+			let did = Self::identity(&sender);
 			ensure!(<Metadata<T>>::exists(did), "did does not exsit");
+			ensure!(!<Identity<T>>::exists(&to), "the public key has been taken");
 
 			// 更新account映射
-			<Identity<T>>::remove(_sender.clone());
+			<Identity<T>>::remove(sender.clone());
 			<Identity<T>>::insert(to.clone(), &did);
 
 			// 更新did对应的accountid
 			<IdentityOf<T>>::insert(did.clone(), to.clone());
 
 			let mut metadata = Self::metadata(did);
-			metadata.account_id = to.clone();
+			metadata.address = to.clone();
 
 			<Metadata<T>>::insert(did, metadata);
 			
-			Self::update_to(_sender, to, did)?;
+			Self::update_to(sender, to, did)?;
 
       Ok(())
 		}
 
 		fn transfer(origin, to_did: T::Hash, value: T::Balance) -> Result {
-			let _sender = ensure_signed(origin)?;
+			let sender = ensure_signed(origin)?;
 
-			let sender_balance = <balances::Module<T>>::free_balance(_sender.clone());
-			ensure!(sender_balance >= value, "you dont have enough free balance");
-
-			let to = Self::identity_of(to_did).ok_or("corresponding AccountId does not exsit")?;
-			ensure!(_sender != to, "you can not send money to yourself");
-
-			// check overflow
-			let _updated_from_balance = sender_balance.checked_sub(&value).ok_or("overflow in calculating balance")?;
-			let receiver_balance = <balances::Module<T>>::free_balance(to.clone());
-			let _updated_to_balance = receiver_balance.checked_add(&value).ok_or("overflow in calculating balance")?;
-
-			<balances::Module<T> as Currency<_>>::transfer(&_sender, &to, value)?;
+			Self::_transfer(sender, to_did, value)?;
 
 			Ok(())
 		}
+
+		fn lock(origin, value: T::Balance) -> Result {
+			let sender = ensure_signed(origin)?;
+
+			let sender_balance = <balances::Module<T>>::free_balance(sender.clone());
+			ensure!(sender_balance >= value, "you dont have enough free balance");
+
+			let fee = <T::Balance as As<u64>>::sa(25);
+			let min = <T::Balance as As<u64>>::sa(50);
+			ensure!(value >= min, "you must lock at least 50 pra");
+
+			ensure!(<Identity<T>>::exists(&sender), "this account has no did yet");
+			let did = Self::identity(&sender);
+			let MetadataRecord { superior, .. } = Self::metadata(&did);
+			
+			// make sure the superior exists
+			ensure!(<Metadata<T>>::exists(superior), "superior does not exsit");
+
+			Self::_transfer(sender.clone(), superior, fee)?;
+
+			<balances::Module<T>>::reserve(&sender, value - fee)?;
+			Ok(())
+		}
+
+		fn unlock(origin, value: T::Balance) -> Result {
+			let sender = ensure_signed(origin)?;
+
+			let reserved_balance = <balances::Module<T>>::reserved_balance(sender.clone());
+
+			ensure!(reserved_balance >= value, "unreserve funds should less than reserved funds");
+
+			<balances::Module<T>>::unreserve(&sender, value);
+
+			Ok(())
+		}
+		
 	}
 }
 
@@ -155,75 +184,24 @@ impl<T: Trait> Module<T> {
     Ok(())
   }
 
-	fn _lock(from_did: T::Hash, value: T::Balance) -> Result {
-		let from = Self::identity_of(from_did).ok_or("corresponding AccountId does not exsit")?;
-		<balances::Module<T>>::reserve(&from, value)?;
-		Ok(())
-	}
+	fn _transfer(from: T::AccountId, to_did: T::Hash, value: T::Balance) -> Result {
+		let sender_balance = <balances::Module<T>>::free_balance(from.clone());
+		ensure!(sender_balance >= value, "you dont have enough free balance");
 
-	fn _unlock(to_did: T::Hash, value: T::Balance) -> Result {
 		let to = Self::identity_of(to_did).ok_or("corresponding AccountId does not exsit")?;
-		<balances::Module<T>>::unreserve(&to, value);
+		ensure!(from != to, "you can not send money to yourself");
+
+		// check overflow
+		let _updated_from_balance = sender_balance.checked_sub(&value).ok_or("overflow in calculating balance")?;
+		let receiver_balance = <balances::Module<T>>::free_balance(to.clone());
+		let _updated_to_balance = receiver_balance.checked_add(&value).ok_or("overflow in calculating balance")?;
+
+		<balances::Module<T> as Currency<_>>::transfer(&from, &to, value)?;
+
 		Ok(())
 	}
 
 }
 
-/// tests for this module
 #[cfg(test)]
-mod tests {
-	use super::*;
-
-	use runtime_io::with_externalities;
-	use primitives::{H256, Blake2Hasher};
-	use support::{impl_outer_origin, assert_ok};
-	use runtime_primitives::{
-		BuildStorage,
-		traits::{BlakeTwo256, IdentityLookup},
-		testing::{Digest, DigestItem, Header}
-	};
-
-	impl_outer_origin! {
-		pub enum Origin for Test {}
-	}
-
-	// For testing the module, we construct most of a mock runtime. This means
-	// first constructing a configuration type (`Test`) which `impl`s each of the
-	// configuration traits of modules we want to use.
-	#[derive(Clone, Eq, PartialEq)]
-	pub struct Test;
-	impl system::Trait for Test {
-		type Origin = Origin;
-		type Index = u64;
-		type BlockNumber = u64;
-		type Hash = H256;
-		type Hashing = BlakeTwo256;
-		type Digest = Digest;
-		type AccountId = u64;
-		type Lookup = IdentityLookup<Self::AccountId>;
-		type Header = Header;
-		type Event = ();
-		type Log = DigestItem;
-	}
-	impl Trait for Test {
-		type Event = ();
-	}
-	type DidModule = Module<Test>;
-
-	// This function basically just builds a genesis storage key/value store according to
-	// our desired mockup.
-	fn new_test_ext() -> runtime_io::TestExternalities<Blake2Hasher> {
-		system::GenesisConfig::<Test>::default().build_storage().unwrap().0.into()
-	}
-
-	#[test]
-	fn it_works_for_default_value() {
-		with_externalities(&mut new_test_ext(), || {
-			// Just a dummy test for the dummy funtion `do_identity`
-			// calling the `do_identity` function with a value 42
-			assert_ok!(DidModule::do_identity(Origin::signed(1), 42));
-			// asserting that the stored value is equal to what we stored
-			assert_eq!(DidModule::identity(), Some(42));
-		});
-	}
-}
+mod tests;
