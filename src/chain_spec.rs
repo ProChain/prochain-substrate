@@ -41,7 +41,7 @@ impl Alternative {
 	pub(crate) fn load(self) -> Result<ChainSpec, String> {
 		let data = r#"
 		{
-			"tokenDecimals": 18,
+			"tokenDecimals": 12,
 			"tokenSymbol": "PRA"
 		}"#;
 		let properties = serde_json::from_str(data).unwrap();

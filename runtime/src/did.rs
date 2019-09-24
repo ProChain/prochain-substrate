@@ -25,6 +25,10 @@ pub struct MetadataRecord<AccountId, Hash, Balance, Moment> {
 	social_account: Option<Hash>,
 }
 
+pub const MILLICENTS: u64 = 1_000_000_000_000;
+pub const CENTS: u64 = 1_000 * MILLICENTS;
+pub const DOLLARS: u64 = 100 * CENTS;
+
 decl_storage! {
 	trait Store for Module<T: Trait> as DidModule {
 		// Just a dummy storage item. 
@@ -180,8 +184,8 @@ decl_module! {
 			let sender_balance = <balances::Module<T>>::free_balance(sender.clone());
 			ensure!(sender_balance >= value, "you dont have enough free balance");
 
-			let fee = <T::Balance as As<u64>>::sa(25);
-			let min = <T::Balance as As<u64>>::sa(50);
+			let fee = <T::Balance as As<u64>>::sa(25 * MILLICENTS);
+			let min = <T::Balance as As<u64>>::sa(50 * MILLICENTS);
 			ensure!(value >= min, "you must lock at least 50 pra");
 
 			ensure!(<Identity<T>>::exists(&sender), "this account has no did yet");
@@ -192,7 +196,7 @@ decl_module! {
 			ensure!(<Metadata<T>>::exists(metadata.superior), "superior does not exsit");
 
 			let locked_funds = value - fee;
-			let max_rewards = locked_funds;
+			let max_rewards = locked_funds * As::sa(10);
 
 			Self::_transfer(sender.clone(), metadata.superior, fee)?;
 
