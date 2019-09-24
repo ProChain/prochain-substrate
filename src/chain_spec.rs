@@ -39,6 +39,12 @@ fn account_key(s: &str) -> AccountId {
 impl Alternative {
 	/// Get an actual chain config from one of the alternatives.
 	pub(crate) fn load(self) -> Result<ChainSpec, String> {
+		let data = r#"
+		{
+			"tokenDecimals": 18,
+			"tokenSymbol": "PRA"
+		}"#;
+		let properties = serde_json::from_str(data).unwrap();
 		Ok(match self {
 			Alternative::Development => ChainSpec::from_genesis(
 				"Development",
@@ -54,7 +60,7 @@ impl Alternative {
 				None,
 				None,
 				None,
-				None
+				properties
 			),
 			Alternative::LocalTestnet => ChainSpec::from_genesis(
 				"Local Testnet",
@@ -106,7 +112,7 @@ fn testnet_genesis(initial_authorities: Vec<AuthorityId>, endowed_accounts: Vec<
 		balances: Some(BalancesConfig {
 			transaction_base_fee: 1,
 			transaction_byte_fee: 0,
-			existential_deposit: 500,
+			existential_deposit: 0,
 			transfer_fee: 0,
 			creation_fee: 0,
 			balances: endowed_accounts.iter().cloned().map(|k|(k, 1 << 60)).collect(),
