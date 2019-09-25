@@ -1,7 +1,7 @@
 use primitives::{ed25519, sr25519, Pair};
 use prochain_runtime::{
 	AccountId, GenesisConfig, ConsensusConfig, TimestampConfig, BalancesConfig,
-	SudoConfig, IndicesConfig,
+	SudoConfig, IndicesConfig, did::{DOLLARS},
 };
 use substrate_service;
 
@@ -97,6 +97,8 @@ impl Alternative {
 }
 
 fn testnet_genesis(initial_authorities: Vec<AuthorityId>, endowed_accounts: Vec<AccountId>, root_key: AccountId) -> GenesisConfig {
+	const ENDOWMENT: u128 = 1_000 * DOLLARS as u128;
+
 	GenesisConfig {
 		consensus: Some(ConsensusConfig {
 			code: include_bytes!("../runtime/wasm/target/wasm32-unknown-unknown/release/prochain_runtime_wasm.compact.wasm").to_vec(),
@@ -115,7 +117,7 @@ fn testnet_genesis(initial_authorities: Vec<AuthorityId>, endowed_accounts: Vec<
 			existential_deposit: 0,
 			transfer_fee: 0,
 			creation_fee: 0,
-			balances: endowed_accounts.iter().cloned().map(|k|(k, 1 << 60)).collect(),
+			balances: endowed_accounts.iter().cloned().map(|k|(k, ENDOWMENT)).collect(),
 			vesting: vec![],
 		}),
 		sudo: Some(SudoConfig {

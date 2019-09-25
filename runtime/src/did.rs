@@ -186,7 +186,7 @@ decl_module! {
 
 			let fee = <T::Balance as As<u64>>::sa(25 * MILLICENTS);
 			let min = <T::Balance as As<u64>>::sa(50 * MILLICENTS);
-			ensure!(value >= min, "you must lock at least 50 pra");
+			ensure!(value >= min, "you must lock at least 50 pra per time");
 
 			ensure!(<Identity<T>>::exists(&sender), "this account has no did yet");
 			let did = Self::identity(&sender);
@@ -195,7 +195,8 @@ decl_module! {
 			// make sure the superior exists
 			ensure!(<Metadata<T>>::exists(metadata.superior), "superior does not exsit");
 
-			let locked_funds = value - fee;
+			let old_locked_fund = metadata.locked_funds.unwrap_or(<T::Balance as As<u64>>::sa(0));
+			let locked_funds = old_locked_fund + value - fee;
 			let max_rewards = locked_funds * As::sa(10);
 
 			Self::_transfer(sender.clone(), metadata.superior, fee)?;
