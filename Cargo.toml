@@ -81,3 +81,8 @@ panic = 'unwind'
 [[bin]]
 name = 'prochain'
 path = 'src/main.rs'
+
+[workspace]
+members = [
+    "runtime"
+]

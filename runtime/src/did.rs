@@ -3,19 +3,18 @@ use support::traits::{Currency, ReservableCurrency};
 use system::ensure_signed;
 use parity_codec::{Encode, Decode};
 use rstd::prelude::*;
-use runtime_io::{blake2_256};
+use runtime_io::blake2_256;
 use runtime_primitives::traits::{CheckedSub, CheckedAdd, As, Hash};
-
 pub trait Trait: balances::Trait {
-  type Event: From<Event<Self>> + Into<<Self as system::Trait>::Event>;
+    type Event: From<Event<Self>> + Into<<Self as system::Trait>::Event>;
 }
 
 #[cfg_attr(feature = "std", derive(Debug))]
 #[derive(Encode, Decode, Default, Clone, PartialEq)]
 pub struct MetadataRecord<AccountId, Hash> {
-	address: AccountId,
-	superior: Hash,
-	creator: AccountId,
+    address: AccountId,
+    superior: Hash,
+    creator: AccountId,
 }
 
 decl_storage! {
@@ -174,34 +173,151 @@ decl_event! {
 }
 
 impl<T: Trait> Module<T> {
-	fn update_to(from: T::AccountId, to: T::AccountId, did: T::Hash) -> Result {
-		// transfer funds
-		let money = <T::Balance as As<u64>>::sa(1020);
-		<balances::Module<T> as Currency<_>>::transfer(&from, &to, money)?;
+    fn update_to(from: T::AccountId, to: T::AccountId, did: T::Hash) -> Result {
+        // transfer funds
+        let money = <T::Balance as As<u64>>::sa(1020);
+        <balances::Module<T> as Currency<_>>::transfer(&from, &to, money)?;
 
-		Self::deposit_event(RawEvent::Updated(to, did, money));
+        Self::deposit_event(RawEvent::Updated(to, did, money));
 
-    Ok(())
-  }
+        Ok(())
+    }
 
-	fn _transfer(from: T::AccountId, to_did: T::Hash, value: T::Balance) -> Result {
-		let sender_balance = <balances::Module<T>>::free_balance(from.clone());
-		ensure!(sender_balance >= value, "you dont have enough free balance");
+    fn _transfer(from: T::AccountId, to_did: T::Hash, value: T::Balance) -> Result {
+        let sender_balance = <balances::Module<T>>::free_balance(from.clone());
+        ensure!(sender_balance >= value, "you dont have enough free balance");
 
-		let to = Self::identity_of(to_did).ok_or("corresponding AccountId does not exsit")?;
-		ensure!(from != to, "you can not send money to yourself");
+        let to = Self::identity_of(to_did).ok_or("corresponding AccountId does not exsit")?;
+        ensure!(from != to, "you can not send money to yourself");
 
-		// check overflow
-		let _updated_from_balance = sender_balance.checked_sub(&value).ok_or("overflow in calculating balance")?;
-		let receiver_balance = <balances::Module<T>>::free_balance(to.clone());
-		let _updated_to_balance = receiver_balance.checked_add(&value).ok_or("overflow in calculating balance")?;
+        // check overflow
+        let _updated_from_balance = sender_balance.checked_sub(&value).ok_or("overflow in calculating balance")?;
+        let receiver_balance = <balances::Module<T>>::free_balance(to.clone());
+        let _updated_to_balance = receiver_balance.checked_add(&value).ok_or("overflow in calculating balance")?;
 
-		<balances::Module<T> as Currency<_>>::transfer(&from, &to, value)?;
+        <balances::Module<T> as Currency<_>>::transfer(&from, &to, value)?;
 
-		Ok(())
-	}
-
+        Ok(())
+    }
 }
 
+
 #[cfg(test)]
-mod tests;
+mod tests {
+    use super::*;
+    use tiny_keccak::keccak256;
+    use runtime_io::with_externalities;
+    use primitives::{H256, Blake2Hasher};
+    use support::{impl_outer_origin, assert_ok, assert_noop};
+    use primitives::hexdisplay::HexDisplay;
+    use hex_literal::hex;
+    use runtime_primitives::{
+		BuildStorage,
+		traits::{BlakeTwo256, IdentityLookup},
+		testing::{Digest, DigestItem, Header},
+	};
+    use std::fmt::Display;
+
+    impl_outer_origin! {
+		pub enum Origin for Test {}
+	}
+
+    // For testing the module, we construct most of a mock runtime. This means
+    // first constructing a configuration type (`Test`) which `impl`s each of the
+    // configuration traits of modules we want to use.
+    #[derive(Clone, Eq, PartialEq)]
+    pub struct Test;
+
+    impl system::Trait for Test {
+        type Origin = Origin;
+        type Index = u64;
+        type BlockNumber = u64;
+        type Hash = H256;
+        type Hashing = BlakeTwo256;
+        type Digest = Digest;
+        type AccountId = u64;
+        type Lookup = IdentityLookup<Self::AccountId>;
+        type Header = Header;
+        type Event = ();
+        type Log = DigestItem;
+    }
+
+    impl balances::Trait for Test {
+        type Balance = u64;
+        type OnFreeBalanceZero = ();
+        type OnNewAccount = ();
+        type TransactionPayment = ();
+        type TransferPayment = ();
+        type DustRemoval = ();
+        type Event = ();
+
+    }
+
+    impl Trait for Test {
+        type Event = ();
+    }
+
+    type DidModule = Module<Test>;
+
+    // This function basically just builds a genesis storage key/value store according to
+    // our desired mockup.
+    fn new_test_ext() -> runtime_io::TestExternalities<Blake2Hasher> {
+        system::GenesisConfig::<Test>::default().build_storage().unwrap().0.into()
+    }
+    //	{"address":"5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY","superior":"0x0000000000000000000000000000000000000000000000000000000000000000","creator":"5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY","social_account":"0x6e657766656979616e67","type":"0x776563686174"}
+    //0x1a0fa65f894e2eeb157baa619afec7a8e54423fe22b47484aaac29615d6d1f6a
+    #[test]
+    fn should_pass_create(){
+        with_externalities(&mut new_test_ext(), || {
+//            let mut has = blake2_256("0x0000000000000000000000000000000000000000000000000000000000000000".as_bytes());
+//            println!("{:?}",has);
+//            let mut did = BlakeTwo256::hash(&has[0..20]);
+            let r = DidModule::create(Origin::signed(42), "5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY".as_bytes().to_vec(), 42u64, H256::zero());
+            assert_ok!(r)
+        });
+    }
+
+    #[test]
+    fn should_pass_identity() {
+        with_externalities(&mut new_test_ext(), || {
+//            let mut has = blake2_256("0x0000000000000000000000000000000000000000000000000000000000000000".as_bytes());
+//            println!("{:?}",has);
+//            let mut did = BlakeTwo256::hash(&has[0..20]);
+            let r = DidModule::create(Origin::signed(42), "5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY".as_bytes().to_vec(), 42u64, H256::zero());
+            let mut hash = DidModule::identity(42u64);
+            let h = hex!["dadeed82831f8738589240e8729925a7a8b1de200da06a476ca63612f891da35"];
+            assert_eq!(h,hash.as_bytes());
+            let count = DidModule::all_did_count();
+        });
+    }
+
+
+    #[test]
+    fn should_pass_identity_of() {
+        with_externalities(&mut new_test_ext(), || {
+            let mut has = blake2_256("5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY".as_bytes());
+            let mut did = BlakeTwo256::hash(&has[0..20]);
+            let did = DidModule::identity_of(did);
+            println!("2......{:?}", did);
+        });
+    }
+
+    #[test]
+    fn should_pass_all_did_count(){
+//        let mut did = BlakeTwo256::hash(&has[0..20]);
+//        let h = hex!["0000000000000000000000000000000000000000000000000000000000000000"];
+        with_externalities(&mut new_test_ext(), || {
+            let r = DidModule::create(Origin::signed(42), "5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY".as_bytes().to_vec(), 42u64, H256::zero());
+            assert_ok!(r);
+            let count = DidModule::all_did_count();
+            assert_eq!(1, count);
+        });
+    }
+
+    fn alice_secret() -> secp256k1::SecretKey {
+        secp256k1::SecretKey::parse(&keccak256(b"Alice")).unwrap()
+    }
+    fn alice_public() -> secp256k1::PublicKey {
+        secp256k1::PublicKey::from_secret_key(&alice_secret())
+    }
+}
