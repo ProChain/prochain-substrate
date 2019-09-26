@@ -72,6 +72,7 @@ decl_module! {
 			
 			// make sure the did is new
 			ensure!(!<Metadata<T>>::exists(&did_hash), "did alread existed");
+			ensure!(!<Identity<T>>::exists(&sender), "you already have did");
 			
 			if let Some(mut value) = social_account {
 
