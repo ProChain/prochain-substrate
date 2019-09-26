@@ -73,23 +73,24 @@ decl_module! {
 			// make sure the did is new
 			ensure!(!<Metadata<T>>::exists(&did_hash), "did alread existed");
 			
-			if let Some(value) = social_account {
-				// update social account
-				let social_hash = (&value, &did_type)
-									.using_encoded(<T as system::Trait>::Hashing::hash);
-				<SocialAccount<T>>::insert(social_hash, &did_hash);
+			if let Some(mut value) = social_account {
 
-				// get superior by wxid
-				// let default_superior = &superior;
-				// let social_superior = social_superior.unwrap();
-				// let superior_hash = (&social_superior, &did_type)
+				// let social_hash = (&value, &did_type)
 				// 					.using_encoded(<T as system::Trait>::Hashing::hash);
-				// let superior_did = Self::social_account(superior_hash).ok_or("the superior does not exsit")?;
+
+				// bind social account
+				value.append(&mut did_type.to_vec());
+
+				let social_hash = T::Hashing::hash(&value);
+				// one social account only can bind one did
+				ensure!(!<SocialAccount<T>>::exists(&social_hash), "this social account has been bound"); 
+				<SocialAccount<T>>::insert(social_hash, &did_hash);
 				
 				let superior_did;
-				if let Some(value) = social_superior {
-					let superior_hash = (&value, &did_type)
-									.using_encoded(<T as system::Trait>::Hashing::hash);
+				if let Some(mut value) = social_superior {
+					value.append(&mut did_type.to_vec());
+
+					let superior_hash = T::Hashing::hash(&value);
 					superior_did = Self::social_account(superior_hash).ok_or("the superior does not exsit")?;
 				} else {
 					superior_did = superior;
@@ -108,7 +109,7 @@ decl_module! {
 				};
 				<Metadata<T>>::insert(&did_hash, metadata);
 
-			}else {
+			} else {
 				// update metadata
 				let metadata = MetadataRecord {
 						address: address.clone(),
@@ -185,7 +186,7 @@ decl_module! {
 
 			let fee = <T::Balance as As<u64>>::sa(25 * MILLICENTS);
 			let min = <T::Balance as As<u64>>::sa(50 * MILLICENTS);
-			ensure!(value >= min, "you must lock at least 50 pra");
+			ensure!(value >= min, "you must lock at least 50 pra per time");
 
 			ensure!(<Identity<T>>::exists(&sender), "this account has no did yet");
 			let did = Self::identity(&sender);
@@ -194,7 +195,8 @@ decl_module! {
 			// make sure the superior exists
 			ensure!(<Metadata<T>>::exists(metadata.superior), "superior does not exsit");
 
-			let locked_funds = value - fee;
+			let old_locked_fund = metadata.locked_funds.unwrap_or(<T::Balance as As<u64>>::sa(0));
+			let locked_funds = old_locked_fund + value - fee;
 			let max_rewards = locked_funds * As::sa(10);
 
 			Self::_transfer(sender.clone(), metadata.superior, fee)?;
