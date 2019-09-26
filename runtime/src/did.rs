@@ -75,13 +75,16 @@ decl_module! {
 			ensure!(!<Metadata<T>>::exists(&did_hash), "did alread existed");
 			
 			if let Some(mut value) = social_account {
-				// update social account
+
 				// let social_hash = (&value, &did_type)
 				// 					.using_encoded(<T as system::Trait>::Hashing::hash);
-				
+
+				// bind social account
 				value.append(&mut did_type.to_vec());
 
 				let social_hash = T::Hashing::hash(&value);
+				// one social account only can bind one did
+				ensure!(!<SocialAccount<T>>::exists(&social_hash), "this social account has been bound"); 
 				<SocialAccount<T>>::insert(social_hash, &did_hash);
 				
 				let superior_did;
@@ -107,7 +110,7 @@ decl_module! {
 				};
 				<Metadata<T>>::insert(&did_hash, metadata);
 
-			}else {
+			} else {
 				// update metadata
 				let metadata = MetadataRecord {
 						address: address.clone(),
