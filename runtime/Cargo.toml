@@ -33,6 +33,8 @@ version = '1.0.0'
 hex-literal = "0.2.0"
 libsecp256k1 = "0.2.1"
 tiny-keccak = "1.4.2"
+keyring = { package = "substrate-keyring", git = "https://github.com/paritytech/substrate", branch = "polkadot-master" }
+
 
 [dependencies.aura]
 default_features = false
