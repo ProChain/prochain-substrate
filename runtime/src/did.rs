@@ -292,7 +292,7 @@ mod tests {
     use tiny_keccak::keccak256;
     use runtime_io::with_externalities;
     use primitives::{H256, Blake2Hasher, crypto::Ss58Codec, crypto, ed25519, sr25519};
-    use support::{impl_outer_origin, assert_ok, assert_noop};
+    use support::{impl_outer_origin, assert_ok, assert_noop,assert_err};
     use primitives::hexdisplay::HexDisplay;
     use hex_literal::hex;
     use balances;
@@ -452,8 +452,9 @@ mod tests {
             let metadata = DidModule::metadata(hash);
             println!("{:?}", metadata);
             let mut pubkey = hex!["e659a7a1628cdd93febc04a4e0646ea20e9f5f0ce097d9a05290d4a9e054df4e"];
-            let result = DidModule::create(Origin::signed(46), pubkey.to_vec(), 46u64, "wx".as_bytes().to_vec(), H256::zero(), Some(Vec::new()), Some(Vec::new()));
+            let result = DidModule::create(Origin::signed(46), pubkey.to_vec(), 46u64, "wx".as_bytes().to_vec(), H256::zero(), Some("haoming".as_bytes().to_vec()), Some(Vec::new()));
             assert_ok!(result);
+//            assert_err!(result,"this social account has been bound");
             let mut hash = DidModule::identity(46u64);
             println!("{:?}", hash);
             let metadata = DidModule::metadata(hash);
@@ -486,7 +487,9 @@ mod tests {
     }
 
     #[test]
-    fn should_pass_lock()
+    fn should_pass_lock(){
+
+    }
 
     fn alice_secret() -> secp256k1::SecretKey {
         secp256k1::SecretKey::parse(&keccak256(b"Alice")).unwrap()
