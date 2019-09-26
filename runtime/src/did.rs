@@ -74,23 +74,21 @@ decl_module! {
 			// make sure the did is new
 			ensure!(!<Metadata<T>>::exists(&did_hash), "did alread existed");
 			
-			if let Some(value) = social_account {
+			if let Some(mut value) = social_account {
 				// update social account
-				let social_hash = (&value, &did_type)
-									.using_encoded(<T as system::Trait>::Hashing::hash);
-				<SocialAccount<T>>::insert(social_hash, &did_hash);
-
-				// get superior by wxid
-				// let default_superior = &superior;
-				// let social_superior = social_superior.unwrap();
-				// let superior_hash = (&social_superior, &did_type)
+				// let social_hash = (&value, &did_type)
 				// 					.using_encoded(<T as system::Trait>::Hashing::hash);
-				// let superior_did = Self::social_account(superior_hash).ok_or("the superior does not exsit")?;
+				
+				value.append(&mut did_type.to_vec());
+
+				let social_hash = T::Hashing::hash(&value);
+				<SocialAccount<T>>::insert(social_hash, &did_hash);
 				
 				let superior_did;
-				if let Some(value) = social_superior {
-					let superior_hash = (&value, &did_type)
-									.using_encoded(<T as system::Trait>::Hashing::hash);
+				if let Some(mut value) = social_superior {
+					value.append(&mut did_type.to_vec());
+
+					let superior_hash = T::Hashing::hash(&value);
 					superior_did = Self::social_account(superior_hash).ok_or("the superior does not exsit")?;
 				} else {
 					superior_did = superior;
