@@ -208,7 +208,6 @@ decl_module! {
 			metadata.locked_funds = Some(locked_funds);
 			metadata.locked_period = Some(period);
 			metadata.max_rewards = Some(max_rewards);
-
 			<Metadata<T>>::insert(did, metadata);
 
 			Ok(())
@@ -293,7 +292,7 @@ mod tests {
     use tiny_keccak::keccak256;
     use runtime_io::with_externalities;
     use primitives::{H256, Blake2Hasher, crypto::Ss58Codec, crypto, ed25519, sr25519};
-    use support::{impl_outer_origin, assert_ok, assert_noop,assert_err};
+    use support::{impl_outer_origin, assert_ok, assert_noop, assert_err};
     use primitives::hexdisplay::HexDisplay;
     use hex_literal::hex;
     use balances;
@@ -350,6 +349,7 @@ mod tests {
 
     type DidModule = Module<Test>;
     type Balance = balances::Module<Test>;
+    type Timestamp = timestamp::Module<Test>;
 
     // This function basically just builds a genesis storage key/value store according to
     // our desired mockup.
@@ -358,10 +358,10 @@ mod tests {
         r.0.extend(
             balances::GenesisConfig::<Test> {
                 balances: vec![
-                    (1, 100),
-                    (2, 100),
-                    (3, 100),
-                    (4, 100),
+                    (1, 100 * MILLICENTS),
+                    (2, 100 * MILLICENTS),
+                    (3, 100 * MILLICENTS),
+                    (4, 100 * MILLICENTS),
                 ],
                 vesting: vec![],
                 transaction_base_fee: 0,
@@ -371,6 +371,7 @@ mod tests {
                 creation_fee: 0,
             }.build_storage().unwrap().0,
         );
+
         r.0.into()
     }
 
@@ -447,19 +448,11 @@ mod tests {
             let result = DidModule::update(Origin::signed(42), 46u64);
             assert_ok!(result);
             let mut hash = DidModule::identity(42u64);
-            println!("{:?}", hash);
             let mut hash = DidModule::identity(46u64);
-            println!("{:?}", hash);
             let metadata = DidModule::metadata(hash);
-            println!("{:?}", metadata);
             let mut pubkey = hex!["e659a7a1628cdd93febc04a4e0646ea20e9f5f0ce097d9a05290d4a9e054df4e"];
             let result = DidModule::create(Origin::signed(46), pubkey.to_vec(), 46u64, "wx".as_bytes().to_vec(), H256::zero(), Some("haoming".as_bytes().to_vec()), Some(Vec::new()));
-            assert_ok!(result);
-//            assert_err!(result,"this social account has been bound");
-            let mut hash = DidModule::identity(46u64);
-            println!("{:?}", hash);
-            let metadata = DidModule::metadata(hash);
-            println!("{:?}", metadata);
+            assert_err!(result,"you already have did");
         });
     }
 
@@ -467,29 +460,67 @@ mod tests {
     fn should_pass_transfer_balance() {
         with_externalities(&mut new_test_ext(), || {
             let balance = Balance::free_balance(1u64);
-            assert_eq!(balance,100);
+            assert_eq!(balance, 100 * MILLICENTS);
             let mut pubkey = hex!["d43593c715fdd31c61141abd04a99fd6822c8558854ccde39a5684e7a56da27d"];
             let result = DidModule::create(Origin::signed(42), pubkey.to_vec(), 42u64, "wx".as_bytes().to_vec(), H256::zero(), Some(Vec::new()), Some(Vec::new()));
             assert_ok!(result);
             let mut hash = DidModule::identity(42u64);
-            let result = Balance::transfer(Origin::signed(1), 42u64, 10);
+            let result = Balance::transfer(Origin::signed(1), 42u64, 10 * MILLICENTS);
             assert_ok!(result);
             let balance = Balance::free_balance(1u64);
-            assert_eq!(balance,90);
+            assert_eq!(balance, 90 * MILLICENTS);
             let balance = Balance::free_balance(42u64);
-            assert_eq!(balance,10);
-            let result = DidModule::transfer(Origin::signed(1), hash, 2);
+            assert_eq!(balance, 10 * MILLICENTS);
+            let result = DidModule::transfer(Origin::signed(1), hash, 2 * MILLICENTS);
             assert_ok!(result);
             let balance = Balance::free_balance(42u64);
-            assert_eq!(balance,12);
+            assert_eq!(balance, 12 * MILLICENTS);
             let balance = Balance::free_balance(1u64);
-            assert_eq!(balance,88);
+            assert_eq!(balance, 88 * MILLICENTS);
         });
     }
 
     #[test]
-    fn should_pass_lock(){
-
+    fn should_pass_lock() {
+        with_externalities(&mut new_test_ext(), || {
+            lock();
+        });
+    }
+    fn lock(){
+        let mut pubkey = hex!["e659a7a1628cdd93febc04a4e0646ea20e9f5f0ce097d9a05290d4a9e054df4e"];
+        let result = DidModule::create(Origin::signed(1), pubkey.to_vec(), 1u64, "wx".as_bytes().to_vec(), H256::zero(), Some("mm".as_bytes().to_vec()), None);
+        let hash = DidModule::identity(1u64);
+        let mut pubkey = hex!["d43593c715fdd31c61141abd04a99fd6822c8558854ccde39a5684e7a56da27d"];
+        let result = DidModule::create(Origin::signed(2), pubkey.to_vec(), 2u64, "wx".as_bytes().to_vec(), hash, Some("hm".as_bytes().to_vec()), Some("mm".as_bytes().to_vec()));
+        let hash = DidModule::identity(2u64);
+        let metadata = DidModule::metadata(hash);
+        assert_ok!(result);
+        let result = DidModule::lock(Origin::signed(2), 50 * MILLICENTS, 1);
+        assert_ok!(result);
+        let balance =  Balance::free_balance(2u64);
+        let reserved_balance = Balance::reserved_balance(2u64);
+        assert_eq!(reserved_balance,25*MILLICENTS);
+        let balance = Balance::free_balance(1u64);
+        assert_eq!(balance,125*MILLICENTS);
+    }
+    #[test]
+    fn should_pass_unlock(){
+        with_externalities(&mut new_test_ext(),||{
+            Timestamp::set_timestamp(42);
+            lock();
+            let balance = Balance::free_balance(2u64);
+            Timestamp::set_timestamp(47);
+            let result = DidModule::unlock(Origin::signed(2),0*MILLICENTS);
+            assert_ok!(result);
+            let reserved_balance = Balance::reserved_balance(2u64);
+            let balance = Balance::free_balance(2u64);
+            assert_eq!(balance,50*MILLICENTS);
+            let result = DidModule::unlock(Origin::signed(2),25*MILLICENTS);
+            assert_ok!(result);
+            let reserved_balance = Balance::reserved_balance(2u64);
+            let balance = Balance::free_balance(2u64);
+            assert_eq!(balance,75*MILLICENTS);
+        });
     }
 
     fn alice_secret() -> secp256k1::SecretKey {
