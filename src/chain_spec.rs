@@ -82,7 +82,7 @@ impl Alternative {
 				None,
 				None,
 				None,
-				None
+				properties
 			),
 		})
 	}
