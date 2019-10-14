@@ -213,7 +213,7 @@ decl_module! {
 			let locked_funds = old_locked_fund + value - fee;
 			let max_rewards = locked_funds * As::sa(10);
 
-			<balances::Module<T>>::reserve(&sender, locked_funds)?;
+			<balances::Module<T>>::reserve(&sender, value - fee)?;
 			
 			metadata.locked_time = Some(<timestamp::Module<T>>::get());
 			metadata.locked_funds = Some(locked_funds);
