@@ -174,7 +174,7 @@ decl_module! {
 			
 			Self::update_to(sender, to, did)?;
 
-      Ok(())
+            Ok(())
 		}
 
 		fn transfer(origin, to_did: T::Hash, value: T::Balance) -> Result {
@@ -217,9 +217,12 @@ decl_module! {
 			
 			metadata.locked_time = Some(<timestamp::Module<T>>::get());
 			metadata.locked_funds = Some(locked_funds);
-			metadata.locked_period = Some(period);
+			metadata.locked_period = Some(period.clone());
 			metadata.max_rewards = Some(max_rewards);
 			<Metadata<T>>::insert(did, metadata);
+
+            // broadcast lock event
+			Self::deposit_event(RawEvent::Locked(sender, locked_funds, period, max_rewards));
 
 			Ok(())
 		}
@@ -248,6 +251,9 @@ decl_module! {
 
 			<balances::Module<T>>::unreserve(&sender, value);
 
+            // broadcast unlock event
+			Self::deposit_event(RawEvent::Unlock(sender, value));
+
 			Ok(())
 		}
 		
@@ -260,9 +266,12 @@ decl_event! {
     <T as system::Trait>::AccountId,
     <T as system::Trait>::Hash,
     <T as balances::Trait>::Balance,
+    <T as timestamp::Trait>::Moment,
     {
       Created(AccountId, Hash),
-			Updated(AccountId, Hash, Balance),
+      Updated(AccountId, Hash, Balance),
+      Locked(AccountId, Balance, Moment, Balance),
+      Unlock(AccountId, Balance),
     }
 }
 
