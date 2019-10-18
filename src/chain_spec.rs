@@ -1,4 +1,4 @@
-use primitives::{ed25519, sr25519, Pair};
+use primitives::{crypto::UncheckedInto, ed25519, sr25519, Pair};
 use prochain_runtime::{
 	AccountId, GenesisConfig, ConsensusConfig, TimestampConfig, BalancesConfig,
 	SudoConfig, IndicesConfig, Perbill, Permill, TreasuryConfig, StakingConfig, SessionConfig, DemocracyConfig, GrandpaConfig, CouncilVotingConfig, did::{DOLLARS},
@@ -6,6 +6,7 @@ use prochain_runtime::{
 use substrate_service;
 
 use ed25519::Public as AuthorityId;
+use hex_literal::{hex_impl, hex};
 
 // Note this is the URL for the telemetry server
 //const STAGING_TELEMETRY_URL: &str = "wss://telemetry.polkadot.io/submit/";
@@ -66,13 +67,13 @@ impl Alternative {
 				"Local Testnet",
 				"local_testnet",
 				|| testnet_genesis(vec![
-					authority_key("Alice"),
-					authority_key("Bob"),
+					hex!("65bdf6515d15f18530a7f962b6fb0a1f746104f0bdbfab99fc620e3d1737e352").unchecked_into(), // 5EN789dARz7MZG3EB1pbGeqpVpRxjEu8dzQTgnyLTYZFtL3r
+					hex!("46758e089fcdf1fa7fe48bad94f6d7e3e44cf9ae8b5af162bc3b0c74bfa53f74").unchecked_into(), // 5Df68W8T9qu8jKLJRgmpD1BfM9pcYKhrw72xkjG7nnwun2r2
+					hex!("0f30261a96b72188eaa117de048a6da8af66646b50ed92d3c5f2a5e70b613ffc").unchecked_into() // 5CQcsuwwS9WTo9p5EK38Li2uVmAHgjnA9sdq14gHsGzWd6mq
 				], vec![
-					account_key("Alice"),
-					account_key("Bob"),
+					hex!("22df4b685df33f070ae6e5ee27f745de078adff099d3a803ec67afe1168acd4f").unchecked_into(), // 5CrRpNbQBTiBmTjpUgJ6mH9YRmopVweLsjffVz7muskYEo2r
 				],
-					account_key("Alice"),
+					hex!("22df4b685df33f070ae6e5ee27f745de078adff099d3a803ec67afe1168acd4f").unchecked_into()
 				),
 				vec![],
 				None,

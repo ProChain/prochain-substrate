@@ -27,8 +27,7 @@
       },
       "indices": {
         "ids": [
-          "5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY",
-          "5FHneW46xGXgs5mUiveU4sbTyGBzmstUspZC92UhjJM694ty"
+          "5CrRpNbQBTiBmTjpUgJ6mH9YRmopVweLsjffVz7muskYEo2r"
         ]
       },
       "balances": {
@@ -39,18 +38,14 @@
         "transactionByteFee": 0,
         "balances": [
           [
-            "5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY",
-            100000000000000000000
-          ],
-          [
-            "5FHneW46xGXgs5mUiveU4sbTyGBzmstUspZC92UhjJM694ty",
+            "5CrRpNbQBTiBmTjpUgJ6mH9YRmopVweLsjffVz7muskYEo2r",
             100000000000000000000
           ]
         ],
         "vesting": []
       },
       "sudo": {
-        "key": "5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY"
+        "key": "5CrRpNbQBTiBmTjpUgJ6mH9YRmopVweLsjffVz7muskYEo2r"
       },
       "treasury": {
         "proposalBond": 50000,
@@ -73,18 +68,13 @@
       },
       "session": {
         "validators": [
-          "5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY",
-          "5FHneW46xGXgs5mUiveU4sbTyGBzmstUspZC92UhjJM694ty"
+          "5CrRpNbQBTiBmTjpUgJ6mH9YRmopVweLsjffVz7muskYEo2r"
         ],
         "sessionLength": 6,
         "keys": [
           [
-            "5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY",
-            "5FA9nQDVg267DEd8m1ZypXLBnvN7SFxYwV7ndqSYGiN9TTpu"
-          ],
-          [
-            "5FHneW46xGXgs5mUiveU4sbTyGBzmstUspZC92UhjJM694ty",
-            "5GoNkf6WdbxCFnPdAnYYQyCjAKPJgLNxXwPjwTh6DGg6gN3E"
+            "5CrRpNbQBTiBmTjpUgJ6mH9YRmopVweLsjffVz7muskYEo2r",
+            "5EN789dARz7MZG3EB1pbGeqpVpRxjEu8dzQTgnyLTYZFtL3r"
           ]
         ]
       },
@@ -103,11 +93,15 @@
       "grandpa": {
         "authorities": [
           [
-            "5FA9nQDVg267DEd8m1ZypXLBnvN7SFxYwV7ndqSYGiN9TTpu",
+            "5EN789dARz7MZG3EB1pbGeqpVpRxjEu8dzQTgnyLTYZFtL3r",
             1
           ],
           [
-            "5GoNkf6WdbxCFnPdAnYYQyCjAKPJgLNxXwPjwTh6DGg6gN3E",
+            "5Df68W8T9qu8jKLJRgmpD1BfM9pcYKhrw72xkjG7nnwun2r2",
+            1
+          ],
+          [
+            "5CQcsuwwS9WTo9p5EK38Li2uVmAHgjnA9sdq14gHsGzWd6mq",
             1
           ]
         ]
