@@ -14,7 +14,7 @@ use primitives::bytes;
 use primitives::{ed25519, sr25519, OpaqueMetadata};
 use runtime_primitives::{
 	ApplyResult, transaction_validity::TransactionValidity, generic, create_runtime_str,
-	traits::{self, NumberFor, BlakeTwo256, Block as BlockT, Convert, StaticLookup, Verify}
+	traits::{self, NumberFor, BlakeTwo256, Block as BlockT, Convert, DigestFor, StaticLookup, Verify}
 };
 use client::{
 	block_builder::api::{CheckInherentsResult, InherentData, self as block_builder_api},
@@ -22,6 +22,7 @@ use client::{
 };
 use version::RuntimeVersion;
 use council::{motions as council_motions, voting as council_voting};
+use grandpa::fg_primitives::{self, ScheduledChange};
 use primitives::u32_trait::{_2, _4};
 #[cfg(feature = "std")]
 use version::NativeVersion;
@@ -237,6 +238,16 @@ impl council::motions::Trait for Runtime {
     type Event = Event;
 }
 
+impl grandpa::Trait for Runtime {
+    type SessionKey = AuthorityId;
+    type Log = Log;
+    type Event = Event;
+}
+
+impl finality_tracker::Trait for Runtime {
+    type OnFinalizationStalled = grandpa::SyncedAuthorities<Runtime>;
+}
+
 /// Used for the module did in `./did.rs`
 impl did::Trait for Runtime {
 	type Event = Event;
@@ -282,6 +293,8 @@ construct_runtime!(
 		Council: council::{Module, Call, Storage, Event<T>},
 		CouncilVoting: council_voting,
 		CouncilMotions: council_motions::{Module, Call, Storage, Event<T>, Origin},
+		Grandpa: grandpa::{Module, Call, Storage, Config<T>, Log(), Event<T>},
+		FinalityTracker: finality_tracker::{Module, Call, Inherent},
 		// Used for the module did in `./did.rs`
 		DidModule: did::{Module, Call, Storage, Event<T>},
 	}
@@ -355,6 +368,40 @@ impl_runtime_apis! {
 	impl runtime_api::TaggedTransactionQueue<Block> for Runtime {
 		fn validate_transaction(tx: <Block as BlockT>::Extrinsic) -> TransactionValidity {
 			Executive::validate_transaction(tx)
+		}
+	}
+
+	impl fg_primitives::GrandpaApi<Block> for Runtime {
+		fn grandpa_pending_change(digest: &DigestFor<Block>)
+				-> Option<ScheduledChange<NumberFor<Block>>>
+		{
+				for log in digest.logs.iter().filter_map(|l| match l {
+						Log(InternalLog::grandpa(grandpa_signal)) => Some(grandpa_signal),
+						_ => None
+				}) {
+						if let Some(change) = Grandpa::scrape_digest_change(log) {
+								return Some(change);
+						}
+				}
+				None
+		}
+
+		fn grandpa_forced_change(digest: &DigestFor<Block>)
+				-> Option<(NumberFor<Block>, ScheduledChange<NumberFor<Block>>)>
+		{
+				for log in digest.logs.iter().filter_map(|l| match l {
+						Log(InternalLog::grandpa(grandpa_signal)) => Some(grandpa_signal),
+						_ => None
+				}) {
+						if let Some(change) = Grandpa::scrape_digest_forced_change(log) {
+								return Some(change);
+						}
+				}
+				None
+		}
+
+		fn grandpa_authorities() -> Vec<(AuthorityId, u64)> {
+				Grandpa::grandpa_authorities()
 		}
 	}
 

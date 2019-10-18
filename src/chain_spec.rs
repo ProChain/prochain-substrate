@@ -1,7 +1,7 @@
 use primitives::{ed25519, sr25519, Pair};
 use prochain_runtime::{
 	AccountId, GenesisConfig, ConsensusConfig, TimestampConfig, BalancesConfig,
-	SudoConfig, IndicesConfig, Perbill, Permill, TreasuryConfig, StakingConfig, SessionConfig, DemocracyConfig, CouncilVotingConfig, did::{DOLLARS},
+	SudoConfig, IndicesConfig, Perbill, Permill, TreasuryConfig, StakingConfig, SessionConfig, DemocracyConfig, GrandpaConfig, CouncilVotingConfig, did::{DOLLARS},
 };
 use substrate_service;
 
@@ -122,6 +122,9 @@ fn testnet_genesis(initial_authorities: Vec<AuthorityId>, endowed_accounts: Vec<
 		}),
 		sudo: Some(SudoConfig {
 			key: root_key,
+		}),
+		grandpa: Some(GrandpaConfig {
+			authorities: initial_authorities.iter().cloned().map(|x| (x, 1)).collect()
 		}),
 		treasury: Some(TreasuryConfig {
 			proposal_bond: Permill::from_millionths(50_000), // Proportion of funds that should be bonded in order to place a proposal.
