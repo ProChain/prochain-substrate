@@ -14,13 +14,15 @@ use primitives::bytes;
 use primitives::{ed25519, sr25519, OpaqueMetadata};
 use runtime_primitives::{
 	ApplyResult, transaction_validity::TransactionValidity, generic, create_runtime_str,
-	traits::{self, NumberFor, BlakeTwo256, Block as BlockT, StaticLookup, Verify}
+	traits::{self, NumberFor, BlakeTwo256, Block as BlockT, Convert, StaticLookup, Verify}
 };
 use client::{
 	block_builder::api::{CheckInherentsResult, InherentData, self as block_builder_api},
 	runtime_api, impl_runtime_apis
 };
 use version::RuntimeVersion;
+use council::{motions as council_motions, voting as council_voting};
+use primitives::u32_trait::{_2, _4};
 #[cfg(feature = "std")]
 use version::NativeVersion;
 
@@ -29,6 +31,7 @@ use version::NativeVersion;
 pub use runtime_primitives::BuildStorage;
 pub use consensus::Call as ConsensusCall;
 pub use timestamp::Call as TimestampCall;
+pub use staking::StakerStatus;
 pub use balances::Call as BalancesCall;
 pub use runtime_primitives::{Permill, Perbill};
 pub use timestamp::BlockPeriod;
@@ -135,7 +138,7 @@ impl system::Trait for Runtime {
 }
 
 impl aura::Trait for Runtime {
-	type HandleReport = ();
+	type HandleReport = aura::StakingSlasher<Runtime>;
 }
 
 impl consensus::Trait for Runtime {
@@ -187,9 +190,76 @@ impl sudo::Trait for Runtime {
 	type Proposal = Call;
 }
 
+impl treasury::Trait for Runtime {
+    type Currency = balances::Module<Self>;
+    type ApproveOrigin = council_motions::EnsureMembers<_4>;
+    type RejectOrigin = council_motions::EnsureMembers<_2>;
+    type Event = Event;
+    type MintedForSpending = ();
+    type ProposalRejection = ();
+}
+
+impl staking::Trait for Runtime {
+    type Currency = balances::Module<Self>;
+    type CurrencyToVote = CurrencyToVoteHandler;
+    type OnRewardMinted = Treasury;
+    type Event = Event;
+    type Slash = ();
+    type Reward = ();
+}
+
+impl session::Trait for Runtime {
+    type ConvertAccountIdToSessionKey = ();
+    type OnSessionChange = Staking;
+    // type OnSessionChange = (Staking, grandpa::SyncedAuthorities<Runtime>);
+    type Event = Event;
+}
+
+impl democracy::Trait for Runtime {
+    type Currency = balances::Module<Self>;
+    type Proposal = Call;
+    type Event = Event;
+}
+
+impl council::Trait for Runtime {
+    type Event = Event;
+    type BadPresentation = ();
+    type BadReaper = ();
+}
+
+impl council::voting::Trait for Runtime {
+    type Event = Event;
+}
+
+impl council::motions::Trait for Runtime {
+    type Origin = Origin;
+    type Proposal = Call;
+    type Event = Event;
+}
+
 /// Used for the module did in `./did.rs`
 impl did::Trait for Runtime {
 	type Event = Event;
+}
+
+pub struct CurrencyToVoteHandler;
+
+impl CurrencyToVoteHandler {
+    fn factor() -> u128 {
+        (Balances::total_issuance() / u128::from(u64::max_value())).max(1)
+    }
+}
+
+impl Convert<u128, u64> for CurrencyToVoteHandler {
+    fn convert(x: u128) -> u64 {
+        (x / Self::factor()) as u64
+    }
+}
+
+impl Convert<u128, u128> for CurrencyToVoteHandler {
+    fn convert(x: u128) -> u128 {
+        x * Self::factor()
+    }
 }
 
 construct_runtime!(
@@ -205,6 +275,13 @@ construct_runtime!(
 		Indices: indices,
 		Balances: balances,
 		Sudo: sudo,
+		Treasury: treasury,
+		Staking: staking,
+		Session: session,
+		Democracy: democracy,
+		Council: council::{Module, Call, Storage, Event<T>},
+		CouncilVoting: council_voting,
+		CouncilMotions: council_motions::{Module, Call, Storage, Event<T>, Origin},
 		// Used for the module did in `./did.rs`
 		DidModule: did::{Module, Call, Storage, Event<T>},
 	}
