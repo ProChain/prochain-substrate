@@ -71,10 +71,6 @@ impl Alternative {
 				], vec![
 					account_key("Alice"),
 					account_key("Bob"),
-					account_key("Charlie"),
-					account_key("Dave"),
-					account_key("Eve"),
-					account_key("Ferdie"),
 				],
 					account_key("Alice"),
 				),
