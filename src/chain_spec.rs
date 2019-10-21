@@ -69,7 +69,8 @@ impl Alternative {
 				|| testnet_genesis(vec![
 					hex!("65bdf6515d15f18530a7f962b6fb0a1f746104f0bdbfab99fc620e3d1737e352").unchecked_into(), // 5EN789dARz7MZG3EB1pbGeqpVpRxjEu8dzQTgnyLTYZFtL3r
 					hex!("46758e089fcdf1fa7fe48bad94f6d7e3e44cf9ae8b5af162bc3b0c74bfa53f74").unchecked_into(), // 5Df68W8T9qu8jKLJRgmpD1BfM9pcYKhrw72xkjG7nnwun2r2
-					hex!("0f30261a96b72188eaa117de048a6da8af66646b50ed92d3c5f2a5e70b613ffc").unchecked_into() // 5CQcsuwwS9WTo9p5EK38Li2uVmAHgjnA9sdq14gHsGzWd6mq
+					hex!("0f30261a96b72188eaa117de048a6da8af66646b50ed92d3c5f2a5e70b613ffc").unchecked_into(), // 5CQcsuwwS9WTo9p5EK38Li2uVmAHgjnA9sdq14gHsGzWd6mq
+					hex!("e0c3f0fc8523ffcfba88bbbdef34c7e5f597b61bfb8a7cb67ef209246acd9a4a").unchecked_into(), // 5H9Qnn4cSQsH11p4vJ9p39TFrgsLFUyEq7b6QVTdU2qhCiju
 				], vec![
 					hex!("22df4b685df33f070ae6e5ee27f745de078adff099d3a803ec67afe1168acd4f").unchecked_into(), // 5CrRpNbQBTiBmTjpUgJ6mH9YRmopVweLsjffVz7muskYEo2r
 				],
