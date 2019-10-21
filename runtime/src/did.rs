@@ -67,9 +67,9 @@ decl_module! {
 			// 截取第三步生成的hash的前4位，并附加到第二步生成的hash后面
 			did_ele.append(&mut ext_hash[..4].to_vec());
 			
-			let mut buf = Vec::new();
-			buf.extend_from_slice(&did_ele.encode());
-			let did_hash = T::Hashing::hash(&buf[..]);
+			// let mut buf = Vec::new();
+			// buf.extend_from_slice(&did_ele.encode());
+			let did_hash = T::Hashing::hash(&did_ele);
 			
 			// make sure the did is new
 			ensure!(!<Metadata<T>>::exists(&did_hash), "did alread existed");
