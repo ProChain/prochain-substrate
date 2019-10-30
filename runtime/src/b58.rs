@@ -1,6 +1,8 @@
 use rstd::prelude::Vec;
 
 static BASE58_CHARS: &'static [u8] = b"123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz";
+static ETH_CHARS: &'static [u8] = b"0123456789abcdefx";
+static EOS_CHARS: &'static [u8] = b"12345abcdefghijkmnopqrstuvwxyz.";
 
 #[rustfmt::skip]
 static BASE58_DIGITS: [Option<u8>; 128] = [
@@ -57,6 +59,32 @@ pub fn from(data: Vec<u8>) -> Result<Vec<u8>, &'static str> {
     // Copy rest of string
     ret.extend(scratch.into_iter().skip_while(|&x| x == 0));
     Ok(ret)
+}
+
+pub fn is_valid_eth_address(address: Vec<u8>) -> Result<bool, &'static str> {
+    let mut is_valid = true;
+
+    for b in address {
+        if !ETH_CHARS.contains(&b) {
+            is_valid = false;
+            break;
+        }
+    }
+
+    Ok(is_valid)
+}
+
+pub fn is_valid_eos_address(address: Vec<u8>) -> Result<bool, &'static str> {
+    let mut is_valid = true;
+
+    for b in address {
+        if !EOS_CHARS.contains(&b) {
+            is_valid = false;
+            break;
+        }
+    }
+
+    Ok(is_valid)
 }
 
 #[cfg(test)]

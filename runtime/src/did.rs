@@ -4,7 +4,7 @@ use rstd::vec::Vec;
 use runtime_io::blake2_256;
 use support::{
     decl_event, decl_module, decl_storage, ensure, StorageMap,
-    StorageValue, traits::{Currency, ReservableCurrency}, dispatch::Result
+    StorageValue, traits::{Currency, ReservableCurrency}, dispatch::Result, print,
 };
 use primitives::H160;
 use sr_primitives::traits::{CheckedSub, CheckedAdd, Hash, SaturatedConversion};
@@ -284,8 +284,22 @@ decl_module! {
                     b58::from(address.clone()).map_err(|_| "invlid bitcoin address")?;
                     external_address.btc = address;
                 },
-                b"eth" => external_address.eth = H160::from_slice(&address[..]),
-                b"eos" => external_address.eos = address,
+                b"eth" => {
+                    let is_valid = b58::is_valid_eth_address(address.clone()).unwrap();
+                    if is_valid {
+                        external_address.eth = H160::from_slice(&address[..]);
+                    } else {
+                        print("invlid eth account");
+                    }
+                },
+                b"eos" => {
+                    let is_valid = b58::is_valid_eos_address(address.clone()).unwrap();
+                    if is_valid {
+                        external_address.eos = address;
+                    } else {
+                        print("invlid eos account");
+                    }
+                },
                 _ => (),
             };
 
