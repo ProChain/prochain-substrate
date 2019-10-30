@@ -1,14 +1,25 @@
-use support::{decl_module, decl_storage, decl_event, StorageValue, StorageMap, dispatch::Result, ensure};
-use support::traits::{Currency, ReservableCurrency};
-use system::ensure_signed;
-use timestamp;
-use parity_codec::{Encode, Decode};
-use rstd::prelude::*;
+use crate::b58;
+use codec::{Decode, Encode};
+use rstd::vec::Vec;
 use runtime_io::blake2_256;
-use runtime_primitives::traits::{CheckedSub, CheckedAdd, As, Hash};
+use support::{
+    decl_event, decl_module, decl_storage, ensure, StorageMap,
+    StorageValue, traits::{Currency, ReservableCurrency}, dispatch::Result
+};
+use primitives::H160;
+use sr_primitives::traits::{CheckedSub, CheckedAdd, Hash, SaturatedConversion};
+use system::ensure_signed;
 
 pub trait Trait: balances::Trait + timestamp::Trait {
     type Event: From<Event<Self>> + Into<<Self as system::Trait>::Event>;
+}
+
+#[cfg_attr(feature = "std", derive(Debug))]
+#[derive(Encode, Decode, Default, Clone, PartialEq)]
+pub struct ExternalAddress {
+	btc: Vec<u8>,
+    eth: H160,
+    eos: Vec<u8>,
 }
 
 #[cfg_attr(feature = "std", derive(Debug))]
@@ -24,51 +35,47 @@ pub struct MetadataRecord<AccountId, Hash, Balance, Moment> {
 	locked_period: Option<Moment>,
 	fund_superior: bool,
 	social_account: Option<Hash>,
+    external_address: ExternalAddress
 }
 
-pub const MILLICENTS: u64 = 1_000_000_000_000;
-pub const CENTS: u64 = 1_000 * MILLICENTS;
-pub const DOLLARS: u64 = 100 * CENTS;
+pub const MILLICENTS: u128 = 1_000_000_000_000;
+pub const CENTS: u128 = 1_000 * MILLICENTS;
+pub const DOLLARS: u128 = 100 * CENTS;
 
 decl_storage! {
-	trait Store for Module<T: Trait> as DidModule {
-		// Just a dummy storage item. 
-		// Here we are declaring a StorageValue, `Identity` as a Option<u32>
-		// `get(identity)` is the default getter which returns either the stored `u32` or `None` if nothing stored
-		Identity get(identity): map T::AccountId => T::Hash;
+    trait Store for Module<T: Trait> as DidModule {
+        Identity get(identity): map T::AccountId => T::Hash;
 		IdentityOf get(identity_of): map T::Hash => Option<T::AccountId>;
 		SocialAccount get(social_account): map T::Hash => T::Hash;
 		Metadata get(metadata): map T::Hash => MetadataRecord<T::AccountId, T::Hash, T::Balance, T::Moment>;
 		AllDidCount get(all_did_count): u64;
-	}
+    }
+}
+
+decl_event! {
+  pub enum Event<T>
+  where 
+    <T as system::Trait>::AccountId,
+    <T as system::Trait>::Hash,
+    <T as balances::Trait>::Balance,
+    <T as timestamp::Trait>::Moment,
+    {
+        Created(AccountId, Hash),
+        Updated(AccountId, Hash, Balance),
+        Locked(AccountId, Balance, Moment, Balance),
+        Unlock(AccountId, Balance),
+    }
 }
 
 decl_module! {
-	pub struct Module<T: Trait> for enum Call where origin: T::Origin {
-		// this is needed only if you are using events in your module
-		fn deposit_event<T>() = default;
+    pub struct Module<T: Trait> for enum Call where origin: T::Origin {
+        fn deposit_event() = default;
 
-		fn create(origin, pubkey: Vec<u8>, address: T::AccountId, did_type: Vec<u8>, superior: T::Hash, social_account: Option<Vec<u8>>, social_superior: Option<Vec<u8>>) -> Result {
+        fn create(origin, pubkey: Vec<u8>, address: T::AccountId, did_type: Vec<u8>, superior: T::Hash, social_account: Option<Vec<u8>>, social_superior: Option<Vec<u8>>) {
 			let sender = ensure_signed(origin)?;
-
-			// 通过公钥生成hash值
-			let mut hash = blake2_256(&pubkey);
-
-			// did的类型
-			let did_ele = &did_type;
-			let mut did_ele = did_ele.to_vec();
-
-			// 	截取第一步生成的hash的前20位，将did类型附加在最前面
-			did_ele.append(&mut hash[..20].to_vec());
-
-			// 将第二步生成的hash再次hash
-			let mut ext_hash = blake2_256(&did_ele[..]);
-
-			// 截取第三步生成的hash的前4位，并附加到第二步生成的hash后面
-			did_ele.append(&mut ext_hash[..4].to_vec());
+            
+            let did_ele = Self::generate_did(&pubkey, &did_type);
 			
-			// let mut buf = Vec::new();
-			// buf.extend_from_slice(&did_ele.encode());
 			let did_hash = T::Hashing::hash(&did_ele);
 			
 			// make sure the did is new
@@ -112,6 +119,11 @@ decl_module! {
 						locked_period: None,
 						fund_superior: false,
 						social_account: Some(social_hash),
+                        external_address: ExternalAddress {
+                            btc: Vec::new(),
+                            eth: H160::zero(),
+                            eos: Vec::new(),
+                        },
 				};
 				<Metadata<T>>::insert(&did_hash, metadata);
 
@@ -128,6 +140,11 @@ decl_module! {
 						locked_period: None,
 						fund_superior: false,
 						social_account: None,
+                        external_address: ExternalAddress {
+                            btc: Vec::new(),
+                            eth: H160::zero(),
+                            eos: Vec::new(),
+                        },
 				};
 				<Metadata<T>>::insert(&did_hash, metadata);
 			};
@@ -142,15 +159,13 @@ decl_module! {
 			let all_did_count = Self::all_did_count();
 			let new_count = all_did_count.checked_add(1)
 					.ok_or("Overflow adding a new did")?;
-			<AllDidCount<T>>::put(new_count);
+			<AllDidCount>::put(new_count);
 
 			// broadcast event
 			Self::deposit_event(RawEvent::Created(sender, did_hash));
-
-			Ok(())
 		}
 
-		fn update(origin, to: T::AccountId) -> Result {
+        fn update(origin, to: T::AccountId) {
 			let sender = ensure_signed(origin)?;
 
 			ensure!(<Identity<T>>::exists(sender.clone()), "this account has no did yet");
@@ -172,26 +187,28 @@ decl_module! {
 
 			<Metadata<T>>::insert(did, metadata);
 			
-			Self::update_to(sender, to, did)?;
+            let money = <balances::Module<T>>::free_balance(sender.clone());
+            <balances::Module<T> as Currency<_>>::transfer(&sender, &to, money)?;
 
-            Ok(())
+            Self::deposit_event(RawEvent::Updated(to, did, money));
 		}
 
-		fn transfer(origin, to_did: T::Hash, value: T::Balance) -> Result {
+        // transfer fund by did
+        fn transfer(origin, to_did: T::Hash, value: T::Balance) {
 			let sender = ensure_signed(origin)?;
 
 			Self::_transfer(sender, to_did, value)?;
-
-			Ok(())
 		}
 
-		fn lock(origin, value: T::Balance, period: T::Moment) -> Result {
+        // lock fund
+        fn lock(origin, value: T::Balance, period: T::Moment) {
 			let sender = ensure_signed(origin)?;
 
 			let sender_balance = <balances::Module<T>>::free_balance(sender.clone());
 			ensure!(sender_balance >= value, "you dont have enough free balance");
 
-			let min = <T::Balance as As<u64>>::sa(50 * MILLICENTS);
+			let min = Self::u64_to_balance(50 * MILLICENTS);
+            let zero = Self::u64_to_balance(0);
 			ensure!(value >= min, "you must lock at least 50 pra per time");
 
 			ensure!(<Identity<T>>::exists(&sender), "this account has no did yet");
@@ -201,17 +218,17 @@ decl_module! {
 			// make sure the superior exists
 			ensure!(<Metadata<T>>::exists(metadata.superior), "superior does not exsit");
 
-			let mut fee = <T::Balance as As<u64>>::sa(25 * MILLICENTS);
+			let mut fee = Self::u64_to_balance(25 * MILLICENTS);
 			if !metadata.fund_superior {
 				Self::_transfer(sender.clone(), metadata.superior, fee)?;
 				metadata.fund_superior = true
 			} else {
-				fee = <T::Balance as As<u64>>::sa(0);
+				fee = Self::u64_to_balance(0);
 			}
 
-			let old_locked_fund = metadata.locked_funds.unwrap_or(<T::Balance as As<u64>>::sa(0));
+			let old_locked_fund = metadata.locked_funds.unwrap_or(zero);
 			let locked_funds = old_locked_fund + value - fee;
-			let max_rewards = locked_funds * As::sa(10);
+			let max_rewards = locked_funds * Self::u64_to_balance(10);
 
 			<balances::Module<T>>::reserve(&sender, value - fee)?;
 			
@@ -221,13 +238,11 @@ decl_module! {
 			metadata.max_rewards = Some(max_rewards);
 			<Metadata<T>>::insert(did, metadata);
 
-            // broadcast lock event
 			Self::deposit_event(RawEvent::Locked(sender, locked_funds, period, max_rewards));
-
-			Ok(())
 		}
 
-		fn unlock(origin, value: T::Balance) -> Result {
+        // unlock fund
+        fn unlock(origin, value: T::Balance) {
 			let sender = ensure_signed(origin)?;
 
 			let reserved_balance = <balances::Module<T>>::reserved_balance(sender.clone());
@@ -251,40 +266,59 @@ decl_module! {
 
 			<balances::Module<T>>::unreserve(&sender, value);
 
-            // broadcast unlock event
 			Self::deposit_event(RawEvent::Unlock(sender, value));
-
-			Ok(())
 		}
-		
-	}
-}
 
-decl_event! {
-  pub enum Event<T>
-  where 
-    <T as system::Trait>::AccountId,
-    <T as system::Trait>::Hash,
-    <T as balances::Trait>::Balance,
-    <T as timestamp::Trait>::Moment,
-    {
-      Created(AccountId, Hash),
-      Updated(AccountId, Hash, Balance),
-      Locked(AccountId, Balance, Moment, Balance),
-      Unlock(AccountId, Balance),
+        // add external address
+        fn add_external_address(origin, add_type: Vec<u8>, address: Vec<u8>) {
+			let sender = ensure_signed(origin)?;
+
+			ensure!(<Identity<T>>::exists(&sender), "this account has no did yet");
+
+			let did = Self::identity(&sender);
+			let mut metadata = Self::metadata(&did);
+			let mut external_address = metadata.external_address;
+
+            match &add_type[..] {
+                b"btc" => {
+                    b58::from(address.clone()).map_err(|_| "invlid bitcoin address")?;
+                    external_address.btc = address;
+                },
+                b"eth" => external_address.eth = H160::from_slice(&address[..]),
+                b"eos" => external_address.eos = address,
+                _ => (),
+            };
+
+			metadata.external_address = external_address;
+
+			<Metadata<T>>::insert(did, metadata);
+		}
     }
 }
 
 impl<T: Trait> Module<T> {
-    fn update_to(from: T::AccountId, to: T::AccountId, did: T::Hash) -> Result {
-        // transfer funds
-        // let money = <T::Balance as As<u64>>::sa(1020);
-        let money = <balances::Module<T>>::free_balance(from.clone());
-        <balances::Module<T> as Currency<_>>::transfer(&from, &to, money)?;
+    fn u64_to_balance(input: u128) -> T::Balance {
+        input.saturated_into()
+    }
 
-        Self::deposit_event(RawEvent::Updated(to, did, money));
+    fn generate_did(pubkey: &[u8], did_type: &[u8]) -> Vec<u8> {
+        // 通过公钥生成hash值
+        let mut hash = blake2_256(pubkey);
 
-        Ok(())
+        // did的类型
+        let did_ele = did_type;
+        let mut did_ele = did_ele.to_vec();
+
+        // 	截取第一步生成的hash的前20位，将did类型附加在最前面
+        did_ele.append(&mut hash[..20].to_vec());
+
+        // 将第二步生成的hash再次hash
+        let mut ext_hash = blake2_256(&did_ele[..]);
+
+        // 截取第三步生成的hash的前4位，并附加到第二步生成的hash后面
+        did_ele.append(&mut ext_hash[..4].to_vec());
+
+        did_ele
     }
 
     fn _transfer(from: T::AccountId, to_did: T::Hash, value: T::Balance) -> Result {
@@ -305,7 +339,6 @@ impl<T: Trait> Module<T> {
     }
 }
 
-
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -317,7 +350,7 @@ mod tests {
     use hex_literal::hex;
     use balances;
     use keyring::Sr25519Keyring;
-    use runtime_primitives::{
+    use sr_primitives::{
         BuildStorage,
         traits::{BlakeTwo256, IdentityLookup},
         testing::{Digest, DigestItem, Header},
