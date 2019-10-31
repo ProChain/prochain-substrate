@@ -1,4 +1,4 @@
-use crate::b58;
+use crate::check;
 use codec::{Decode, Encode};
 use rstd::vec::Vec;
 use runtime_io::blake2_256;
@@ -6,7 +6,6 @@ use support::{
     decl_event, decl_module, decl_storage, ensure, StorageMap,
     StorageValue, traits::{Currency, ReservableCurrency}, dispatch::Result, print,
 };
-use primitives::H160;
 use sr_primitives::traits::{CheckedSub, CheckedAdd, Hash, SaturatedConversion};
 use system::ensure_signed;
 
@@ -18,7 +17,7 @@ pub trait Trait: balances::Trait + timestamp::Trait {
 #[derive(Encode, Decode, Default, Clone, PartialEq)]
 pub struct ExternalAddress {
 	btc: Vec<u8>,
-    eth: H160,
+    eth: Vec<u8>,
     eos: Vec<u8>,
 }
 
@@ -121,7 +120,7 @@ decl_module! {
 						social_account: Some(social_hash),
                         external_address: ExternalAddress {
                             btc: Vec::new(),
-                            eth: H160::zero(),
+                            eth: Vec::new(),
                             eos: Vec::new(),
                         },
 				};
@@ -142,7 +141,7 @@ decl_module! {
 						social_account: None,
                         external_address: ExternalAddress {
                             btc: Vec::new(),
-                            eth: H160::zero(),
+                            eth: Vec::new(),
                             eos: Vec::new(),
                         },
 				};
@@ -281,26 +280,21 @@ decl_module! {
 
             match &add_type[..] {
                 b"btc" => {
-                    b58::from(address.clone()).map_err(|_| "invlid bitcoin address")?;
+                    check::from(address.clone()).map_err(|_| "invlid bitcoin address")?;
                     external_address.btc = address;
+                    print("add btc address sucessfully");
                 },
                 b"eth" => {
-                    let is_valid = b58::is_valid_eth_address(address.clone()).unwrap();
-                    if is_valid {
-                        external_address.eth = H160::from_slice(&address[..]);
-                    } else {
-                        print("invlid eth account");
-                    }
+                    ensure!(check::is_valid_eth_address(address.clone()), "invlid eth account");
+                    external_address.eth = address;
+                    print("add eth address sucessfully");
                 },
                 b"eos" => {
-                    let is_valid = b58::is_valid_eos_address(address.clone()).unwrap();
-                    if is_valid {
-                        external_address.eos = address;
-                    } else {
-                        print("invlid eos account");
-                    }
+                    ensure!(check::is_valid_eos_address(address.clone()), "invlid eos account");
+                    external_address.eos = address;
+                    print("add eos address sucessfully");
                 },
-                _ => (),
+                _ => ensure!(false, "invlid type"),
             };
 
 			metadata.external_address = external_address;

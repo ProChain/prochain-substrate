@@ -89,8 +89,7 @@ impl Convert<u128, Balance> for CurrencyToVoteHandler {
 /// Used for the module did in `./did.rs`
 pub mod did;
 use did::{MILLICENTS, CENTS, DOLLARS};
-mod b58;
-
+mod check;
 mod oracle;
 
 

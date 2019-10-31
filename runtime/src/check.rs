@@ -1,7 +1,7 @@
 use rstd::prelude::Vec;
 
 static BASE58_CHARS: &'static [u8] = b"123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz";
-static ETH_CHARS: &'static [u8] = b"0123456789abcdefx";
+static ETH_CHARS: &'static [u8] = b"0123456789abcdef";
 static EOS_CHARS: &'static [u8] = b"12345abcdefghijkmnopqrstuvwxyz.";
 
 #[rustfmt::skip]
@@ -61,8 +61,12 @@ pub fn from(data: Vec<u8>) -> Result<Vec<u8>, &'static str> {
     Ok(ret)
 }
 
-pub fn is_valid_eth_address(address: Vec<u8>) -> Result<bool, &'static str> {
+pub fn is_valid_eth_address(address: Vec<u8>) -> bool {
     let mut is_valid = true;
+
+    if address.len() < 40 {
+        return false;
+    };
 
     for b in address {
         if !ETH_CHARS.contains(&b) {
@@ -71,11 +75,15 @@ pub fn is_valid_eth_address(address: Vec<u8>) -> Result<bool, &'static str> {
         }
     }
 
-    Ok(is_valid)
+    is_valid
 }
 
-pub fn is_valid_eos_address(address: Vec<u8>) -> Result<bool, &'static str> {
+pub fn is_valid_eos_address(address: Vec<u8>) -> bool {
     let mut is_valid = true;
+
+    if address.len() > 12 {
+        return false;
+    };
 
     for b in address {
         if !EOS_CHARS.contains(&b) {
@@ -84,7 +92,7 @@ pub fn is_valid_eos_address(address: Vec<u8>) -> Result<bool, &'static str> {
         }
     }
 
-    Ok(is_valid)
+    is_valid
 }
 
 #[cfg(test)]
