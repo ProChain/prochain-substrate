@@ -1,3 +1,4 @@
+use crate::check;
 use support::{decl_module, decl_storage, decl_event, StorageValue, StorageMap, dispatch::Result, ensure};
 use support::traits::{Currency, ReservableCurrency};
 use system::ensure_signed;
@@ -13,6 +14,14 @@ pub trait Trait: balances::Trait + timestamp::Trait {
 
 #[cfg_attr(feature = "std", derive(Debug))]
 #[derive(Encode, Decode, Default, Clone, PartialEq)]
+pub struct ExternalAddress {
+	btc: Vec<u8>,
+    eth: Vec<u8>,
+    eos: Vec<u8>,
+}
+
+#[cfg_attr(feature = "std", derive(Debug))]
+#[derive(Encode, Decode, Default, Clone, PartialEq)]
 pub struct MetadataRecord<AccountId, Hash, Balance, Moment> {
 	address: AccountId,
 	superior: Hash,
@@ -24,6 +33,7 @@ pub struct MetadataRecord<AccountId, Hash, Balance, Moment> {
 	locked_period: Option<Moment>,
 	fund_superior: bool,
 	social_account: Option<Hash>,
+    external_address: ExternalAddress,
 }
 
 pub const MILLICENTS: u64 = 1_000_000_000_000;
@@ -112,6 +122,11 @@ decl_module! {
 						locked_period: None,
 						fund_superior: false,
 						social_account: Some(social_hash),
+                        external_address: ExternalAddress {
+                            btc: Vec::new(),
+                            eth: Vec::new(),
+                            eos: Vec::new(),
+                        },
 				};
 				<Metadata<T>>::insert(&did_hash, metadata);
 
@@ -128,6 +143,11 @@ decl_module! {
 						locked_period: None,
 						fund_superior: false,
 						social_account: None,
+                        external_address: ExternalAddress {
+                            btc: Vec::new(),
+                            eth: Vec::new(),
+                            eos: Vec::new(),
+                        },
 				};
 				<Metadata<T>>::insert(&did_hash, metadata);
 			};
@@ -255,6 +275,42 @@ decl_module! {
 			Self::deposit_event(RawEvent::Unlock(sender, value));
 
 			Ok(())
+		}
+
+        // add external address
+        fn add_external_address(origin, add_type: Vec<u8>, address: Vec<u8>) -> Result {
+			let sender = ensure_signed(origin)?;
+
+			ensure!(<Identity<T>>::exists(&sender), "this account has no did yet");
+
+			let did = Self::identity(&sender);
+			let mut metadata = Self::metadata(&did);
+			let mut external_address = metadata.external_address;
+
+            match &add_type[..] {
+                b"btc" => {
+                    check::from(address.clone()).map_err(|_| "invlid bitcoin address")?;
+                    external_address.btc = address;
+                    runtime_io::print("add btc address sucessfully");
+                },
+                b"eth" => {
+                    ensure!(check::is_valid_eth_address(address.clone()), "invlid eth account");
+                    external_address.eth = address;
+                    runtime_io::print("add eth address sucessfully");
+                },
+                b"eos" => {
+                    ensure!(check::is_valid_eos_address(address.clone()), "invlid eos account");
+                    external_address.eos = address;
+                    runtime_io::print("add eos address sucessfully");
+                },
+                _ => ensure!(false, "invlid type"),
+            };
+
+			metadata.external_address = external_address;
+
+			<Metadata<T>>::insert(did, metadata);
+
+            Ok(())
 		}
 		
 	}
