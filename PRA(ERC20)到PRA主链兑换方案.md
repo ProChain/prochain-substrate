@@ -17,14 +17,14 @@
 
 #### 3. HTLC流程
 
-a. eth用户向合约转账ERC20
-b. eth用户调用函数htlc()，参数randomNumberHash, timestamp, heightSpan, praReceiverAddr, erc20Amount, praAmount等, 发起HTLC
-c. Deputy通过off-chain worker监听eth，接收新的HTLC Event
-d. Deputy在PRA主链创建新的HTLC，通过swapID对应
-e. 主链用户调用Deputy合约的claim()，参数必须一致，声明所属权
-f. eth用户调用函数claim()，参数randomNumber，确认完成交易
-g. eth用户可以随时调用refund()结束交易
-g. 失败处理：交易超时，主链用户未在指定heightSpan出块范围内claim，eth用户可调用refund()结束交易
+- eth用户向合约转账ERC20
+- eth用户调用函数htlc()，参数randomNumberHash, timestamp, heightSpan, praReceiverAddr, erc20Amount, praAmount等, 发起HTLC
+- Deputy通过off-chain worker监听eth，接收新的HTLC Event
+- Deputy在PRA主链创建新的HTLC，通过swapID对应
+- 主链用户调用Deputy合约的claim()，参数必须一致，声明所属权
+- eth用户调用函数claim()，参数randomNumber，确认完成交易
+- eth用户可以随时调用refund()结束交易
+- 失败处理：交易超时，主链用户未在指定heightSpan出块范围内claim，eth用户可调用refund()结束交易
 
 
 #### 4. 测试物料
