@@ -1,21 +1,27 @@
 ### PRA(ERC20) 到 PRA主链兑换方案（单向）
 ---
 
-#### 1. Eth
+#### 1. Eth合约
 
 - 部署HTLC合约
 - 函数：htlc(), claim(), refund()
 - 事件：HTLC, Claimed, Refunded
 - HTLC状态：INVALID, OPEN, COMPLETED, EXPIRED
 
-#### 2. PRA主链
+#### 2. PRA主链合约
 
 - 部署Deputy合约
 - 通过off-chain worker监听eth event，聚合
 - 函数：claim(), refund()
 - 事件：HTLC, Claimed, Refunded
 
-#### 3. HTLC流程
+#### 3. Event数据聚合
+
+- 中心化服务器
+- 访问N个主链数据源，取n/2+1个正确结果，存数据库
+- 向off-chain worker提供服务
+
+#### HTLC流程
 
 - eth用户向合约转账ERC20
 - eth用户调用函数htlc()，参数randomNumberHash, timestamp, heightSpan, praReceiverAddr, erc20Amount, praAmount等, 发起HTLC
