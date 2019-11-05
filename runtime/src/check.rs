@@ -2,7 +2,7 @@ use rstd::prelude::Vec;
 
 static BASE58_CHARS: &'static [u8] = b"123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz";
 static ETH_CHARS: &'static [u8] = b"0123456789abcdef";
-static EOS_CHARS: &'static [u8] = b"12345abcdefghijkmnopqrstuvwxyz.";
+static EOS_CHARS: &'static [u8] = b"12345abcdefghijklmnopqrstuvwxyz.";
 
 #[rustfmt::skip]
 static BASE58_DIGITS: [Option<u8>; 128] = [
