@@ -1,0 +1,22 @@
+[package]
+name = "transaction-factory"
+version = "0.0.1"
+authors = ["Parity Technologies <admin@parity.io>"]
+edition = "2018"
+
+[dependencies]
+cli = { package = "substrate-cli", git = "https://github.com/ProChain/substrate.git" }
+client = { package = "substrate-client", git = "https://github.com/ProChain/substrate.git" }
+consensus_common = { package = "substrate-consensus-common", git = "https://github.com/ProChain/substrate.git" }
+log = "0.4.8"
+codec = { package = "parity-scale-codec", version = "1.0.0", default-features = false, features = ["derive"] }
+primitives = { package = "substrate-primitives", git = "https://github.com/ProChain/substrate.git", default-features = false }
+sr-primitives = { git = "https://github.com/ProChain/substrate.git", default-features = false }
+substrate-service = { git = "https://github.com/ProChain/substrate.git" }
+
+[features]
+default = ["std"]
+std = [
+	"codec/std",
+	"sr-primitives/std",
+]

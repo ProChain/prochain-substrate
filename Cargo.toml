@@ -1,109 +1,18 @@
-[package]
-authors = ['hlm']
-build = 'build.rs'
-edition = '2018'
-name = 'prochain'
-version = '2.0.0'
-
-[build-dependencies]
-vergen = '3'
-
 [workspace]
-members = ['runtime']
+members = [
+	"core/utils/fork-tree",
+	"core/utils/wasm-builder",
+	"core/utils/wasm-builder-runner",
+	"node/cli",
+	"node/executor",
+	"node/primitives",
+	"node/rpc",
+	"node/rpc-client",
+	"node/runtime",
+	"node/testing",
+	"test-utils/chain-spec-builder",
+]
 
-[dependencies]
-derive_more = '0.14.0'
-exit-future = '0.1'
-futures = '0.1'
-log = '0.4'
-parking_lot = '0.9.0'
-tokio = '0.1'
-trie-root = '0.15.2'
-serde_json = "1.0"
-
-[dependencies.babe]
-git = 'https://github.com/paritytech/substrate.git'
-package = 'substrate-consensus-babe'
-rev = 'bbe90e31ed2fd71dc037fc385dae32584d2b1ce8'
-
-[dependencies.babe-primitives]
-git = 'https://github.com/paritytech/substrate.git'
-package = 'substrate-consensus-babe-primitives'
-rev = 'bbe90e31ed2fd71dc037fc385dae32584d2b1ce8'
-
-[dependencies.basic-authorship]
-git = 'https://github.com/paritytech/substrate.git'
-package = 'substrate-basic-authorship'
-rev = 'bbe90e31ed2fd71dc037fc385dae32584d2b1ce8'
-
-[dependencies.codec]
-package = 'parity-scale-codec'
-version = '1.0.0'
-
-[dependencies.ctrlc]
-features = ['termination']
-version = '3.0'
-
-[dependencies.grandpa]
-git = 'https://github.com/paritytech/substrate.git'
-package = 'substrate-finality-grandpa'
-rev = 'bbe90e31ed2fd71dc037fc385dae32584d2b1ce8'
-
-[dependencies.grandpa-primitives]
-git = 'https://github.com/paritytech/substrate.git'
-package = 'substrate-finality-grandpa-primitives'
-rev = 'bbe90e31ed2fd71dc037fc385dae32584d2b1ce8'
-
-[dependencies.inherents]
-git = 'https://github.com/paritytech/substrate.git'
-package = 'substrate-inherents'
-rev = 'bbe90e31ed2fd71dc037fc385dae32584d2b1ce8'
-
-[dependencies.network]
-git = 'https://github.com/paritytech/substrate.git'
-package = 'substrate-network'
-rev = 'bbe90e31ed2fd71dc037fc385dae32584d2b1ce8'
-
-[dependencies.prochain-runtime]
-path = 'runtime'
-
-[dependencies.primitives]
-git = 'https://github.com/paritytech/substrate.git'
-package = 'substrate-primitives'
-rev = 'bbe90e31ed2fd71dc037fc385dae32584d2b1ce8'
-
-[dependencies.sr-io]
-git = 'https://github.com/paritytech/substrate.git'
-rev = 'bbe90e31ed2fd71dc037fc385dae32584d2b1ce8'
-
-[dependencies.substrate-cli]
-git = 'https://github.com/paritytech/substrate.git'
-rev = 'bbe90e31ed2fd71dc037fc385dae32584d2b1ce8'
-
-[dependencies.substrate-client]
-git = 'https://github.com/paritytech/substrate.git'
-rev = 'bbe90e31ed2fd71dc037fc385dae32584d2b1ce8'
-
-[dependencies.substrate-executor]
-git = 'https://github.com/paritytech/substrate.git'
-rev = 'bbe90e31ed2fd71dc037fc385dae32584d2b1ce8'
-
-[dependencies.substrate-service]
-git = 'https://github.com/paritytech/substrate.git'
-rev = 'bbe90e31ed2fd71dc037fc385dae32584d2b1ce8'
-
-[dependencies.transaction-pool]
-git = 'https://github.com/paritytech/substrate.git'
-package = 'substrate-transaction-pool'
-rev = 'bbe90e31ed2fd71dc037fc385dae32584d2b1ce8'
-
-[dependencies.sr-primitives]
-default_features = false
-git = 'https://github.com/paritytech/substrate.git'
-rev = 'bbe90e31ed2fd71dc037fc385dae32584d2b1ce8'
-
-[[bin]]
-name = 'prochain'
-path = 'src/main.rs'
 [profile.release]
-panic = 'unwind'
+# Substrate runtime requires unwinding.
+panic = "unwind"
