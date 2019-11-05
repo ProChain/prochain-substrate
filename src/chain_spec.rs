@@ -70,7 +70,8 @@ impl Alternative {
 					hex!("65bdf6515d15f18530a7f962b6fb0a1f746104f0bdbfab99fc620e3d1737e352").unchecked_into(), // 5EN789dARz7MZG3EB1pbGeqpVpRxjEu8dzQTgnyLTYZFtL3r
 					hex!("46758e089fcdf1fa7fe48bad94f6d7e3e44cf9ae8b5af162bc3b0c74bfa53f74").unchecked_into(), // 5Df68W8T9qu8jKLJRgmpD1BfM9pcYKhrw72xkjG7nnwun2r2
 					hex!("0f30261a96b72188eaa117de048a6da8af66646b50ed92d3c5f2a5e70b613ffc").unchecked_into(), // 5CQcsuwwS9WTo9p5EK38Li2uVmAHgjnA9sdq14gHsGzWd6mq
-					// hex!("e0c3f0fc8523ffcfba88bbbdef34c7e5f597b61bfb8a7cb67ef209246acd9a4a").unchecked_into(), // 5H9Qnn4cSQsH11p4vJ9p39TFrgsLFUyEq7b6QVTdU2qhCiju
+					hex!("e0c3f0fc8523ffcfba88bbbdef34c7e5f597b61bfb8a7cb67ef209246acd9a4a").unchecked_into(), // 5H9Qnn4cSQsH11p4vJ9p39TFrgsLFUyEq7b6QVTdU2qhCiju
+					hex!("88894e8e3e6a19d035e02395f3b331d81b45def3cfb285bc8b6f2d128a39f904").unchecked_into(), // 5F9jA8E4GczoDpRXnvdPSgpmxJuPjfCNyznQhrprAJtvaW6V
 				], vec![
 					hex!("22df4b685df33f070ae6e5ee27f745de078adff099d3a803ec67afe1168acd4f").unchecked_into(), // 5CrRpNbQBTiBmTjpUgJ6mH9YRmopVweLsjffVz7muskYEo2r
 				],
@@ -124,11 +125,10 @@ fn testnet_genesis(initial_authorities: Vec<AuthorityId>, endowed_accounts: Vec<
 		grandpa: Some(GrandpaConfig {
 			authorities: initial_authorities.iter().cloned().map(|x| (x, 1)).collect()
 		}),
-		treasury: Some(TreasuryConfig {
-			proposal_bond: Permill::from_millionths(50_000), // Proportion of funds that should be bonded in order to place a proposal.
-			proposal_bond_minimum: 1_000_000, // Minimum amount of funds that should be placed in a deposit for making a proposal.
-			spend_period: 360, // Period between successive spends.
-			burn: Permill::from_millionths(100_000), // Percentage of spare funds (if any) that are burnt per spend period.
+		session: Some(SessionConfig {
+			validators: endowed_accounts.clone(),
+			keys: endowed_accounts.iter().cloned().zip(initial_authorities.clone()).collect(),
+			session_length: 6
 		}),
 		staking: Some(StakingConfig {
 			validator_count: 5, // The ideal number of staking participants.
@@ -143,22 +143,23 @@ fn testnet_genesis(initial_authorities: Vec<AuthorityId>, endowed_accounts: Vec<
 			current_era: 0, // The current era index.
 			current_session_reward: 10, // Maximum reward, per validator, that is provided per acceptable session.
 		}),
-		session: Some(SessionConfig {
-			validators: endowed_accounts.clone(),
-			keys: endowed_accounts.iter().cloned().zip(initial_authorities.clone()).collect(),
-			session_length: 6
-		}),
-		council_voting: Some(CouncilVotingConfig {
-			cooloff_period: 360, // Period (in blocks) that a veto is in effect.
-			voting_period: 60, // Period (in blocks) that a vote is open for.
-			enact_delay_period: 5, // Number of blocks by which to delay enactment of successful.
-		}),
 		democracy: Some(DemocracyConfig {
 			launch_period: 1440, // How often (in blocks) new public referenda are launched.
 			minimum_deposit: 10_000, // The minimum amount to be used as a deposit for a public referendum proposal.
 			public_delay: 5, // The delay before enactment for all public referenda.
 			max_lock_periods: 60, // The maximum number of additional lock periods a voter may offer to strengthen their vote.
 			voting_period: 144, // How often (in blocks) to check for new votes.
+		}),
+		council_voting: Some(CouncilVotingConfig {
+			cooloff_period: 360, // Period (in blocks) that a veto is in effect.
+			voting_period: 60, // Period (in blocks) that a vote is open for.
+			enact_delay_period: 5, // Number of blocks by which to delay enactment of successful.
+		}),
+		treasury: Some(TreasuryConfig {
+			proposal_bond: Permill::from_millionths(50_000), // Proportion of funds that should be bonded in order to place a proposal.
+			proposal_bond_minimum: 1_000_000, // Minimum amount of funds that should be placed in a deposit for making a proposal.
+			spend_period: 360, // Period between successive spends.
+			burn: Permill::from_millionths(100_000), // Percentage of spare funds (if any) that are burnt per spend period.
 		}),
 	}
 }

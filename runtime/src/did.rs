@@ -290,17 +290,17 @@ decl_module! {
             match &add_type[..] {
                 b"btc" => {
                     check::from(address.clone()).map_err(|_| "invlid bitcoin address")?;
-                    external_address.btc = address;
+                    external_address.btc = address.clone();
                     runtime_io::print("add btc address sucessfully");
                 },
                 b"eth" => {
                     ensure!(check::is_valid_eth_address(address.clone()), "invlid eth account");
-                    external_address.eth = address;
+                    external_address.eth = address.clone();
                     runtime_io::print("add eth address sucessfully");
                 },
                 b"eos" => {
                     ensure!(check::is_valid_eos_address(address.clone()), "invlid eos account");
-                    external_address.eos = address;
+                    external_address.eos = address.clone();
                     runtime_io::print("add eos address sucessfully");
                 },
                 _ => ensure!(false, "invlid type"),
@@ -309,6 +309,8 @@ decl_module! {
 			metadata.external_address = external_address;
 
 			<Metadata<T>>::insert(did, metadata);
+            
+            Self::deposit_event(RawEvent::AddressAdded(sender, add_type, address));
 
             Ok(())
 		}
@@ -328,6 +330,7 @@ decl_event! {
       Updated(AccountId, Hash, Balance),
       Locked(AccountId, Balance, Moment, Balance),
       Unlock(AccountId, Balance),
+      AddressAdded(AccountId, Vec<u8>, Vec<u8>),
     }
 }
 
