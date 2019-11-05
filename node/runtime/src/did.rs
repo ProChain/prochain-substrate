@@ -63,13 +63,13 @@ decl_event! {
 }
 
 decl_module! {
-    pub struct Module<T: Trait> for enum Call where origin: T::Origin {
-        fn deposit_event() = default;
+	pub struct Module<T: Trait> for enum Call where origin: T::Origin {
+		fn deposit_event() = default;
 
-        fn create(origin, pubkey: Vec<u8>, address: T::AccountId, did_type: Vec<u8>, superior: T::Hash, social_account: Option<Vec<u8>>, social_superior: Option<Vec<u8>>) {
+		fn create(origin, pubkey: Vec<u8>, address: T::AccountId, did_type: Vec<u8>, superior: T::Hash, social_account: Option<Vec<u8>>, social_superior: Option<Vec<u8>>) {
 			let sender = ensure_signed(origin)?;
 
-            let did_ele = Self::generate_did(&pubkey, &did_type);
+			let did_ele = Self::generate_did(&pubkey, &did_type);
 
 			let did_hash = T::Hashing::hash(&did_ele);
 
@@ -114,11 +114,11 @@ decl_module! {
 						locked_period: None,
 						fund_superior: false,
 						social_account: Some(social_hash),
-                        external_address: ExternalAddress {
-                            btc: Vec::new(),
-                            eth: Vec::new(),
-                            eos: Vec::new(),
-                        },
+												external_address: ExternalAddress {
+														btc: Vec::new(),
+														eth: Vec::new(),
+														eos: Vec::new(),
+												},
 				};
 				<Metadata<T>>::insert(&did_hash, metadata);
 
@@ -135,11 +135,11 @@ decl_module! {
 						locked_period: None,
 						fund_superior: false,
 						social_account: None,
-                        external_address: ExternalAddress {
-                            btc: Vec::new(),
-                            eth: Vec::new(),
-                            eos: Vec::new(),
-                        },
+												external_address: ExternalAddress {
+														btc: Vec::new(),
+														eth: Vec::new(),
+														eos: Vec::new(),
+												},
 				};
 				<Metadata<T>>::insert(&did_hash, metadata);
 			};
@@ -160,7 +160,7 @@ decl_module! {
 			Self::deposit_event(RawEvent::Created(sender, did_hash));
 		}
 
-        fn update(origin, to: T::AccountId) {
+		fn update(origin, to: T::AccountId) {
 			let sender = ensure_signed(origin)?;
 
 			ensure!(<Identity<T>>::exists(sender.clone()), "this account has no did yet");
@@ -182,28 +182,28 @@ decl_module! {
 
 			<Metadata<T>>::insert(did, metadata);
 
-            let money = <balances::Module<T>>::free_balance(sender.clone());
-            <balances::Module<T> as Currency<_>>::transfer(&sender, &to, money)?;
+			let money = <balances::Module<T>>::free_balance(sender.clone());
+			<balances::Module<T> as Currency<_>>::transfer(&sender, &to, money)?;
 
-            Self::deposit_event(RawEvent::Updated(to, did, money));
+			Self::deposit_event(RawEvent::Updated(to, did, money));
 		}
 
-        // transfer fund by did
-        fn transfer(origin, to_did: T::Hash, value: T::Balance) {
+		// transfer fund by did
+		fn transfer(origin, to_did: T::Hash, value: T::Balance) {
 			let sender = ensure_signed(origin)?;
 
 			Self::_transfer(sender, to_did, value)?;
 		}
 
-        // lock fund
-        fn lock(origin, value: T::Balance, period: T::Moment) {
+		// lock fund
+		fn lock(origin, value: T::Balance, period: T::Moment) {
 			let sender = ensure_signed(origin)?;
 
 			let sender_balance = <balances::Module<T>>::free_balance(sender.clone());
 			ensure!(sender_balance >= value, "you dont have enough free balance");
 
 			let min = Self::u64_to_balance(50 * MILLICENTS);
-            let zero = Self::u64_to_balance(0);
+						let zero = Self::u64_to_balance(0);
 			ensure!(value >= min, "you must lock at least 50 pra per time");
 
 			ensure!(<Identity<T>>::exists(&sender), "this account has no did yet");
@@ -236,8 +236,8 @@ decl_module! {
 			Self::deposit_event(RawEvent::Locked(sender, locked_funds, period, max_rewards));
 		}
 
-        // unlock fund
-        fn unlock(origin, value: T::Balance) {
+		// unlock fund
+		fn unlock(origin, value: T::Balance) {
 			let sender = ensure_signed(origin)?;
 
 			let reserved_balance = <balances::Module<T>>::reserved_balance(sender.clone());
@@ -264,8 +264,8 @@ decl_module! {
 			Self::deposit_event(RawEvent::Unlock(sender, value));
 		}
 
-        // add external address
-        fn add_external_address(origin, add_type: Vec<u8>, address: Vec<u8>) {
+		// add external address
+		fn add_external_address(origin, add_type: Vec<u8>, address: Vec<u8>) {
 			let sender = ensure_signed(origin)?;
 
 			ensure!(<Identity<T>>::exists(&sender), "this account has no did yet");
@@ -274,30 +274,30 @@ decl_module! {
 			let mut metadata = Self::metadata(&did);
 			let mut external_address = metadata.external_address;
 
-            match &add_type[..] {
-                b"btc" => {
-                    check::from(address.clone()).map_err(|_| "invlid bitcoin address")?;
-                    external_address.btc = address;
-                    print("add btc address sucessfully");
-                },
-                b"eth" => {
-                    ensure!(check::is_valid_eth_address(address.clone()), "invlid eth account");
-                    external_address.eth = address;
-                    print("add eth address sucessfully");
-                },
-                b"eos" => {
-                    ensure!(check::is_valid_eos_address(address.clone()), "invlid eos account");
-                    external_address.eos = address;
-                    print("add eos address sucessfully");
-                },
-                _ => ensure!(false, "invlid type"),
-            };
+						match &add_type[..] {
+								b"btc" => {
+										check::from(address.clone()).map_err(|_| "invlid bitcoin address")?;
+										external_address.btc = address;
+										print("add btc address sucessfully");
+								},
+								b"eth" => {
+										ensure!(check::is_valid_eth_address(address.clone()), "invlid eth account");
+										external_address.eth = address;
+										print("add eth address sucessfully");
+								},
+								b"eos" => {
+										ensure!(check::is_valid_eos_address(address.clone()), "invlid eos account");
+										external_address.eos = address;
+										print("add eos address sucessfully");
+								},
+								_ => ensure!(false, "invlid type"),
+						};
 
 			metadata.external_address = external_address;
 
 			<Metadata<T>>::insert(did, metadata);
 		}
-    }
+	}
 }
 
 impl<T: Trait> Module<T> {
