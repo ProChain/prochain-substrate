@@ -8,11 +8,11 @@
 - 事件：HTLC, Claimed, Refunded
 - HTLC状态：INVALID, OPEN, COMPLETED, EXPIRED
 
-#### 2. PRA主链合约
+#### 2. PRA主链
 
-- 部署Deputy合约
+- 部署Deputy逻辑
 - 通过off-chain worker监听eth event，聚合
-- 函数：claim(), refund()
+- 函数：htlc(), claim(), refund()
 - 事件：HTLC, Claimed, Refunded
 - HTLC状态：INVALID, OPEN, COMPLETED, EXPIRED
 
