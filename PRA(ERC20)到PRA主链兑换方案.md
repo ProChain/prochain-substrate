@@ -1,7 +1,7 @@
 ### PRA(ERC20) 到 PRA主链兑换方案（单向）
 ---
 
-#### 1. Eth合约
+#### 1. Eth合约 (代码见 https://github.com/ProChain/prochain-substrate/tree/master/eth-contracts )
 
 - 部署HTLC合约
 - 函数：htlc(), claim(), refund()
