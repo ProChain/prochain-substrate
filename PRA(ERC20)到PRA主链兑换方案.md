@@ -69,7 +69,14 @@
 - PRA主链SDK
 
 #### 测试物料和样例
-待补充
+
+##### Ropsten测试网
+- 测试网入口 https://ropsten.infura.io/v3/32d3935c7ba0400d97a7d8f983753a34
+- UserA: 0xf7FeA1722F9b27B0666919A5664BaB486a4b18D3
+- UserB: 0xCF5bECb7245E2e6eE2E092F0BD63F6Bd79eF19Fe
+- `ProToken`合约地址: 0xd10338e29d1cFcc1F6A547af640666ddd429C5e6
+- `ERC20HTLC`合约地址: 0xeb3c5e93DB4B732E8081dDf5d69dAD35f42Eb1B7
+
 
 #### 扩展
 - 可用于erc20-erc20的原子交换
