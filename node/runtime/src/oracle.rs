@@ -147,14 +147,18 @@ impl<T: Trait> Module<T> {
 	fn offchain(now: T::BlockNumber) {
 		<BlockNumber<T>>::put(now);
 
-		let cmc_value = Self::request_gec_value();
-		let cds_value = Self::request_cds_value();
-		let nom_value = Self::request_nomics_value();
+		// let cmc_value = Self::request_gec_value();
+		// let cds_value = Self::request_cds_value();
+		// let nom_value = Self::request_nomics_value();
+		// let values: [u32; 3] = [cmc_value, cds_value, nom_value];
 
-		let values: [u32; 3] = [cmc_value, cds_value, nom_value];
-		if let Some(average_value) = Self::average_values(values) {
-			Self::update_value(average_value).unwrap();
-		}
+		//let values: [u32; 1] = [cmc_value, cds_value, nom_value];
+		//if let Some(average_value) = Self::average_values(values) {
+		//	Self::update_value(average_value).unwrap();
+		//}
+
+		let ethscan_value = Self::_request_ethscan_value();
+		Self::update_value(ethscan_value).unwrap();
 	}
 
 	fn parse_result(res: [u8; BUFFER_LEN], start: &str) -> Value {
@@ -171,44 +175,56 @@ impl<T: Trait> Module<T> {
 		}
 	}
 
+	//fn parse_etherscan_result(res: [u8; BUFFER_LEN], start: &str) -> Value {
+	//}
+
 	// request limited
-	fn _request_cmc_value() -> Value {
-		// TODO: uri and api key should write into sotrage like authorisedKey
-		let uri = "https://pro-api.coinmarketcap.com/v1/cryptocurrency/quotes/latest?id=1";
-		let api_key_value = "20a084fd-afdd-4c81-8e95-08868a45fcaf";
-		let api_key = "X-CMC_PRO_API_KEY";
+	// fn _request_cmc_value() -> Value {
+	// 	// TODO: uri and api key should write into sotrage like authorisedKey
+	// 	let uri = "https://pro-api.coinmarketcap.com/v1/cryptocurrency/quotes/latest?id=1";
+	// 	let api_key_value = "20a084fd-afdd-4c81-8e95-08868a45fcaf";
+	// 	let api_key = "X-CMC_PRO_API_KEY";
 
-		let header = Some((api_key, api_key_value));
-		let res = Self::http_request_get(uri, header);
-		match res {
-			Ok(buf) => return Self::parse_result(buf, "price\":"),
-			Err(_) => return 0,
-		}
-	}
+	// 	let header = Some((api_key, api_key_value));
+	// 	let res = Self::http_request_get(uri, header);
+	// 	match res {
+	// 		Ok(buf) => return Self::parse_result(buf, "price\":"),
+	// 		Err(_) => return 0,
+	// 	}
+	// }
 
-	fn request_gec_value() -> Value {
-		let uri = "https://api.coingecko.com/api/v3/simple/price?ids=bitcoin&vs_currencies=usd";
+	// fn request_gec_value() -> Value {
+	// 	let uri = "https://api.coingecko.com/api/v3/simple/price?ids=bitcoin&vs_currencies=usd";
+	// 	let res = Self::http_request_get(uri, None);
+	// 	match res {
+	// 		Ok(buf) => return Self::parse_result(buf, "usd\":"),
+	// 		Err(_) => return 0,
+	// 	}
+	// }
+
+	// fn request_cds_value() -> Value {
+	// 	let uri = "https://api.coindesk.com/v1/bpi/currentprice/USD.json";
+	// 	let res = Self::http_request_get(uri, None);
+	// 	match res {
+	// 		Ok(buf) => return Self::parse_result(buf, "rate\":\""),
+	// 		Err(_) => return 0,
+	// 	}
+	// }
+
+	// fn request_nomics_value() -> Value {
+	// 	let uri = "https://api.nomics.com/v1/currencies/ticker?key=3d93bdca7ee51ad25fcf650f2883b92d&ids=BTC";
+	// 	let res = Self::http_request_get(uri, None);
+	// 	match res {
+	// 		Ok(buf) => return Self::parse_result(buf, "price\":\""),
+	// 		Err(_) => return 0,
+	// 	}
+	// }
+
+	fn _request_ethscan_value() -> Value {
+		let uri = "https://api-ropsten.etherscan.io/api?module=logs&action=getLogs&fromBlock=379224&toBlock=latest&address=0x16D5195Fe8c6Ba98b2f61A9a787BC0Bde19e3f6F&apikey=YourApiKeyToken";
 		let res = Self::http_request_get(uri, None);
 		match res {
-			Ok(buf) => return Self::parse_result(buf, "usd\":"),
-			Err(_) => return 0,
-		}
-	}
-
-	fn request_cds_value() -> Value {
-		let uri = "https://api.coindesk.com/v1/bpi/currentprice/USD.json";
-		let res = Self::http_request_get(uri, None);
-		match res {
-			Ok(buf) => return Self::parse_result(buf, "rate\":\""),
-			Err(_) => return 0,
-		}
-	}
-
-	fn request_nomics_value() -> Value {
-		let uri = "https://api.nomics.com/v1/currencies/ticker?key=3d93bdca7ee51ad25fcf650f2883b92d&ids=BTC";
-		let res = Self::http_request_get(uri, None);
-		match res {
-			Ok(buf) => return Self::parse_result(buf, "price\":\""),
+			Ok(buf) => return Self::parse_result(buf, "status\":\""),
 			Err(_) => return 0,
 		}
 	}
@@ -241,7 +257,8 @@ impl<T: Trait> Module<T> {
 		match res {
 			Ok(_len) => {
 				let result = &buf[..BUFFER_LEN];
-				// runtime_io::print_utf8(result);
+				runtime_io::print_utf8(b"got http result");
+				runtime_io::print_utf8(result);
 
 				let mut res: [u8; BUFFER_LEN] = [0; BUFFER_LEN];
 				res.copy_from_slice(result);

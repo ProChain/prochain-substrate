@@ -74,9 +74,12 @@
 - 测试网入口 https://ropsten.infura.io/v3/32d3935c7ba0400d97a7d8f983753a34
 - UserA: 0xf7FeA1722F9b27B0666919A5664BaB486a4b18D3
 - UserB: 0xCF5bECb7245E2e6eE2E092F0BD63F6Bd79eF19Fe
-- `ProToken`合约地址: 0xd10338e29d1cFcc1F6A547af640666ddd429C5e6
-- `ERC20HTLC`合约地址: 0xeb3c5e93DB4B732E8081dDf5d69dAD35f42Eb1B7
-
+- `ProToken`合约地址: 0x143E2218eBD3d6c1C09289fe7Ed8e2c4AA6bb682
+- `ERC20HTLC`合约地址: 0x16D5195Fe8c6Ba98b2f61A9a787BC0Bde19e3f6F
+- HTLC randomNumber : 0xaabbccddaabbccddaabbccddaabbccddaabbccddaabbccddaabbccddaabbccdd
+- HTLC randomNumber hash : 0x685b9ce6be12fd697fed42cff5dcace2cccc87616d140f7fab53b4486203b044
+- PRA DID : "did:pra:Lt23xGimVoUNvZ3EXM9FcgBsJXzrSaUo8p"
+- Swap ID : 0x52410cc304086dd9d31963f57ff1cc193d7e00f350a3e4c0fc0ad967850f76ec
 
 #### 扩展
 - 可用于erc20-erc20的原子交换

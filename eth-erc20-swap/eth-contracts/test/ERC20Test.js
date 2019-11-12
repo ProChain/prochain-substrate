@@ -98,16 +98,17 @@ contract('Verify PRA Token and ERC20 Atomic Swap', (accounts) => {
 
         await instance.approve(ERC20AtomicSwap.address, erc20Amount, { from: swapA });
         let initiateTx = await swapInstance.htlc(randomNumberHash, timestamp, heightSpan, recipientAddr, erc20Amount, praAmount, praDIDAddr, { from: swapA });
-        
+
         console.log("swapA:", swapA);
         console.log("swapB:", swapB);
         console.log("praDIDAddr:", praDIDAddr);
-        console.log("swapID:", swapID);
+		console.log("swapID:", swapID);
+		console.log("randomNumber:", randomNumber);
         console.log("randomNumberHash:", randomNumberHash);
         console.log("timestamp:", timestamp);
         console.log("erc20Amount:", erc20Amount);
         console.log("praAmount:", praAmount);
-        
+
         //SwapInit event should be emitted
         truffleAssert.eventEmitted(initiateTx, 'HTLC', (ev) => {
             return ev._msgSender === swapA &&
@@ -145,10 +146,10 @@ contract('Verify PRA Token and ERC20 Atomic Swap', (accounts) => {
         let claimTx = await swapInstance.claim(swapID, randomNumber, { from: accounts[6] });
         //SwapComplete and Claimed event should be emitted
         truffleAssert.eventEmitted(claimTx, 'Claimed', (ev) => {
-            return ev._msgSender === accounts[6] && 
-                ev._recipientAddr === swapB && 
-                ev._swapID === swapID && 
-                //ev._randomNumberHash === randomNumberHash && 
+            return ev._msgSender === accounts[6] &&
+                ev._recipientAddr === swapB &&
+                ev._swapID === swapID &&
+                //ev._randomNumberHash === randomNumberHash &&
                 ev._randomNumber === randomNumber;
         });
         console.log("claimTx gasUsed: ", claimTx.receipt.gasUsed);
@@ -225,9 +226,9 @@ contract('Verify PRA Token and ERC20 Atomic Swap', (accounts) => {
 
         //SwapExpire and Refunded event should be emitted
         truffleAssert.eventEmitted(refundTx, 'Refunded', (ev) => {
-            return ev._msgSender === accounts[6] && 
-                ev._recipientAddr === swapA && 
-                ev._swapID === swapID && 
+            return ev._msgSender === accounts[6] &&
+                ev._recipientAddr === swapA &&
+                ev._swapID === swapID &&
                 ev._randomNumberHash === randomNumberHash;
         });
         console.log("refundTx gasUsed: ", refundTx.receipt.gasUsed);
