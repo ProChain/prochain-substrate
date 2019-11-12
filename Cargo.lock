@@ -1088,6 +1088,13 @@ dependencies = [
 ]
 
 [[package]]
+name = "harsh"
+version = "0.1.6"
+dependencies = [
+ "sr-std 2.0.0 (git+https://github.com/ProChain/substrate.git)",
+]
+
+[[package]]
 name = "hash-db"
 version = "0.15.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2387,6 +2394,7 @@ dependencies = [
 name = "node-runtime"
 version = "2.0.0"
 dependencies = [
+ "harsh 0.1.6",
  "integer-sqrt 0.1.2 (registry+https://github.com/rust-lang/crates.io-index)",
  "node-primitives 2.0.0",
  "parity-scale-codec 1.0.6 (registry+https://github.com/rust-lang/crates.io-index)",

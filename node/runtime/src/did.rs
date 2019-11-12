@@ -8,6 +8,7 @@ use support::{
 use sr_primitives::traits::{CheckedSub, CheckedAdd, Hash, SaturatedConversion};
 use system::ensure_signed;
 use runtime_io::blake2_256;
+use harsh::{HarshBuilder};
 
 pub trait Trait: balances::Trait + timestamp::Trait {
 	type Event: From<Event<Self>> + Into<<Self as system::Trait>::Event>;
@@ -39,11 +40,14 @@ pub struct MetadataRecord<AccountId, Hash, Balance, Moment> {
 
 decl_storage! {
     trait Store for Module<T: Trait> as DidModule {
-        Identity get(identity): map T::AccountId => T::Hash;
-		IdentityOf get(identity_of): map T::Hash => Option<T::AccountId>;
-		SocialAccount get(social_account): map T::Hash => T::Hash;
-		Metadata get(metadata): map T::Hash => MetadataRecord<T::AccountId, T::Hash, T::Balance, T::Moment>;
-		AllDidCount get(all_did_count): u64;
+      Identity get(identity): map T::AccountId => T::Hash;
+			IdentityOf get(identity_of): map T::Hash => Option<T::AccountId>;
+			SocialAccount get(social_account): map T::Hash => T::Hash;
+			Metadata get(metadata): map T::Hash => MetadataRecord<T::AccountId, T::Hash, T::Balance, T::Moment>;
+
+			AllDidCount get(all_did_count): u64;
+			AllDidsArray get(did_by_index): map Vec<u8> => T::Hash;
+      AllDidsIndex: map T::Hash => Vec<u8>;
     }
 }
 
@@ -114,11 +118,11 @@ decl_module! {
 						locked_period: None,
 						fund_superior: false,
 						social_account: Some(social_hash),
-												external_address: ExternalAddress {
-														btc: Vec::new(),
-														eth: Vec::new(),
-														eos: Vec::new(),
-												},
+						external_address: ExternalAddress {
+							btc: Vec::new(),
+							eth: Vec::new(),
+							eos: Vec::new(),
+						},
 				};
 				<Metadata<T>>::insert(&did_hash, metadata);
 
@@ -135,11 +139,11 @@ decl_module! {
 						locked_period: None,
 						fund_superior: false,
 						social_account: None,
-												external_address: ExternalAddress {
-														btc: Vec::new(),
-														eth: Vec::new(),
-														eos: Vec::new(),
-												},
+						external_address: ExternalAddress {
+							btc: Vec::new(),
+							eth: Vec::new(),
+							eos: Vec::new(),
+						},
 				};
 				<Metadata<T>>::insert(&did_hash, metadata);
 			};
@@ -155,6 +159,12 @@ decl_module! {
 			let new_count = all_did_count.checked_add(1)
 					.ok_or("Overflow adding a new did")?;
 			<AllDidCount>::put(new_count);
+
+			let harsh = HarshBuilder::new().salt("prochain did").length(4).init().unwrap();
+			let idx = harsh.encode(&[all_did_count]).unwrap();
+
+			<AllDidsArray<T>>::insert(&idx, &did_hash);
+			<AllDidsIndex<T>>::insert(&did_hash, idx);
 
 			// broadcast event
 			Self::deposit_event(RawEvent::Created(sender, did_hash));
