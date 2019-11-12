@@ -42,7 +42,7 @@ fn start_inner(wasm_ext: wasm_ext::ffi::Transport) -> Result<Client, Box<dyn std
 		let mut config = Configuration::<(), _, _>::default_with_spec_and_base_path(chain_spec, None);
 		config.network.transport = network::config::TransportConfig::Normal {
 			wasm_external_transport: Some(wasm_ext.clone()),
-			enable_mdns: false,
+			enable_mdns: true,
 		};
 		config.telemetry_external_transport = Some(wasm_ext);
 		config.roles = ServiceRoles::LIGHT;

@@ -17,7 +17,7 @@ node-primitives = { path = "../primitives" }
 node-runtime = { path = "../runtime" }
 codec = { package = "parity-scale-codec", version = "1.0.0" }
 primitives = { package = "substrate-primitives", git = "https://github.com/ProChain/substrate.git" }
-sr-io = { git = "https://github.com/ProChain/substrate.git" }
+runtime-io = { package = "sr-io", git = "https://github.com/ProChain/substrate.git" }
 sr-primitives = { git = "https://github.com/ProChain/substrate.git" }
 runtime_support = { package = "srml-support", git = "https://github.com/ProChain/substrate.git" }
 session = { package = "srml-session", git = "https://github.com/ProChain/substrate.git" }

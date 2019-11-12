@@ -17,10 +17,6 @@
 //! A `CodeExecutor` specialization which uses natively compiled runtime when the wasm to be
 //! executed is equivalent to the natively compiled code.
 
-#![cfg_attr(feature = "benchmarks", feature(test))]
-
-#[cfg(feature = "benchmarks")] extern crate test;
-
 pub use substrate_executor::NativeExecutor;
 use substrate_executor::native_executor_instance;
 
@@ -472,11 +468,16 @@ mod tests {
 				},
 				EventRecord {
 					phase: Phase::ApplyExtrinsic(1),
+					event: Event::treasury(treasury::RawEvent::Deposit(1984800000000)),
+					topics: vec![],
+				},
+				EventRecord {
+					phase: Phase::ApplyExtrinsic(1),
 					event: Event::balances(balances::RawEvent::Transfer(
 						alice().into(),
 						bob().into(),
 						69 * DOLLARS,
-						1 * CENTS
+						1 * CENTS,
 					)),
 					topics: vec![],
 				},
@@ -516,6 +517,11 @@ mod tests {
 				},
 				EventRecord {
 					phase: Phase::ApplyExtrinsic(1),
+					event: Event::treasury(treasury::RawEvent::Deposit(1984780231392)),
+					topics: vec![],
+				},
+				EventRecord {
+					phase: Phase::ApplyExtrinsic(1),
 					event: Event::balances(
 						balances::RawEvent::Transfer(
 							bob().into(),
@@ -529,6 +535,11 @@ mod tests {
 				EventRecord {
 					phase: Phase::ApplyExtrinsic(1),
 					event: Event::system(system::Event::ExtrinsicSuccess),
+					topics: vec![],
+				},
+				EventRecord {
+					phase: Phase::ApplyExtrinsic(2),
+					event: Event::treasury(treasury::RawEvent::Deposit(1984780231392)),
 					topics: vec![],
 				},
 				EventRecord {
@@ -625,14 +636,11 @@ mod tests {
 					(call $ext_scratch_size)
 				)
 			)
-
 			(call $ext_scratch_read
 				(i32.const 0)
 				(i32.const 0)
 				(i32.const 4)
 			)
-
-
 			(br_if $fail
 				(i32.ne
 					(i32.load8_u (i32.const 0))
@@ -657,7 +665,6 @@ mod tests {
 					(i32.const 3)
 				)
 			)
-
 			(drop
 				(call $ext_call
 					(i32.const 4)  ;; Pointer to "callee" address.
@@ -669,7 +676,6 @@ mod tests {
 					(i32.const 0)   ;; Length of input data buffer
 				)
 			)
-
 			(return)
 		)
 		unreachable
@@ -1206,23 +1212,6 @@ mod tests {
 			nonce += 1;
 			time += 10;
 			block_number += 1;
-		}
-	}
-
-	#[cfg(feature = "benchmarks")]
-	mod benches {
-		use super::*;
-		use test::Bencher;
-
-		#[bench]
-		fn wasm_execute_block(b: &mut Bencher) {
-			let (block1, block2) = blocks();
-
-			b.iter(|| {
-				let mut t = new_test_ext(COMPACT_CODE, false);
-				WasmExecutor::new().call(&mut t, "Core_execute_block", &block1.0).unwrap();
-				WasmExecutor::new().call(&mut t, "Core_execute_block", &block2.0).unwrap();
-			});
 		}
 	}
 }

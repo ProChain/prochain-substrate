@@ -3,11 +3,11 @@ use crate::{constants::currency::*};
 use codec::{Decode, Encode};
 use rstd::vec::Vec;
 use support::{
-	decl_event, decl_module, decl_storage, ensure, traits::{Currency, ReservableCurrency}, dispatch::Result, print,
+	decl_event, decl_module, decl_storage, ensure, traits::{Currency, ReservableCurrency, ExistenceRequirement}, dispatch::Result, print,
 };
 use sr_primitives::traits::{CheckedSub, CheckedAdd, Hash, SaturatedConversion};
 use system::ensure_signed;
-use runtime_io::blake2_256;
+use runtime_io::hashing::blake2_256;
 use harsh::{HarshBuilder};
 
 pub trait Trait: balances::Trait + timestamp::Trait {
@@ -193,7 +193,7 @@ decl_module! {
 			<Metadata<T>>::insert(did, metadata);
 
 			let money = <balances::Module<T>>::free_balance(sender.clone());
-			<balances::Module<T> as Currency<_>>::transfer(&sender, &to, money)?;
+			<balances::Module<T> as Currency<_>>::transfer(&sender, &to, money, ExistenceRequirement::AllowDeath,)?;
 
 			Self::deposit_event(RawEvent::Updated(to, did, money));
 		}
@@ -347,7 +347,7 @@ impl<T: Trait> Module<T> {
 		let receiver_balance = <balances::Module<T>>::free_balance(to.clone());
 		let _updated_to_balance = receiver_balance.checked_add(&value).ok_or("overflow in calculating balance")?;
 
-		<balances::Module<T> as Currency<_>>::transfer(&from, &to, value)?;
+		<balances::Module<T> as Currency<_>>::transfer(&from, &to, value, ExistenceRequirement::AllowDeath)?;
 
 		Ok(())
 	}
