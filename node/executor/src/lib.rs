@@ -636,11 +636,14 @@ mod tests {
 					(call $ext_scratch_size)
 				)
 			)
+
 			(call $ext_scratch_read
 				(i32.const 0)
 				(i32.const 0)
 				(i32.const 4)
 			)
+
+
 			(br_if $fail
 				(i32.ne
 					(i32.load8_u (i32.const 0))
@@ -665,6 +668,7 @@ mod tests {
 					(i32.const 3)
 				)
 			)
+
 			(drop
 				(call $ext_call
 					(i32.const 4)  ;; Pointer to "callee" address.
@@ -676,6 +680,7 @@ mod tests {
 					(i32.const 0)   ;; Length of input data buffer
 				)
 			)
+
 			(return)
 		)
 		unreachable
