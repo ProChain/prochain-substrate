@@ -644,6 +644,7 @@ mod tests {
 			assert_noop!(DidModule::lock(Origin::signed(2), 10, 5), "you must lock at least 50 pra per time");
 
 			assert_eq!(Balances::free_balance(&2), 9900);
+			assert_eq!(Balances::free_balance(&1), 10025); // get 25 from locked funds
 
 		});
 	}
@@ -707,9 +708,13 @@ mod tests {
 				Some("f".as_bytes().to_vec())
 			));
 
-			let did = DidModule::identity(&1);
-			let memo = b"transfer test";
-			assert_ok!(DidModule::transfer(Origin::signed(2), did, 100, memo.to_vec()));
+			let memo =b"transfer test";
+			assert_ok!(DidModule::transfer(
+				Origin::signed(2), 
+				DidModule::identity(&1), 
+				100, 
+				memo.to_vec()
+			));
 
 			let events = System::events();
 			let from_did = DidModule::identity(&2);
@@ -717,12 +722,23 @@ mod tests {
 				events[events.len() - 1],
 				EventRecord {
 						phase: Phase::ApplyExtrinsic(0),
-						event: Event::did(RawEvent::Transfered(from_did, did, 100, memo.to_vec())),
+						event: Event::did(RawEvent::Transfered(from_did, DidModule::identity(&1), 100, memo.to_vec())),
 						topics: vec![],
 				}
 			);
 
 			assert_eq!(Balances::free_balance(&2), 9900);
+			assert_eq!(Balances::free_balance(&1), 10100);
+
+			// test ads fee split
+			assert_ok!(DidModule::transfer(
+				Origin::signed(1), 
+				DidModule::identity(&2), 
+				100, 
+				b"ads fee".to_vec()
+			));
+			assert_eq!(Balances::free_balance(&1), 10025);
+			assert_eq!(Balances::free_balance(&2), 9975);
 		});
 	}
 

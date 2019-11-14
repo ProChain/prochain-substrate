@@ -45,10 +45,10 @@ impl substrate_cli::IntoExit for Exit {
 
 fn main() -> Result<(), substrate_cli::error::Error> {
 	let version = VersionInfo {
-		name: "Substrate Node",
+		name: "Prochain Node",
 		commit: env!("VERGEN_SHA_SHORT"),
 		version: env!("CARGO_PKG_VERSION"),
-		executable_name: "substrate",
+		executable_name: "prochain",
 		author: "Parity Technologies <admin@parity.io>",
 		description: "Generic substrate node",
 		support_url: "https://github.com/paritytech/substrate/issues/new",
