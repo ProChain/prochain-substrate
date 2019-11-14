@@ -1,5 +1,4 @@
 use crate::check;
-use crate::{constants::currency::*};
 use codec::{Decode, Encode};
 use rstd::vec::Vec;
 use support::{
@@ -24,22 +23,42 @@ pub struct ExternalAddress {
 
 #[cfg_attr(feature = "std", derive(Debug))]
 #[derive(Encode, Decode, Default, Clone, PartialEq)]
+pub struct LockedRecords<Balance, Moment> {
+	locked_time: Moment,
+	locked_period: Moment,
+	locked_funds: Balance,
+	rewards_ratio: u64,
+	max_quota: u64,
+}
+
+#[cfg_attr(feature = "std", derive(Debug))]
+#[derive(Encode, Decode, Default, Clone, PartialEq)]
+pub struct UnlockRecords<Balance, Moment> {
+	unlock_time: Moment,
+	unlock_funds: Balance,
+}
+
+#[cfg_attr(feature = "std", derive(Debug))]
+#[derive(Encode, Decode, Default, Clone, PartialEq)]
 pub struct MetadataRecord<AccountId, Hash, Balance, Moment> {
 	address: AccountId,
 	superior: Hash,
 	creator: AccountId,
 	did_ele: Vec<u8>,
-	max_rewards: Option<Balance>,
-	locked_funds: Option<Balance>,
-	locked_time: Option<Moment>,
-	locked_period: Option<Moment>,
-	fund_superior: bool,
+	locked_records: Option<LockedRecords<Balance, Moment>>,
+	unlock_records: Option<UnlockRecords<Balance, Moment>>,
 	social_account: Option<Hash>,
+	subordinate_count: u64,
 	external_address: ExternalAddress
 }
 
 decl_storage! {
     trait Store for Module<T: Trait> as DidModule {
+			GenesisAccount get(genesis_account) config(): T::AccountId;
+			BaseQuota get(base_quota) config(): u64;
+			MinDeposit get(min_deposit) config(): T::Balance;
+			FeeToPrevious get(fee_to_previous) config(): T::Balance;
+
       Identity get(identity): map T::AccountId => T::Hash;
 			IdentityOf get(identity_of): map T::Hash => Option<T::AccountId>;
 			SocialAccount get(social_account): map T::Hash => T::Hash;
@@ -61,8 +80,10 @@ decl_event! {
     {
         Created(AccountId, Hash),
         Updated(AccountId, Hash, Balance),
-        Locked(AccountId, Balance, Moment, Balance),
+        Locked(AccountId, Balance, Moment),
         Unlock(AccountId, Balance),
+				Transfered(Hash, Hash, Balance, Vec<u8>),
+				AddressAdded(AccountId, Vec<u8>, Vec<u8>),
     }
 }
 
@@ -81,72 +102,65 @@ decl_module! {
 			ensure!(!<Metadata<T>>::exists(&did_hash), "did alread existed");
 			ensure!(!<Identity<T>>::exists(&address), "you already have did");
 
+			let mut superior_did = superior;
+			let mut social_account_hash = None;
+
 			if let Some(mut value) = social_account {
-
-				// let social_hash = (&value, &did_type)
-				// 					.using_encoded(<T as system::Trait>::Hashing::hash);
-
 				// bind social account
 				value.append(&mut did_type.to_vec());
 
 				let social_hash = T::Hashing::hash(&value);
+				social_account_hash = Some(social_hash);
+
 				// one social account only can bind one did
 				ensure!(!<SocialAccount<T>>::exists(&social_hash), "this social account has been bound");
 
-				let superior_did;
 				if let Some(mut value) = social_superior {
 					value.append(&mut did_type.to_vec());
 
 					let superior_hash = T::Hashing::hash(&value);
 					ensure!(<SocialAccount<T>>::exists(&superior_hash), "the superior does not exsit");
 					superior_did = Self::social_account(superior_hash);
-				} else {
-					superior_did = superior;
 				};
+			}
 
+			let mut superior_metadata = Self::metadata(superior_did);
+			if superior_metadata.address != Self::genesis_account() && <Metadata<T>>::exists(&superior_did){
+				let subordinate_count = superior_metadata.subordinate_count.checked_add(1).ok_or("overflow")?;
+
+				ensure!(superior_metadata.locked_records.is_some(), "the superior has not locked funds");
+
+				let locked_records = superior_metadata.locked_records.unwrap();
+				let LockedRecords { max_quota, .. } = locked_records;
+				ensure!(subordinate_count <= max_quota, "the superior's subordinate exceeds max quota");
+
+				superior_metadata.subordinate_count = subordinate_count;
+				superior_metadata.locked_records = Some(locked_records);
+				<Metadata<T>>::insert(&superior_did, superior_metadata);
+			}
+			
+			if social_account_hash.is_some() {
+				let social_hash = social_account_hash.unwrap();
 				<SocialAccount<T>>::insert(social_hash, &did_hash);
+			}
 
-				// update metadata
-				let metadata = MetadataRecord {
-						address: address.clone(),
-						superior: superior_did,
-						creator: sender.clone(),
-						did_ele,
-						max_rewards: None,
-						locked_funds: None,
-						locked_time: None,
-						locked_period: None,
-						fund_superior: false,
-						social_account: Some(social_hash),
-						external_address: ExternalAddress {
-							btc: Vec::new(),
-							eth: Vec::new(),
-							eos: Vec::new(),
-						},
-				};
-				<Metadata<T>>::insert(&did_hash, metadata);
-
-			} else {
-				// update metadata
-				let metadata = MetadataRecord {
-						address: address.clone(),
-						superior,
-						creator: sender.clone(),
-						did_ele,
-						max_rewards: None,
-						locked_funds: None,
-						locked_time: None,
-						locked_period: None,
-						fund_superior: false,
-						social_account: None,
-						external_address: ExternalAddress {
-							btc: Vec::new(),
-							eth: Vec::new(),
-							eos: Vec::new(),
-						},
-				};
-				<Metadata<T>>::insert(&did_hash, metadata);
+			// update metadata
+			let metadata = MetadataRecord {
+					address: address.clone(),
+					superior: superior_did,
+					creator: sender.clone(),
+					did_ele,
+					locked_records: None,
+					social_account: social_account_hash,
+					unlock_records: None,
+					subordinate_count: 0,
+					external_address: ExternalAddress {
+						btc: Vec::new(),
+						eth: Vec::new(),
+						eos: Vec::new(),
+					},
 			};
+			<Metadata<T>>::insert(&did_hash, metadata);
 
 			// update identity record
 			<Identity<T>>::insert(&address, &did_hash);
@@ -199,10 +213,12 @@ decl_module! {
 		}
 
 		// transfer fund by did
-		fn transfer(origin, to_did: T::Hash, value: T::Balance) {
+		fn transfer(origin, to_did: T::Hash, value: T::Balance, memo: Vec<u8>) {
 			let sender = ensure_signed(origin)?;
 
-			Self::_transfer(sender, to_did, value)?;
+			ensure!(<Identity<T>>::exists(sender.clone()), "you have no did yet");
+
+			Self::_transfer(sender, to_did, value, memo)?;
 		}
 
 		// lock fund
@@ -211,39 +227,59 @@ decl_module! {
 
 			let sender_balance = <balances::Module<T>>::free_balance(sender.clone());
 			ensure!(sender_balance >= value, "you dont have enough free balance");
-
-			let min = Self::u64_to_balance(50 * MILLICENTS);
-						let zero = Self::u64_to_balance(0);
-			ensure!(value >= min, "you must lock at least 50 pra per time");
-
+			ensure!(value >= Self::min_deposit(), "you must lock at least 50 pra per time");
 			ensure!(<Identity<T>>::exists(&sender), "this account has no did yet");
+
 			let did = Self::identity(&sender);
 			let mut metadata = Self::metadata(&did);
 
 			// make sure the superior exists
 			ensure!(<Metadata<T>>::exists(metadata.superior), "superior does not exsit");
+			
+			let mut fee = Self::fee_to_previous();
+			let mut locked_funds = value - fee;
+			let mut max_quota = Self::balance_to_u64(value / Self::min_deposit()) as u64 * Self::base_quota();
 
-			let mut fee = Self::u64_to_balance(25 * MILLICENTS);
-			if !metadata.fund_superior {
-				Self::_transfer(sender.clone(), metadata.superior, fee)?;
-				metadata.fund_superior = true
+			let rewards_ratio = 1;
+			if metadata.locked_records.is_none() {
+				
+				let locked_records = LockedRecords {
+					locked_funds,
+					rewards_ratio,
+					max_quota,
+					locked_time: <timestamp::Module<T>>::get(),
+					locked_period: period.clone(),
+				};
+
+				let memo = "新群主抵押分成".as_bytes().to_vec();
+				Self::_transfer(sender.clone(), metadata.superior, fee, memo)?;
+
+				metadata.locked_records = Some(locked_records.clone());
 			} else {
+				let mut locked_records = metadata.locked_records.unwrap();
 				fee = Self::u64_to_balance(0);
-			}
 
-			let old_locked_fund = metadata.locked_funds.unwrap_or(zero);
-			let locked_funds = old_locked_fund + value - fee;
-			let max_rewards = locked_funds * Self::u64_to_balance(10);
+				let old_locked_funds = locked_records.locked_funds;
+				locked_funds = old_locked_funds + value;
+
+				max_quota = Self::balance_to_u64(locked_funds / Self::min_deposit()) as u64 * Self::base_quota();
+
+				locked_records = LockedRecords {
+					locked_funds,
+					rewards_ratio,
+					max_quota,
+					locked_time: <timestamp::Module<T>>::get(),
+					locked_period: period.clone(),
+				};
+
+				metadata.locked_records = Some(locked_records.clone());
+			}
 
 			<balances::Module<T>>::reserve(&sender, value - fee)?;
 
-			metadata.locked_time = Some(<timestamp::Module<T>>::get());
-			metadata.locked_funds = Some(locked_funds);
-			metadata.locked_period = Some(period.clone());
-			metadata.max_rewards = Some(max_rewards);
 			<Metadata<T>>::insert(did, metadata);
 
-			Self::deposit_event(RawEvent::Locked(sender, locked_funds, period, max_rewards));
+			Self::deposit_event(RawEvent::Locked(sender, locked_funds, period));
 		}
 
 		// unlock fund
@@ -252,20 +288,37 @@ decl_module! {
 
 			let reserved_balance = <balances::Module<T>>::reserved_balance(sender.clone());
 
-			ensure!(reserved_balance == value, "unreserve funds should equal reserved funds");
+			ensure!(reserved_balance >= value, "unreserved funds should equal or less than reserved funds");
 
 			ensure!(<Identity<T>>::exists(&sender), "this account has no did yet");
 
 			let did = Self::identity(&sender);
 			let mut metadata = Self::metadata(&did);
+			ensure!(metadata.locked_records.is_some(), "you didn't lock funds before");
+			
+			let mut locked_records = metadata.locked_records.unwrap();
+			let LockedRecords { locked_time, locked_period, locked_funds, .. } = locked_records;
 			let now = <timestamp::Module<T>>::get();
-			let unlock_time = metadata.locked_time.unwrap().checked_add(&metadata.locked_period.unwrap()).ok_or("Overflow.")?;
+			let unlock_time = locked_time.checked_add(&locked_period).ok_or("Overflow.")?;
+
 			ensure!(now >= unlock_time, "unlock time has not reached");
 
-			metadata.locked_time = None;
-			metadata.locked_funds = None;
-			metadata.locked_period = None;
-			metadata.max_rewards = None;
+			let unlock_records = UnlockRecords {
+				unlock_time,
+				unlock_funds: value,
+			};
+
+			let new_locked_funds = locked_funds - value;
+			let new_max_quota = Self::balance_to_u64(new_locked_funds / Self::min_deposit()) as u64 * Self::base_quota();
+
+			locked_records = LockedRecords {
+				locked_funds: new_locked_funds,
+				max_quota: new_max_quota,
+				.. locked_records
+			};
+
+			metadata.unlock_records = Some(unlock_records);
+			metadata.locked_records = Some(locked_records);
 
 			<Metadata<T>>::insert(did, metadata);
 
@@ -287,17 +340,17 @@ decl_module! {
 						match &add_type[..] {
 								b"btc" => {
 										check::from(address.clone()).map_err(|_| "invlid bitcoin address")?;
-										external_address.btc = address;
+										external_address.btc = address.clone();
 										print("add btc address sucessfully");
 								},
 								b"eth" => {
 										ensure!(check::is_valid_eth_address(address.clone()), "invlid eth account");
-										external_address.eth = address;
+										external_address.eth = address.clone();
 										print("add eth address sucessfully");
 								},
 								b"eos" => {
 										ensure!(check::is_valid_eos_address(address.clone()), "invlid eos account");
-										external_address.eos = address;
+										external_address.eos = address.clone();
 										print("add eos address sucessfully");
 								},
 								_ => ensure!(false, "invlid type"),
@@ -306,6 +359,8 @@ decl_module! {
 			metadata.external_address = external_address;
 
 			<Metadata<T>>::insert(did, metadata);
+
+			Self::deposit_event(RawEvent::AddressAdded(sender, add_type, address));
 		}
 	}
 }
@@ -313,6 +368,19 @@ decl_module! {
 impl<T: Trait> Module<T> {
 	fn u64_to_balance(input: u128) -> T::Balance {
 		input.saturated_into()
+	}
+
+	fn balance_to_u64(input: T::Balance) -> u64 {
+    input.saturated_into::<u64>()
+	}
+
+	fn is_sub(mut haystack: &[u8], needle: &[u8]) -> bool {
+    if needle.len() == 0 { return true; }
+    while !haystack.is_empty() {
+        if haystack.starts_with(needle) { return true; }
+        haystack = &haystack[1..];
+    }
+    false
 	}
 
 	fn generate_did(pubkey: &[u8], did_type: &[u8]) -> Vec<u8> {
@@ -335,19 +403,36 @@ impl<T: Trait> Module<T> {
 		did_ele
 	}
 
-	fn _transfer(from: T::AccountId, to_did: T::Hash, value: T::Balance) -> Result {
+	fn _transfer(from: T::AccountId, to_did: T::Hash, value: T::Balance, memo: Vec<u8>) -> Result {
 		let sender_balance = <balances::Module<T>>::free_balance(from.clone());
 		ensure!(sender_balance >= value, "you dont have enough free balance");
 
 		let to = Self::identity_of(to_did).ok_or("corresponding AccountId does not exsit")?;
 		ensure!(from != to, "you can not send money to yourself");
 
+		let from_did = Self::identity(&from);
+		
 		// check overflow
-		let _updated_from_balance = sender_balance.checked_sub(&value).ok_or("overflow in calculating balance")?;
 		let receiver_balance = <balances::Module<T>>::free_balance(to.clone());
-		let _updated_to_balance = receiver_balance.checked_add(&value).ok_or("overflow in calculating balance")?;
+		sender_balance.checked_sub(&value).ok_or("overflow in calculating balance")?;
+		receiver_balance.checked_add(&value).ok_or("overflow in calculating balance")?;
 
-		<balances::Module<T> as Currency<_>>::transfer(&from, &to, value, ExistenceRequirement::AllowDeath)?;
+		// proceeds split
+		let fee_type = b"ads";
+		if Self::is_sub(&memo, fee_type) {
+			let MetadataRecord { superior, .. } = Self::metadata(&to_did);
+			let superior_address = Self::identity_of(superior).ok_or("superior AccountId does not find")?;
+
+			let fee_to_superior = value / Self::u64_to_balance(4);
+			let fee_to_user = value * Self::u64_to_balance(3) / Self::u64_to_balance(4);
+
+			<balances::Module<T> as Currency<_>>::transfer(&from, &superior_address, fee_to_superior, ExistenceRequirement::AllowDeath)?;
+			<balances::Module<T> as Currency<_>>::transfer(&from, &to, fee_to_user, ExistenceRequirement::AllowDeath)?;
+		} else {
+			<balances::Module<T> as Currency<_>>::transfer(&from, &to, value, ExistenceRequirement::AllowDeath)?;
+		}
+
+		Self::deposit_event(RawEvent::Transfered(from_did, to_did, value, memo));
 
 		Ok(())
 	}
@@ -356,245 +441,309 @@ impl<T: Trait> Module<T> {
 #[cfg(test)]
 mod tests {
 	use super::*;
-	use tiny_keccak::keccak256;
-	use runtime_io::with_externalities;
-	use primitives::{H256, Blake2Hasher, crypto::Ss58Codec, crypto, ed25519, sr25519};
-	use support::{impl_outer_origin, assert_ok, assert_noop, assert_err};
-	use primitives::hexdisplay::HexDisplay;
-	use hex_literal::hex;
-	use balances;
-	use keyring::Sr25519Keyring;
+
+	use support::{assert_ok, assert_noop, impl_outer_origin, impl_outer_event, parameter_types};
+	use primitives::H256;
+	// The testing primitives are very useful for avoiding having to work with signatures
+	// or public keys. `u64` is used as the `AccountId` and no `Signature`s are required.
 	use sr_primitives::{
-		BuildStorage,
-		traits::{BlakeTwo256, IdentityLookup},
-		testing::{Digest, DigestItem, Header},
+		Perbill, testing::Header, traits::{BlakeTwo256, IdentityLookup},
 	};
-	use std::fmt::Display;
+	use system::{EventRecord, Phase};
 
 	impl_outer_origin! {
 		pub enum Origin for Test {}
 	}
 
+	mod did {
+		pub use super::super::*;
+	}
+
+	impl_outer_event! {
+		pub enum Event for Test {
+			did<T>, balances<T>,
+		}
+	}
 	// For testing the module, we construct most of a mock runtime. This means
 	// first constructing a configuration type (`Test`) which `impl`s each of the
 	// configuration traits of modules we want to use.
 	#[derive(Clone, Eq, PartialEq)]
 	pub struct Test;
-
+	parameter_types! {
+		pub const BlockHashCount: u64 = 250;
+		pub const MaximumBlockWeight: u32 = 1024;
+		pub const MaximumBlockLength: u32 = 2 * 1024;
+		pub const AvailableBlockRatio: Perbill = Perbill::one();
+	}
 	impl system::Trait for Test {
 		type Origin = Origin;
 		type Index = u64;
 		type BlockNumber = u64;
 		type Hash = H256;
+		type Call = ();
 		type Hashing = BlakeTwo256;
-		type Digest = Digest;
 		type AccountId = u64;
 		type Lookup = IdentityLookup<Self::AccountId>;
 		type Header = Header;
-		type Event = ();
-		type Log = DigestItem;
+		type Event = Event;
+		type BlockHashCount = BlockHashCount;
+		type MaximumBlockWeight = MaximumBlockWeight;
+		type MaximumBlockLength = MaximumBlockLength;
+		type AvailableBlockRatio = AvailableBlockRatio;
+		type Version = ();
 	}
-
+	parameter_types! {
+		pub const ExistentialDeposit: u64 = 0;
+		pub const TransferFee: u64 = 0;
+		pub const CreationFee: u64 = 0;
+	}
 	impl balances::Trait for Test {
 		type Balance = u64;
 		type OnFreeBalanceZero = ();
 		type OnNewAccount = ();
-		type TransactionPayment = ();
+		type Event = Event;
 		type TransferPayment = ();
 		type DustRemoval = ();
-		type Event = ();
+		type ExistentialDeposit = ExistentialDeposit;
+		type TransferFee = TransferFee;
+		type CreationFee = CreationFee;
+	}
+
+	parameter_types! {
+		pub const MinimumPeriod: u64 = 1;
 	}
 
 	impl timestamp::Trait for Test {
 		type Moment = u64;
 		type OnTimestampSet = ();
+		type MinimumPeriod = MinimumPeriod;
+	}
+
+	parameter_types! {
+		pub const ReservationFee: u64 = 2;
+		pub const MinLength: usize = 3;
+		pub const MaxLength: usize = 16;
+		pub const One: u64 = 1;
 	}
 
 	impl Trait for Test {
-		type Event = ();
+		type Event = Event;
 	}
 
+	const EOS_ADDRESS: &[u8; 12] = b"praqianchang";
+	const BTC_ADDRESS: &[u8; 34] = b"1N75dvASxn1CCjaeguyqvwXLXJun9e54mM";
+	const ETH_ADDRESS: &[u8; 40] = b"cb222a32df146ef7e3ac63725dad0fd978d33ce2";
+
 	type DidModule = Module<Test>;
-	type Balance = balances::Module<Test>;
+	type System = system::Module<Test>;
+	type Balances = balances::Module<Test>;
 	type Timestamp = timestamp::Module<Test>;
 
 	// This function basically just builds a genesis storage key/value store according to
 	// our desired mockup.
-	fn new_test_ext() -> runtime_io::TestExternalities<Blake2Hasher> {
-		let mut r = system::GenesisConfig::<Test>::default().build_storage().unwrap();
-		r.0.extend(
-			balances::GenesisConfig::<Test> {
-				balances: vec![
-					(1, 100 * MILLICENTS),
-					(2, 100 * MILLICENTS),
-					(3, 100 * MILLICENTS),
-					(4, 100 * MILLICENTS),
-				],
-				vesting: vec![],
-				transaction_base_fee: 0,
-				transaction_byte_fee: 0,
-				existential_deposit: 0,
-				transfer_fee: 0,
-				creation_fee: 0,
-			}.build_storage().unwrap().0,
-		);
+	fn new_test_ext() -> runtime_io::TestExternalities {
+		let mut t = system::GenesisConfig::default().build_storage::<Test>().unwrap();
+		// We use default for brevity, but you can configure as desired if needed.
+		balances::GenesisConfig::<Test> {
+			balances: vec![
+				(1, 10000),
+				(2, 10000),
+				(3, 10000),
+			],
+			vesting: vec![],
+		}.assimilate_storage(&mut t).unwrap();
 
-		r.0.into()
+		GenesisConfig::<Test> {
+			genesis_account: 1u64,
+			min_deposit: 50,
+			base_quota: 500,
+			fee_to_previous: 25,
+		}.assimilate_storage(&mut t).unwrap();
+
+		t.into()
 	}
 
+	#[test]
 	fn should_pass_create() {
-		with_externalities(&mut new_test_ext(), || {
-			let mut pubkey = hex!["d43593c715fdd31c61141abd04a99fd6822c8558854ccde39a5684e7a56da27d"];
-			let result = DidModule::create(Origin::signed(42), pubkey.to_vec(), 42u64, "wx".as_bytes().to_vec(), H256::zero(), Some(Vec::new()), Some(Vec::new()));
-			assert_ok!(result);
+		new_test_ext().execute_with(|| {
+			System::set_block_number(0);
 
-			let mut pubkey = hex!["e659a7a1628cdd93febc04a4e0646ea20e9f5f0ce097d9a05290d4a9e054df4e"];
-			let result = DidModule::create(Origin::signed(42), pubkey.to_vec(), 42u64, "wx".as_bytes().to_vec(), H256::zero(), Some(Vec::new()), Some(Vec::new()));
-			assert_ok!(result);
-		});
-	}
+			// genesis account
+			assert_ok!(DidModule::create(
+				Origin::signed(1),
+				b"0x22df4b685df33f070ae6e5ee27f745de078adff099d3a803ec67afe1168acd4f".to_vec(),
+				1u64,
+				"1".as_bytes().to_vec(),
+				H256::zero(),
+				Some("f".as_bytes().to_vec()),
+				None
+			));
 
-	//	{"address":"5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY","superior":"0x0000000000000000000000000000000000000000000000000000000000000000","creator":"5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY","social_account":"0x6e657766656979616e67","type":"0x776563686174"}
-	//0x1a0fa65f894e2eeb157baa619afec7a8e54423fe22b47484aaac29615d6d1f6a
-	#[test]
-	fn should_pass_identity() {
-		with_externalities(&mut new_test_ext(), || {
-			let mut pubkey = hex!["d43593c715fdd31c61141abd04a99fd6822c8558854ccde39a5684e7a56da27d"];
-			let result = DidModule::create(Origin::signed(42), pubkey.to_vec(), 42u64, "wx".as_bytes().to_vec(), H256::zero(), Some(Vec::new()), Some(Vec::new()));
-			assert_ok!(result);
-			let mut hash = DidModule::identity(42u64);
-			let h = hex!["94b0a26bbe1a494310375e4b5e74ea125f786a6c1fcb02d9f99e72207bfad59a"];
-			assert_eq!(h, hash.as_bytes());
-		});
-	}
+			// second account
+			assert_ok!(DidModule::create(
+				Origin::signed(1),
+				b"0xd43593c715fdd31c61141abd04a99fd6822c8558854ccde39a5684e7a56da27d".to_vec(),
+				2u64,
+				"1".as_bytes().to_vec(),
+				H256::zero(),
+				Some("s".as_bytes().to_vec()),
+				Some("f".as_bytes().to_vec())
+			));
 
-
-	#[test]
-	fn should_pass_identity_of() {
-		with_externalities(&mut new_test_ext(), || {
-			let mut pubkey = hex!["d43593c715fdd31c61141abd04a99fd6822c8558854ccde39a5684e7a56da27d"];
-			let result = DidModule::create(Origin::signed(42), pubkey.to_vec(), 42u64, "wx".as_bytes().to_vec(), H256::zero(), Some(Vec::new()), Some(Vec::new()));
-			assert_ok!(result);
-			let mut hash = DidModule::identity(42u64);
-			let did = DidModule::identity_of(hash);
-			assert_ne!(did, None);
-			assert_eq!(did.unwrap(), 42u64);
-		});
-	}
-
-	#[test]
-	fn should_pass_all_did_count() {
-		with_externalities(&mut new_test_ext(), || {
-			let mut pubkey = hex!["d43593c715fdd31c61141abd04a99fd6822c8558854ccde39a5684e7a56da27d"];
-			let r = DidModule::create(Origin::signed(42), pubkey.to_vec(), 42u64, "wx".as_bytes().to_vec(), H256::zero(), Some(Vec::new()), Some(Vec::new()));
-			assert_ok!(r);
-			let count = DidModule::all_did_count();
-			assert_eq!(1, count);
-		});
-	}
-
-	#[test]
-	fn should_pass_metadata() {
-		with_externalities(&mut new_test_ext(), || {
-			let mut pubkey = hex!["d43593c715fdd31c61141abd04a99fd6822c8558854ccde39a5684e7a56da27d"];
-			let result = DidModule::create(Origin::signed(42), pubkey.to_vec(), 42u64, "wx".as_bytes().to_vec(), H256::zero(), Some(Vec::new()), Some(Vec::new()));
-			assert_ok!(result);
-			let mut hash = DidModule::identity(42u64);
-			let data = DidModule::metadata(hash);
-			let h = hex!["94b0a26bbe1a494310375e4b5e74ea125f786a6c1fcb02d9f99e72207bfad59a"];
-			assert_eq!(data.superior.as_bytes(), h);
 		});
 	}
 
 	#[test]
 	fn should_pass_update() {
-		with_externalities(&mut new_test_ext(), || {
-			let mut pubkey = hex!["d43593c715fdd31c61141abd04a99fd6822c8558854ccde39a5684e7a56da27d"];
-			let result = DidModule::create(Origin::signed(42), pubkey.to_vec(), 42u64, "wx".as_bytes().to_vec(), H256::zero(), Some(Vec::new()), Some(Vec::new()));
-			assert_ok!(result);
-			let result = DidModule::update(Origin::signed(42), 46u64);
-			assert_ok!(result);
-			let mut hash = DidModule::identity(42u64);
-			let mut hash = DidModule::identity(46u64);
-			let metadata = DidModule::metadata(hash);
-			let mut pubkey = hex!["e659a7a1628cdd93febc04a4e0646ea20e9f5f0ce097d9a05290d4a9e054df4e"];
-			let result = DidModule::create(Origin::signed(46), pubkey.to_vec(), 46u64, "wx".as_bytes().to_vec(), H256::zero(), Some("haoming".as_bytes().to_vec()), Some(Vec::new()));
-			assert_err!(result,"you already have did");
-		});
-	}
+		new_test_ext().execute_with(|| {
+			System::set_block_number(0);
 
-	#[test]
-	fn should_pass_transfer_balance() {
-		with_externalities(&mut new_test_ext(), || {
-			let balance = Balance::free_balance(1u64);
-			assert_eq!(balance, 100 * MILLICENTS);
-			let mut pubkey = hex!["d43593c715fdd31c61141abd04a99fd6822c8558854ccde39a5684e7a56da27d"];
-			let result = DidModule::create(Origin::signed(42), pubkey.to_vec(), 42u64, "wx".as_bytes().to_vec(), H256::zero(), Some(Vec::new()), Some(Vec::new()));
-			assert_ok!(result);
-			let mut hash = DidModule::identity(42u64);
-			let result = Balance::transfer(Origin::signed(1), 42u64, 10 * MILLICENTS);
-			assert_ok!(result);
-			let balance = Balance::free_balance(1u64);
-			assert_eq!(balance, 90 * MILLICENTS);
-			let balance = Balance::free_balance(42u64);
-			assert_eq!(balance, 10 * MILLICENTS);
-			let result = DidModule::transfer(Origin::signed(1), hash, 2 * MILLICENTS);
-			assert_ok!(result);
-			let balance = Balance::free_balance(42u64);
-			assert_eq!(balance, 12 * MILLICENTS);
-			let balance = Balance::free_balance(1u64);
-			assert_eq!(balance, 88 * MILLICENTS);
+			assert_ok!(DidModule::create(
+				Origin::signed(1),
+				b"0x22df4b685df33f070ae6e5ee27f745de078adff099d3a803ec67afe1168acd4f".to_vec(),
+				1u64,
+				"1".as_bytes().to_vec(),
+				H256::zero(),
+				Some("f".as_bytes().to_vec()),
+				None
+			));
+
+			assert_ok!(DidModule::update(Origin::signed(1), 2u64));
+			assert_eq!(Balances::free_balance(&1), 0);
+			assert_eq!(Balances::free_balance(&2), 20000);
 		});
 	}
 
 	#[test]
 	fn should_pass_lock() {
-		with_externalities(&mut new_test_ext(), || {
-			lock();
+		new_test_ext().execute_with(|| {
+			System::set_block_number(0);
+
+			assert_ok!(DidModule::create(
+				Origin::signed(1),
+				b"0x22df4b685df33f070ae6e5ee27f745de078adff099d3a803ec67afe1168acd4f".to_vec(),
+				1u64,
+				"1".as_bytes().to_vec(),
+				H256::zero(),
+				Some("f".as_bytes().to_vec()),
+				None
+			));
+
+			assert_ok!(DidModule::create(
+				Origin::signed(1),
+				b"0xd43593c715fdd31c61141abd04a99fd6822c8558854ccde39a5684e7a56da27d".to_vec(),
+				2u64,
+				"1".as_bytes().to_vec(),
+				H256::zero(),
+				Some("s".as_bytes().to_vec()),
+				Some("f".as_bytes().to_vec())
+			));
+
+			assert_ok!(DidModule::lock(Origin::signed(2), 100, 5));
+
+			assert_noop!(DidModule::lock(Origin::signed(2), 10, 5), "you must lock at least 50 pra per time");
+
+			assert_eq!(Balances::free_balance(&2), 9900);
+
 		});
 	}
-	fn lock(){
-		let mut pubkey = hex!["e659a7a1628cdd93febc04a4e0646ea20e9f5f0ce097d9a05290d4a9e054df4e"];
-		let result = DidModule::create(Origin::signed(1), pubkey.to_vec(), 1u64, "wx".as_bytes().to_vec(), H256::zero(), Some("mm".as_bytes().to_vec()), None);
-		let hash = DidModule::identity(1u64);
-		let mut pubkey = hex!["d43593c715fdd31c61141abd04a99fd6822c8558854ccde39a5684e7a56da27d"];
-		let result = DidModule::create(Origin::signed(2), pubkey.to_vec(), 2u64, "wx".as_bytes().to_vec(), hash, Some("hm".as_bytes().to_vec()), Some("mm".as_bytes().to_vec()));
-		let hash = DidModule::identity(2u64);
-		let metadata = DidModule::metadata(hash);
-		assert_ok!(result);
-		let result = DidModule::lock(Origin::signed(2), 50 * MILLICENTS, 1);
-		assert_ok!(result);
-		let balance =  Balance::free_balance(2u64);
-		let reserved_balance = Balance::reserved_balance(2u64);
-		assert_eq!(reserved_balance,25*MILLICENTS);
-		let balance = Balance::free_balance(1u64);
-		assert_eq!(balance,125*MILLICENTS);
-	}
+
 	#[test]
-	fn should_pass_unlock(){
-		with_externalities(&mut new_test_ext(),||{
+	fn should_pass_unlock() {
+		new_test_ext().execute_with(|| {
+
+			assert_ok!(DidModule::create(
+				Origin::signed(1),
+				b"0x22df4b685df33f070ae6e5ee27f745de078adff099d3a803ec67afe1168acd4f".to_vec(),
+				1u64,
+				"1".as_bytes().to_vec(),
+				H256::zero(),
+				Some("f".as_bytes().to_vec()),
+				None
+			));
+
+			assert_ok!(DidModule::create(
+				Origin::signed(1),
+				b"0xd43593c715fdd31c61141abd04a99fd6822c8558854ccde39a5684e7a56da27d".to_vec(),
+				2u64,
+				"1".as_bytes().to_vec(),
+				H256::zero(),
+				Some("s".as_bytes().to_vec()),
+				Some("f".as_bytes().to_vec())
+			));
+
 			Timestamp::set_timestamp(42);
-			lock();
-			let balance = Balance::free_balance(2u64);
-			Timestamp::set_timestamp(47);
-			let result = DidModule::unlock(Origin::signed(2),0*MILLICENTS);
-			assert_ok!(result);
-			let reserved_balance = Balance::reserved_balance(2u64);
-			let balance = Balance::free_balance(2u64);
-			assert_eq!(balance,50*MILLICENTS);
-			let result = DidModule::unlock(Origin::signed(2),25*MILLICENTS);
-			assert_ok!(result);
-			let reserved_balance = Balance::reserved_balance(2u64);
-			let balance = Balance::free_balance(2u64);
-			assert_eq!(balance,75*MILLICENTS);
+			assert_ok!(DidModule::lock(Origin::signed(2), 100, 5));
+
+			Timestamp::set_timestamp(50);
+			assert_ok!(DidModule::unlock(Origin::signed(2), 10));
+
+			assert_eq!(Balances::free_balance(&2), 9910);
 		});
 	}
 
-	fn alice_secret() -> secp256k1::SecretKey {
-		secp256k1::SecretKey::parse(&keccak256(b"Alice")).unwrap()
+	#[test]
+	fn should_pass_transfer() {
+		new_test_ext().execute_with(|| {
+			System::set_block_number(1);
+
+			assert_ok!(DidModule::create(
+				Origin::signed(1),
+				b"0x22df4b685df33f070ae6e5ee27f745de078adff099d3a803ec67afe1168acd4f".to_vec(),
+				1u64,
+				"1".as_bytes().to_vec(),
+				H256::zero(),
+				Some("f".as_bytes().to_vec()),
+				None
+			));
+
+			assert_ok!(DidModule::create(
+				Origin::signed(1),
+				b"0xd43593c715fdd31c61141abd04a99fd6822c8558854ccde39a5684e7a56da27d".to_vec(),
+				2u64,
+				"1".as_bytes().to_vec(),
+				H256::zero(),
+				Some("s".as_bytes().to_vec()),
+				Some("f".as_bytes().to_vec())
+			));
+
+			let did = DidModule::identity(&1);
+			let memo = b"transfer test";
+			assert_ok!(DidModule::transfer(Origin::signed(2), did, 100, memo.to_vec()));
+
+			let events = System::events();
+			let from_did = DidModule::identity(&2);
+			assert_eq!(
+				events[events.len() - 1],
+				EventRecord {
+						phase: Phase::ApplyExtrinsic(0),
+						event: Event::did(RawEvent::Transfered(from_did, did, 100, memo.to_vec())),
+						topics: vec![],
+				}
+			);
+
+			assert_eq!(Balances::free_balance(&2), 9900);
+		});
 	}
 
-	fn alice_public() -> secp256k1::PublicKey {
-		secp256k1::PublicKey::from_secret_key(&alice_secret())
+	#[test]
+	fn should_pass_add_external_address() {
+		new_test_ext().execute_with(|| {
+			System::set_block_number(0);
+
+			assert_ok!(DidModule::create(
+				Origin::signed(1),
+				b"0x22df4b685df33f070ae6e5ee27f745de078adff099d3a803ec67afe1168acd4f".to_vec(),
+				1u64,
+				"1".as_bytes().to_vec(),
+				H256::zero(),
+				Some("f".as_bytes().to_vec()),
+				None
+			));
+
+			assert_ok!(DidModule::add_external_address(Origin::signed(1), b"eos".to_vec(), EOS_ADDRESS.to_vec()));
+			assert_ok!(DidModule::add_external_address(Origin::signed(1), b"eth".to_vec(), ETH_ADDRESS.to_vec()));
+			assert_ok!(DidModule::add_external_address(Origin::signed(1), b"btc".to_vec(), BTC_ADDRESS.to_vec()));
+		});
 	}
 }

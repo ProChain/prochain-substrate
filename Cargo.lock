@@ -2764,6 +2764,7 @@ dependencies = [
 name = "node-testing"
 version = "2.0.0"
 dependencies = [
+ "hex-literal 0.2.1 (registry+https://github.com/rust-lang/crates.io-index)",
  "node-executor 2.0.0",
  "node-primitives 2.0.0",
  "node-runtime 2.0.0",

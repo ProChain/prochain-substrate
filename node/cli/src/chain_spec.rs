@@ -22,7 +22,7 @@ use serde::{Serialize, Deserialize};
 use node_runtime::{
 	BabeConfig, BalancesConfig, ContractsConfig, CouncilConfig, DemocracyConfig, GrandpaConfig,
 	ImOnlineConfig, IndicesConfig, SessionConfig, SessionKeys, StakerStatus, StakingConfig,
-	SudoConfig, SystemConfig, TechnicalCommitteeConfig, WASM_BINARY,
+	SudoConfig, SystemConfig, TechnicalCommitteeConfig, DidConfig, WASM_BINARY,
 };
 use node_runtime::Block;
 use node_runtime::constants::currency::*;
@@ -264,6 +264,12 @@ pub fn testnet_genesis(
 		}),
 		membership_Instance1: Some(Default::default()),
 		treasury: Some(Default::default()),
+		did: Some(DidConfig {
+			genesis_account: hex!["22df4b685df33f070ae6e5ee27f745de078adff099d3a803ec67afe1168acd4f"].into(),
+			min_deposit: 50 * MILLICENTS,
+			base_quota: 500,
+			fee_to_previous: 25 * MILLICENTS,
+		}),
 	}
 }
 

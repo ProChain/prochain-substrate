@@ -544,7 +544,7 @@ construct_runtime!(
 		Offences: offences::{Module, Call, Storage, Event},
 		RandomnessCollectiveFlip: randomness_collective_flip::{Module, Call, Storage},
 		Nicks: nicks::{Module, Call, Storage, Event<T>},
-		Did: did::{Module, Storage, Call, Event<T>},
+		Did: did::{Module, Storage, Call, Config<T>, Event<T>},
 //		Oracle: oracle::{Module, Storage, Call, Event<T>},
 	}
 );
