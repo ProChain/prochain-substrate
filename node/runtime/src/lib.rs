@@ -69,8 +69,7 @@ use constants::{time::*, currency::*};
 mod did;
 mod check;
 
-//mod oracle;
-//use oracle::sr25519::AuthorityId as OracleId;
+mod oracle;
 
 // Make the WASM binary available.
 #[cfg(feature = "std")]
@@ -507,12 +506,16 @@ impl did::Trait for Runtime {
 	type Event = Event;
 }
 
-//impl oracle::Trait for Runtime {
-//	type Call = Call;
-//	type Event = Event;
-//	type AuthorityId = OracleId;
-//	type SubmitTransaction = SubmitTransaction;
-//}
+use oracle::sr25519::AuthorityId as OracleId;
+/// We need to define the Transaction signer for that using the Key definition
+type SubmitTransactionOracle = TransactionSubmitter<OracleId, Runtime, UncheckedExtrinsic>;
+
+impl oracle::Trait for Runtime {
+	type Call = Call;
+	type Event = Event;
+	type AuthorityId = OracleId;
+	type SubmitTransaction = SubmitTransactionOracle;
+}
 
 construct_runtime!(
 	pub enum Runtime where
@@ -544,8 +547,8 @@ construct_runtime!(
 		Offences: offences::{Module, Call, Storage, Event},
 		RandomnessCollectiveFlip: randomness_collective_flip::{Module, Call, Storage},
 		Nicks: nicks::{Module, Call, Storage, Event<T>},
-		Did: did::{Module, Storage, Call, Config<T>, Event<T>},
-//		Oracle: oracle::{Module, Storage, Call, Event<T>},
+		Did: did::{Module, Storage, Call, Event<T>},
+		Oracle: oracle::{Module, Storage, Call, Event<T>},
 	}
 );
 
