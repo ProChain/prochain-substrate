@@ -324,6 +324,61 @@ pub fn local_testnet_config() -> ChainSpec {
 	)
 }
 
+fn prochain_testnet_genesis() -> GenesisConfig {
+	let initial_authorities: Vec<(AccountId, AccountId, GrandpaId, BabeId, ImOnlineId)> = vec![(
+		// 5GTDPKDnqavJMa9Wsqp8ospmjs3riV6zg8obQNLPqn7c3wh5
+		hex!["c21bbbee5958ccc3be18979a75c229dfb8ad9319218eddc71b0989c796408b13"].into(),
+		// 5CSMAWVYBoHpMYTjxS2AWYEo74ntuHNdQFuxzuD1Cz37ffcm
+		hex!["1081bdf73aade46b14187607f1ff944876cc886282e2af9aab0c6a5b5ddb6d02"].into(),
+		// 5G3uZAvTgy9BExaEBZwky8Md1bAn2BBXsdywTp4db1EENSFL
+		hex!["b0551188f5ae7d99a0e7f10bbe91b54d8df2de2a795615e581ee0f0eb2f8a8d6"].unchecked_into(),
+		// 5CSMAWVYBoHpMYTjxS2AWYEo74ntuHNdQFuxzuD1Cz37ffcm
+		hex!["1081bdf73aade46b14187607f1ff944876cc886282e2af9aab0c6a5b5ddb6d02"].unchecked_into(),
+		// 5HpAZPUUCFTBzZz3a68EiLE39gyt9UXmnAADELg6J7okijLA
+		hex!["fe529b5769c288b01695760063c88238e87fc64194117c5eaa37e911c8b53eb7"].unchecked_into(),
+	),(
+		// 5ECkqhw4dCCwX6zzanbjNCgA9VxMeK6qR7snfrWefbumLBrQ
+		hex!["5e9c79234b5e55348fc60f38b28c2cc60d8bb4bd2862eae2179a05ec39e62658"].into(),
+		// 5H4F6CRnkUaMGSYckLXMViNTECpa4pC8KNAKW4X9qjKF73CC
+		hex!["dcd30ff89083ced6197c950ab9409989ebddbee39ebe3e771ad6cd352da1d178"].into(),
+		// 5CvSzTNJKq1o8Boz77KxNrjZoLXEkoMbRmirBUBj44EZe6py
+		hex!["25f03a4773211cd1863f250b9f6adc5c2b952f1f1ecae8cab8a41ded1a132398"].unchecked_into(),
+		// 5H4F6CRnkUaMGSYckLXMViNTECpa4pC8KNAKW4X9qjKF73CC
+		hex!["dcd30ff89083ced6197c950ab9409989ebddbee39ebe3e771ad6cd352da1d178"].unchecked_into(),
+		// 5FMbfj8GtHx5CH6C8jVcf9fccyj3BojPEsYrX9tQGxhAsfJ8
+		hex!["91970a15105928e471eb1f150f5c775e88ba2504828ec6b986dfb1a9ff922369"].unchecked_into(),
+	)];
+
+	// generated with secret: subkey inspect "$secret"/fir
+	let root_key: AccountId = hex![
+		// 5CrRpNbQBTiBmTjpUgJ6mH9YRmopVweLsjffVz7muskYEo2r
+		"22df4b685df33f070ae6e5ee27f745de078adff099d3a803ec67afe1168acd4f"
+	].into();
+
+	let endowed_accounts: Vec<AccountId> = vec![root_key.clone()];
+
+	testnet_genesis(
+		initial_authorities,
+		root_key,
+		Some(endowed_accounts),
+		false,
+	)
+}
+
+/// prochain testnet config
+pub fn prochain_testnet_config() -> ChainSpec {
+	ChainSpec::from_genesis(
+		"Prochain Testnet",
+		"prochain_testnet",
+		prochain_testnet_genesis,
+		vec![],
+		None,
+		None,
+		None,
+		Default::default(),
+	)
+}
+
 #[cfg(test)]
 pub(crate) mod tests {
 	use super::*;
