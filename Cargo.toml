@@ -1,16 +1,21 @@
 [workspace]
 members = [
-	"core/utils/fork-tree",
-	"core/utils/wasm-builder",
-	"core/utils/wasm-builder-runner",
-	"node/cli",
-	"node/executor",
-	"node/primitives",
-	"node/rpc",
-	"node/rpc-client",
-	"node/runtime",
-	"node/testing",
-	"test-utils/chain-spec-builder",
+	"bin/node/cli",
+	"bin/node/executor",
+	"bin/node/primitives",
+	"bin/node/rpc-client",
+	"bin/node/rpc",
+	"bin/node/runtime",
+	"bin/node/testing",
+	"test/utils/chain-spec-builder",
+	"test/utils/client",
+	"test/utils/primitives",
+	"test/utils/runtime",
+	"test/utils/runtime/client",
+	"test/utils/transaction-factory",
+	"utils/build-script-utils",
+	"utils/fork-tree",
+	"utils/wasm-builder"
 ]
 
 [profile.release]

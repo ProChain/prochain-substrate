@@ -1,0 +1,71 @@
+[package]
+name = "substrate-test-primitives"
+version = "2.0.0"
+authors = ["Parity Technologies <admin@parity.io>"]
+edition = "2018"
+
+[dependencies]
+app-crypto = { package = "substrate-application-crypto", git = "https://github.com/ProChain/substrate.git", default-features = false }
+codec = { package = "parity-scale-codec", version = "1.0.0", default-features = false, features = ["derive"] }
+# aura-primitives = { package = "substrate-consensus-aura-primitives", git = "https://github.com/ProChain/substrate.git", default-features = false }
+# babe-primitives = { package = "substrate-consensus-babe-primitives", git = "https://github.com/ProChain/substrate.git", default-features = false }
+# block-builder-api = { package = "substrate-block-builder-runtime-api", git = "https://github.com/ProChain/substrate.git", default-features = false }
+# inherents = { package = "substrate-inherents", git = "https://github.com/ProChain/substrate.git", default-features = false }
+# log = { version = "0.4.8", optional = true }
+# memory-db = { version = "0.15.2", default-features = false }
+# offchain-primitives = { package = "substrate-offchain-primitives", git = "https://github.com/ProChain/substrate.git", default-features = false}
+primitives = { package = "substrate-primitives", git = "https://github.com/ProChain/substrate.git", default-features = false }
+# rstd = { package = "sr-std", git = "https://github.com/ProChain/substrate.git", default-features = false }
+# runtime-interface = { package = "substrate-runtime-interface", git = "https://github.com/ProChain/substrate.git", default-features = false}
+# runtime_io = { package = "sr-io", git = "https://github.com/ProChain/substrate.git", default-features = false }
+# runtime_support = { package = "frame-support", git = "https://github.com/ProChain/substrate.git", default-features = false }
+# runtime_version = { package = "sr-version", git = "https://github.com/ProChain/substrate.git", default-features = false }
+serde = { version = "1.0.101", optional = true, features = ["derive"] }
+# session = { package = "substrate-session", git = "https://github.com/ProChain/substrate.git", default-features = false }
+# sr-api = { git = "https://github.com/ProChain/substrate.git", default-features = false }
+sr-primitives = {  git = "https://github.com/ProChain/substrate.git", default-features = false }
+# pallet-babe = { git = "https://github.com/ProChain/substrate.git", default-features = false }
+# frame-system = { git = "https://github.com/ProChain/substrate.git", default-features = false }
+# frame-system-rpc-runtime-api = { git = "https://github.com/ProChain/substrate.git", default-features = false }
+# pallet-timestamp = { git = "https://github.com/ProChain/substrate.git", default-features = false }
+# substrate-client = { git = "https://github.com/ProChain/substrate.git", optional = true }
+# substrate-trie = { git = "https://github.com/ProChain/substrate.git", default-features = false }
+# transaction-pool-api = { package = "substrate-transaction-pool-runtime-api", git = "https://github.com/ProChain/substrate.git", default-features = false }
+# trie-db = { version = "0.15.2", default-features = false }
+
+[features]
+default = [
+	"std",
+]
+std = [
+	"app-crypto/std",
+	# "aura-primitives/std",
+	# "babe-primitives/std",
+	# "block-builder-api/std",
+	# "codec/std",
+	# "executive/std",
+	# "inherents/std",
+	# "keyring",
+	# "log",
+	# "memory-db/std",
+	# "offchain-primitives/std",
+	# "primitives/std",
+	# "primitives/std",
+	# "rstd/std",
+	# "runtime-interface/std",
+	# "runtime_io/std",
+	# "runtime_support/std",
+	# "runtime_version/std",
+	"serde",
+	# "session/std",
+	# "sr-api/std",
+	# "sr-primitives/std",
+	# "pallet-babe/std",
+	# "frame-system-rpc-runtime-api/std",
+	# "frame-system/std",
+	# "pallet-timestamp/std",
+	# "substrate-client",
+	# "substrate-trie/std",
+	# "transaction-pool-api/std",
+	# "trie-db/std",
+]

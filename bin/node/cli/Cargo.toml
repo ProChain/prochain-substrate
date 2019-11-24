@@ -1,0 +1,139 @@
+[package]
+name = "node-cli"
+version = "2.0.0"
+authors = ["Parity Technologies <admin@parity.io>"]
+description = "Substrate node implementation in Rust."
+build = "build.rs"
+edition = "2018"
+default-run = "prochain"
+
+[badges]
+travis-ci = { repository = "paritytech/substrate", branch = "master" }
+maintenance = { status = "actively-developed" }
+is-it-maintained-issue-resolution = { repository = "paritytech/substrate" }
+is-it-maintained-open-issues = { repository = "paritytech/substrate" }
+
+[[bin]]
+name = "prochain"
+path = "bin/main.rs"
+required-features = ["cli"]
+
+[lib]
+crate-type = ["cdylib", "rlib"]
+
+[dependencies]
+# third-party dependencies
+codec = { package = "parity-scale-codec", version = "1.0.6" }
+serde = { version = "1.0.102", features = [ "derive" ] }
+futures01 = { package = "futures", version = "0.1.29" }
+futures = { version = "0.3.1", features = ["compat"] }
+hex-literal = "0.2.1"
+jsonrpc-core = "14.0.3"
+log = "0.4.8"
+rand = "0.7.2"
+structopt = "0.3.3"
+
+# primitives
+authority-discovery-primitives = { package = "substrate-authority-discovery-primitives", git = "https://github.com/ProChain/substrate.git"}
+babe-primitives = { package = "substrate-consensus-babe-primitives", git = "https://github.com/ProChain/substrate.git" }
+grandpa_primitives = { package = "substrate-finality-grandpa-primitives", git = "https://github.com/ProChain/substrate.git" }
+primitives = { package = "substrate-primitives", git = "https://github.com/ProChain/substrate.git" }
+sr-primitives = { git = "https://github.com/ProChain/substrate.git" }
+sp-timestamp = { git = "https://github.com/ProChain/substrate.git", default-features = false }
+
+# core dependencies
+runtime-io = { package = "sr-io", git = "https://github.com/ProChain/substrate.git" }
+client-api = { package = "substrate-client-api", git = "https://github.com/ProChain/substrate.git" }
+client = { package = "substrate-client", git = "https://github.com/ProChain/substrate.git" }
+inherents = { package = "substrate-inherents", git = "https://github.com/ProChain/substrate.git" }
+chain-spec = { package = "substrate-chain-spec", git = "https://github.com/ProChain/substrate.git" }
+transaction_pool = { package = "substrate-transaction-pool", git = "https://github.com/ProChain/substrate.git" }
+network = { package = "substrate-network", git = "https://github.com/ProChain/substrate.git" }
+babe = { package = "substrate-consensus-babe", git = "https://github.com/ProChain/substrate.git" }
+grandpa = { package = "substrate-finality-grandpa", git = "https://github.com/ProChain/substrate.git" }
+keyring = { package = "substrate-keyring", git = "https://github.com/ProChain/substrate.git" }
+client_db = { package = "substrate-client-db", git = "https://github.com/ProChain/substrate.git", default-features = false }
+offchain = { package = "substrate-offchain", git = "https://github.com/ProChain/substrate.git" }
+substrate-rpc = { package = "substrate-rpc", git = "https://github.com/ProChain/substrate.git" }
+substrate-basic-authorship = { git = "https://github.com/ProChain/substrate.git" }
+substrate-service = { git = "https://github.com/ProChain/substrate.git", default-features = false }
+substrate-telemetry = { package = "substrate-telemetry", git = "https://github.com/ProChain/substrate.git" }
+authority-discovery = { package = "substrate-authority-discovery", git = "https://github.com/ProChain/substrate.git"}
+
+# frame dependencies
+indices = { package = "pallet-indices", git = "https://github.com/ProChain/substrate.git" }
+timestamp = { package = "pallet-timestamp", git = "https://github.com/ProChain/substrate.git", default-features = false }
+sp-finality-tracker = { git = "https://github.com/ProChain/substrate.git", default-features = false }
+contracts = { package = "pallet-contracts", git = "https://github.com/ProChain/substrate.git" }
+system = { package = "frame-system", git = "https://github.com/ProChain/substrate.git" }
+balances = { package = "pallet-balances", git = "https://github.com/ProChain/substrate.git" }
+transaction-payment = { package = "pallet-transaction-payment", git = "https://github.com/ProChain/substrate.git" }
+support = { package = "frame-support", git = "https://github.com/ProChain/substrate.git", default-features = false }
+im_online = { package = "pallet-im-online", git = "https://github.com/ProChain/substrate.git", default-features = false }
+sr-authority-discovery = { package = "pallet-authority-discovery", git = "https://github.com/ProChain/substrate.git"}
+
+# node-specific dependencies
+node-runtime = { path = "../runtime" }
+node-rpc = { path = "../rpc" }
+node-primitives = { path = "../primitives" }
+node-executor = { path = "../executor" }
+
+# CLI-specific dependencies
+tokio = { version = "0.1.22", optional = true }
+substrate-cli = { git = "https://github.com/ProChain/substrate.git", optional = true }
+transaction-factory = { path = "../../../test/utils/transaction-factory", optional = true }
+ctrlc = { version = "3.1.3", features = ["termination"], optional = true }
+
+# WASM-specific dependencies
+libp2p = { version = "0.13.0", default-features = false, optional = true }
+clear_on_drop = { version = "0.2.3", features = ["no_cc"], optional = true }	# Imported just for the `no_cc` feature
+console_error_panic_hook = { version = "0.1.1", optional = true }
+console_log = { version = "0.1.2", optional = true }
+js-sys = { version = "0.3.22", optional = true }
+wasm-bindgen = { version = "0.2.45", optional = true }
+wasm-bindgen-futures = { version = "0.3.22", optional = true }
+kvdb-memorydb = { git = "https://github.com/paritytech/parity-common", rev="03a2ba08f47f4af4219280e660a1ea92cb8896bd", optional = true }
+rand6 = { package = "rand", version = "0.6", features = ["wasm-bindgen"], optional = true }	# Imported just for the `wasm-bindgen` feature
+
+[dev-dependencies]
+keystore = { package = "substrate-keystore", git = "https://github.com/ProChain/substrate.git" }
+babe = { package = "substrate-consensus-babe", git = "https://github.com/ProChain/substrate.git", features = ["test-helpers"] }
+consensus-common = { package = "substrate-consensus-common", git = "https://github.com/ProChain/substrate.git" }
+service-test = { package = "substrate-service-test", git = "https://github.com/ProChain/substrate.git" }
+futures = "0.3.1"
+tempfile = "3.1.0"
+
+[build-dependencies]
+substrate-cli = { package = "substrate-cli", git = "https://github.com/ProChain/substrate.git" }
+build-script-utils = { package = "substrate-build-script-utils", path = "../../../utils/build-script-utils" }
+structopt = "0.3.3"
+vergen = "3.0.4"
+
+[features]
+default = ["cli"]
+browser = [
+	"clear_on_drop",
+	"console_error_panic_hook",
+	"console_log",
+	"js-sys",
+	"libp2p",
+	"wasm-bindgen",
+	"wasm-bindgen-futures",
+	"kvdb-memorydb",
+	"rand/wasm-bindgen",
+	"rand6"
+]
+cli = [
+	"substrate-cli",
+	"transaction-factory",
+	"tokio",
+	"ctrlc",
+	"substrate-service/rocksdb",
+	"node-executor/wasmi-errno",
+]
+wasmtime = [
+	"cli",
+	"node-executor/wasmtime",
+	"substrate-cli/wasmtime",
+	"substrate-service/wasmtime",
+]
