@@ -7,6 +7,7 @@ edition = "2018"
 [dependencies]
 cli = { package = "substrate-cli", git = "https://github.com/ProChain/substrate.git" }
 client = { package = "substrate-client", git = "https://github.com/ProChain/substrate.git" }
+client-api = { package = "substrate-client-api", git = "https://github.com/ProChain/substrate.git" }
 sr-api = { git = "https://github.com/ProChain/substrate.git" }
 block-builder-api = { package = "substrate-block-builder-runtime-api", git = "https://github.com/ProChain/substrate.git" }
 consensus_common = { package = "substrate-consensus-common", git = "https://github.com/ProChain/substrate.git" }

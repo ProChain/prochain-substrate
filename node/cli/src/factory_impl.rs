@@ -35,8 +35,8 @@ use sr_primitives::{
 use transaction_factory::RuntimeAdapter;
 use transaction_factory::modes::Mode;
 use inherents::InherentData;
-use timestamp;
-use finality_tracker;
+use sp_timestamp;
+use sp_finality_tracker;
 
 type AccountPublic = <Signature as Verify>::Signer;
 
@@ -156,14 +156,15 @@ impl RuntimeAdapter for FactoryState<Number> {
 		}, key, (version, genesis_hash.clone(), prior_block_hash.clone(), (), (), (), ()))
 	}
 
+	//TODO: error[E0603]: constant `INHERENT_IDENTIFIER` is private
 	fn inherent_extrinsics(&self) -> InherentData {
-		let timestamp = (self.block_no as u64 + 1) * MinimumPeriod::get();
+		//let timestamp = (self.block_no as u64 + 1) * MinimumPeriod::get();
 
 		let mut inherent = InherentData::new();
-		inherent.put_data(timestamp::INHERENT_IDENTIFIER, &timestamp)
-			.expect("Failed putting timestamp inherent");
-		inherent.put_data(finality_tracker::INHERENT_IDENTIFIER, &self.block_no)
-			.expect("Failed putting finalized number inherent");
+		// inherent.put_data(sp_timestamp::INHERENT_IDENTIFIER, &timestamp)
+		// 	.expect("Failed putting timestamp inherent");
+		// inherent.put_data(sp_finality_tracker::INHERENT_IDENTIFIER, &self.block_no)
+		// 	.expect("Failed putting finalized number inherent");
 		inherent
 	}
 

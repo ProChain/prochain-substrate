@@ -33,35 +33,35 @@ substrate-keyring = { git = "https://github.com/ProChain/substrate.git", optiona
 substrate-session = { git = "https://github.com/ProChain/substrate.git", default-features = false }
 
 # srml dependencies
-authorship = { package = "srml-authorship", git = "https://github.com/ProChain/substrate.git", default-features = false }
-babe = { package = "srml-babe", git = "https://github.com/ProChain/substrate.git", default-features = false }
-balances = { package = "srml-balances", git = "https://github.com/ProChain/substrate.git", default-features = false }
-collective = { package = "srml-collective", git = "https://github.com/ProChain/substrate.git", default-features = false }
-contracts = { package = "srml-contracts", git = "https://github.com/ProChain/substrate.git", default-features = false }
-contracts-rpc-runtime-api = { package = "srml-contracts-rpc-runtime-api", git = "https://github.com/ProChain/substrate.git", default-features = false }
-democracy = { package = "srml-democracy", git = "https://github.com/ProChain/substrate.git", default-features = false }
-elections-phragmen = { package = "srml-elections-phragmen", git = "https://github.com/ProChain/substrate.git", default-features = false }
-executive = { package = "srml-executive", git = "https://github.com/ProChain/substrate.git", default-features = false }
-finality-tracker = { package = "srml-finality-tracker", git = "https://github.com/ProChain/substrate.git", default-features = false }
-grandpa = { package = "srml-grandpa", git = "https://github.com/ProChain/substrate.git", default-features = false }
-im-online = { package = "srml-im-online", git = "https://github.com/ProChain/substrate.git", default-features = false }
-indices = { package = "srml-indices", git = "https://github.com/ProChain/substrate.git", default-features = false }
-membership = { package = "srml-membership", git = "https://github.com/ProChain/substrate.git", default-features = false }
-nicks = { package = "srml-nicks", git = "https://github.com/ProChain/substrate.git", default-features = false }
-offences = { package = "srml-offences", git = "https://github.com/ProChain/substrate.git", default-features = false }
-randomness-collective-flip = { package = "srml-randomness-collective-flip", git = "https://github.com/ProChain/substrate.git", default-features = false }
-session = { package = "srml-session", git = "https://github.com/ProChain/substrate.git", default-features = false, features = ["historical"] }
-staking = { package = "srml-staking", git = "https://github.com/ProChain/substrate.git", default-features = false }
-srml-staking-reward-curve = { git = "https://github.com/ProChain/substrate.git"}
-sudo = { package = "srml-sudo", git = "https://github.com/ProChain/substrate.git", default-features = false }
-support = { package = "srml-support", git = "https://github.com/ProChain/substrate.git", default-features = false }
-system = { package = "srml-system", git = "https://github.com/ProChain/substrate.git", default-features = false }
-system-rpc-runtime-api = { package = "srml-system-rpc-runtime-api", git = "https://github.com/ProChain/substrate.git", default-features = false }
-timestamp = { package = "srml-timestamp", git = "https://github.com/ProChain/substrate.git", default-features = false }
-treasury = { package = "srml-treasury", git = "https://github.com/ProChain/substrate.git", default-features = false }
-utility = { package = "srml-utility", git = "https://github.com/ProChain/substrate.git", default-features = false }
-transaction-payment = { package = "srml-transaction-payment", git = "https://github.com/ProChain/substrate.git", default-features = false }
-transaction-payment-rpc-runtime-api = { package = "srml-transaction-payment-rpc-runtime-api", git = "https://github.com/ProChain/substrate.git", default-features = false }
+authorship = { package = "pallet-authorship", git = "https://github.com/ProChain/substrate.git", default-features = false }
+babe = { package = "pallet-babe", git = "https://github.com/ProChain/substrate.git", default-features = false }
+balances = { package = "pallet-balances", git = "https://github.com/ProChain/substrate.git", default-features = false }
+collective = { package = "pallet-collective", git = "https://github.com/ProChain/substrate.git", default-features = false }
+contracts = { package = "pallet-contracts", git = "https://github.com/ProChain/substrate.git", default-features = false }
+contracts-rpc-runtime-api = { package = "pallet-contracts-rpc-runtime-api", git = "https://github.com/ProChain/substrate.git", default-features = false }
+democracy = { package = "pallet-democracy", git = "https://github.com/ProChain/substrate.git", default-features = false }
+elections-phragmen = { package = "pallet-elections-phragmen", git = "https://github.com/ProChain/substrate.git", default-features = false }
+executive = { package = "palette-executive", git = "https://github.com/ProChain/substrate.git", default-features = false }
+finality-tracker = { package = "pallet-finality-tracker", git = "https://github.com/ProChain/substrate.git", default-features = false }
+grandpa = { package = "pallet-grandpa", git = "https://github.com/ProChain/substrate.git", default-features = false }
+im-online = { package = "pallet-im-online", git = "https://github.com/ProChain/substrate.git", default-features = false }
+indices = { package = "pallet-indices", git = "https://github.com/ProChain/substrate.git", default-features = false }
+membership = { package = "pallet-membership", git = "https://github.com/ProChain/substrate.git", default-features = false }
+nicks = { package = "pallet-nicks", git = "https://github.com/ProChain/substrate.git", default-features = false }
+offences = { package = "pallet-offences", git = "https://github.com/ProChain/substrate.git", default-features = false }
+randomness-collective-flip = { package = "pallet-randomness-collective-flip", git = "https://github.com/ProChain/substrate.git", default-features = false }
+session = { package = "pallet-session", git = "https://github.com/ProChain/substrate.git", default-features = false, features = ["historical"] }
+staking = { package = "pallet-staking", git = "https://github.com/ProChain/substrate.git", default-features = false }
+pallet-staking-reward-curve = { git = "https://github.com/ProChain/substrate.git"}
+sudo = { package = "pallet-sudo", git = "https://github.com/ProChain/substrate.git", default-features = false }
+support = { package = "palette-support", git = "https://github.com/ProChain/substrate.git", default-features = false }
+system = { package = "palette-system", git = "https://github.com/ProChain/substrate.git", default-features = false }
+system-rpc-runtime-api = { package = "palette-system-rpc-runtime-api", git = "https://github.com/ProChain/substrate.git", default-features = false }
+timestamp = { package = "pallet-timestamp", git = "https://github.com/ProChain/substrate.git", default-features = false }
+treasury = { package = "pallet-treasury", git = "https://github.com/ProChain/substrate.git", default-features = false }
+utility = { package = "palette-utility", git = "https://github.com/ProChain/substrate.git", default-features = false }
+transaction-payment = { package = "pallet-transaction-payment", git = "https://github.com/ProChain/substrate.git", default-features = false }
+transaction-payment-rpc-runtime-api = { package = "pallet-transaction-payment-rpc-runtime-api", git = "https://github.com/ProChain/substrate.git", default-features = false }
 runtime-io = { package = "sr-io", git = "https://github.com/ProChain/substrate.git", default-features = false }
 app-crypto = { package = "substrate-application-crypto", git = "https://github.com/ProChain/substrate.git", default-features = false }
 
@@ -79,6 +79,7 @@ std = [
 	"codec/std",
 	"collective/std",
 	"contracts/std",
+	'runtime-io/std',
 	"contracts-rpc-runtime-api/std",
 	"democracy/std",
 	"elections-phragmen/std",

@@ -41,6 +41,7 @@ grandpa_primitives = { package = "substrate-finality-grandpa-primitives", git = 
 # core dependencies
 runtime-io = { package = "sr-io", git = "https://github.com/ProChain/substrate.git" }
 client = { package = "substrate-client", git = "https://github.com/ProChain/substrate.git" }
+client-api = { package = "substrate-client-api", git = "https://github.com/ProChain/substrate.git" }
 inherents = { package = "substrate-inherents", git = "https://github.com/ProChain/substrate.git" }
 chain-spec = { package = "substrate-chain-spec", git = "https://github.com/ProChain/substrate.git" }
 transaction_pool = { package = "substrate-transaction-pool", git = "https://github.com/ProChain/substrate.git" }
@@ -55,16 +56,16 @@ substrate-basic-authorship = { git = "https://github.com/ProChain/substrate.git"
 substrate-service = { git = "https://github.com/ProChain/substrate.git", default-features = false }
 substrate-telemetry = { package = "substrate-telemetry", git = "https://github.com/ProChain/substrate.git" }
 
-# srml dependencies
-indices = { package = "srml-indices", git = "https://github.com/ProChain/substrate.git" }
-timestamp = { package = "srml-timestamp", git = "https://github.com/ProChain/substrate.git", default-features = false }
-finality_tracker = { package = "srml-finality-tracker", git = "https://github.com/ProChain/substrate.git", default-features = false }
-contracts = { package = "srml-contracts", git = "https://github.com/ProChain/substrate.git" }
-system = { package = "srml-system", git = "https://github.com/ProChain/substrate.git" }
-balances = { package = "srml-balances", git = "https://github.com/ProChain/substrate.git" }
-transaction-payment = { package = "srml-transaction-payment", git = "https://github.com/ProChain/substrate.git" }
-support = { package = "srml-support", git = "https://github.com/ProChain/substrate.git", default-features = false }
-im_online = { package = "srml-im-online", git = "https://github.com/ProChain/substrate.git", default-features = false }
+# palette dependencies
+indices = { package = "pallet-indices", git = "https://github.com/ProChain/substrate.git" }
+sp-timestamp = { package = "pallet-timestamp", git = "https://github.com/ProChain/substrate.git", default-features = false }
+sp-finality-tracker = { package = "pallet-finality-tracker", git = "https://github.com/ProChain/substrate.git", default-features = false }
+contracts = { package = "pallet-contracts", git = "https://github.com/ProChain/substrate.git" }
+system = { package = "palette-system", git = "https://github.com/ProChain/substrate.git" }
+balances = { package = "pallet-balances", git = "https://github.com/ProChain/substrate.git" }
+transaction-payment = { package = "pallet-transaction-payment", git = "https://github.com/ProChain/substrate.git" }
+support = { package = "palette-support", git = "https://github.com/ProChain/substrate.git", default-features = false }
+im_online = { package = "pallet-im-online", git = "https://github.com/ProChain/substrate.git", default-features = false }
 
 # node-specific dependencies
 node-runtime = { path = "../runtime" }

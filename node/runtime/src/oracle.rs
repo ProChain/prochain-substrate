@@ -1,25 +1,26 @@
-use app_crypto::{KeyTypeId, RuntimeAppPublic};
+use sr_primitives::app_crypto::{KeyTypeId, RuntimeAppPublic};
 use codec::{Decode, Encode};
 use primitives::offchain::{Duration, HttpRequestId, HttpRequestStatus};
 use rstd::result::Result;
 use rstd::vec::Vec;
-use sr_primitives::traits::Member;
+use sr_primitives::{
+    traits::Member,
+    transaction_validity::{
+		TransactionValidity, InvalidTransaction, ValidTransaction, UnknownTransaction, TransactionLongevity,
+		TransactionPriority
+    }
+};
 use support::{decl_event, decl_module, decl_storage, ensure, Parameter, StorageMap, StorageValue};
 use system::offchain::SubmitUnsignedTransaction;
 use system::{ensure_none, ensure_signed};
-
-/// only for debug
-fn debug(msg: &str) {
-    // let msg = format!("\x1b[34m{}", msg);
-    runtime_io::misc::print_utf8(msg.as_bytes());
-}
+use rstd::prelude::*;
 
 pub const KEY_TYPE: KeyTypeId = KeyTypeId(*b"orin");
 pub const BUFFER_LEN: usize = 2048;
 
 pub mod sr25519 {
     mod app_sr25519 {
-        use app_crypto::{app_crypto, sr25519};
+        use sr_primitives::app_crypto::{app_crypto, sr25519};
         app_crypto!(sr25519, super::super::KEY_TYPE);
 
         impl From<Signature> for sr_primitives::AnySignature {
@@ -54,7 +55,6 @@ pub trait Trait: timestamp::Trait {
     type AuthorityId: Member + Parameter + RuntimeAppPublic + Default + Ord;
     /// The overarching event type.
     type Event: From<Event<Self>> + Into<<Self as system::Trait>::Event>;
-
     /// A dispatchable call type.
     type Call: From<Call<Self>>;
     /// A transaction submitter.
@@ -71,11 +71,10 @@ decl_storage! {
         pub BlockNumber get(block_number): Option<T::BlockNumber>;
 
         /// Provide price value for external api consuming
-        pub PriceValue get(price_value): Option<Value>;
+        pub PriceValue get(price_value): Option<u32>;
 
         /// Values for specific block_number
         pub Values get(values): map T::BlockNumber => Option<BTCValue<T::BlockNumber>>;
-
     }
 }
 
@@ -121,9 +120,11 @@ decl_module! {
             Self::deposit_event(RawEvent::SetAuthority(sender));
         }
 
-        fn submit_value(origin, value: BTCValue<T::BlockNumber>
+        pub fn submit_value(origin, value: BTCValue<T::BlockNumber>
             // signature: <T::AuthorityId as RuntimeAppPublic>::Signature
         ) {
+            runtime_io::misc::print_utf8(b"submit value call happens ========");
+            runtime_io::misc::print_num(value.price as u64);
             ensure_none(origin)?;
 
             // verify the signature
@@ -152,6 +153,8 @@ impl<T: Trait> Module<T> {
         let nom_value = Self::request_nomics_value();
 
         let values: [u32; 3] = [cmc_value, cds_value, nom_value];
+        runtime_io::misc::print_utf8(b"=====result values:");
+        runtime_io::misc::print_utf8(&cmc_value.to_be_bytes());
         if let Some(average_value) = Self::average_values(values) {
             Self::update_value(average_value);
         }
@@ -187,6 +190,7 @@ impl<T: Trait> Module<T> {
     }
 
     fn request_gec_value() -> Value {
+        runtime_io::misc::print_utf8(b"request gec value========");
         let uri = "https://api.coingecko.com/api/v3/simple/price?ids=bitcoin&vs_currencies=usd";
         let res = Self::http_request_get(uri, None);
         match res {
@@ -196,6 +200,7 @@ impl<T: Trait> Module<T> {
     }
 
     fn request_cds_value() -> Value {
+        runtime_io::misc::print_utf8(b"request cds value========");
         let uri = "https://api.coindesk.com/v1/bpi/currentprice/USD.json";
         let res = Self::http_request_get(uri, None);
         match res {
@@ -205,6 +210,7 @@ impl<T: Trait> Module<T> {
     }
 
     fn request_nomics_value() -> Value {
+        runtime_io::misc::print_utf8(b"request nomic value========");
         let uri = "https://api.nomics.com/v1/currencies/ticker?key=3d93bdca7ee51ad25fcf650f2883b92d&ids=BTC";
         let res = Self::http_request_get(uri, None);
         match res {
@@ -218,6 +224,7 @@ impl<T: Trait> Module<T> {
         header: Option<(&str, &str)>,
     ) -> Result<[u8; BUFFER_LEN], &'static str> {
         // TODO: extract id, maybe use for other place
+        runtime_io::misc::print_utf8(b"request http request ========");
         let id: HttpRequestId = runtime_io::offchain::http_request_start("GET", uri, &[0]).unwrap();
         let deadline = runtime_io::offchain::timestamp().add(Duration::from_millis(10_000));
 
@@ -241,7 +248,7 @@ impl<T: Trait> Module<T> {
         match res {
             Ok(_len) => {
                 let result = &buf[..BUFFER_LEN];
-                // runtime_io::print_utf8(result);
+                // runtime_io::misc::print_utf8(result);
 
                 let mut res: [u8; BUFFER_LEN] = [0; BUFFER_LEN];
                 res.copy_from_slice(result);
@@ -280,11 +287,14 @@ impl<T: Trait> Module<T> {
 
     fn update_value(value: Value) -> Result<(), &'static str> {
         let block_number = Self::block_number();
+        runtime_io::misc::print_utf8(b"in update ========");
         ensure!(block_number.is_some(), "block number can not be empty");
         let block_number = block_number.unwrap();
 
         // let key = Self::authorised_key();
         // if let Some(_key) = key {
+        runtime_io::misc::print_utf8(b"update btc value: ========");
+        runtime_io::misc::print_num(value as u64);
         let btc_value = BTCValue {
             block_number,
             price: value,
@@ -297,12 +307,72 @@ impl<T: Trait> Module<T> {
         let result = T::SubmitTransaction::submit_unsigned(call);
         match result {
             Ok(_) => runtime_io::misc::print_utf8(b"execute off-chain worker success"),
-            Err(_) => runtime_io::misc::print_utf8(b"execute off-chain worker failed!"),
-        }
+            Err(_) => {
+                runtime_io::misc::print_utf8(b"execute off-chain worker failed!");
+                return Err("error happens when submit unsigned transaction of btc value")
+			},
+		}
         // } else {
-        //     runtime_io::print_utf8(b"No authorised key found!");
+        //      runtime_io::misc::print_utf8(b"No authorised key found!");
         // }
 
+        runtime_io::misc::print_utf8(b"=========end of update btc value: ========");
         Ok(())
+    }
+}
+
+impl<T: Trait> support::unsigned::ValidateUnsigned for Module<T> {
+    type Call = Call<T>;
+
+    fn validate_unsigned(call: &Self::Call) -> TransactionValidity {
+//        let current_session = <session::Module<T>>::current_index();
+        match call {
+            Call::submit_value(_) => Ok(ValidTransaction {
+                priority: TransactionPriority::max_value(),
+                requires: vec![],
+                provides: vec![0.encode()],
+                longevity: TransactionLongevity::max_value(),
+                propagate: true,
+            }),
+            _ => UnknownTransaction::NoUnsignedValidator.into(),
+        }
+//        if let Call::heartbeat(heartbeat, signature) = call {
+//            if <Module<T>>::is_online_in_current_session(heartbeat.authority_index) {
+//                // we already received a heartbeat for this authority
+//                return InvalidTransaction::Stale.into();
+//            }
+//
+//            // check if session index from heartbeat is recent
+//            let current_session = <session::Module<T>>::current_index();
+//            if heartbeat.session_index != current_session {
+//                return InvalidTransaction::Stale.into();
+//            }
+//
+//            // verify that the incoming (unverified) pubkey is actually an authority id
+//            let keys = Keys::<T>::get();
+//            let authority_id = match keys.get(heartbeat.authority_index as usize) {
+//                Some(id) => id,
+//                None => return InvalidTransaction::BadProof.into(),
+//            };
+//
+//            // check signature (this is expensive so we do it last).
+//            let signature_valid = heartbeat.using_encoded(|encoded_heartbeat| {
+//                authority_id.verify(&encoded_heartbeat, &signature)
+//            });
+//
+//            if !signature_valid {
+//                return InvalidTransaction::BadProof.into();
+//            }
+//
+//            Ok(ValidTransaction {
+//                priority: 0,
+//                requires: vec![],
+//                provides: vec![(current_session, authority_id).encode()],
+//                longevity: TransactionLongevity::max_value(),
+//                propagate: true,
+//            })
+//        } else {
+//            InvalidTransaction::Call.into()
+//        }
     }
 }
