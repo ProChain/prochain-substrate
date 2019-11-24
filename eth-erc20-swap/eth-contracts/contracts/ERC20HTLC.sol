@@ -12,13 +12,13 @@ interface ERC20 {
 contract ERC20HTLC {
 
     struct Swap {
-        uint256 outAmount;
-        uint256 expireHeight;
+        uint256 outAmount;     //The ERC20 Pra amount to swap out
+        uint256 expireHeight;  //The height of blocks to wait before the asset can be returned to sender
         bytes32 randomNumberHash;
         uint64  timestamp;
         address senderAddr;    //The swap creator ethereum address
         uint256 senderChainType;
-        string  receiverAddr;  //The PRA address to swap out
+        string  receiverAddr;  //The PRA address (DID) to swap out
         uint256 receiverChainType;
         address recipientAddr; //The ethereum address to lock swapped assets
     }
@@ -39,7 +39,7 @@ contract ERC20HTLC {
     event HTLC(address indexed _msgSender, address _recipientAddr, string indexed _receiverAddr, bytes32 indexed _swapID, bytes32 _randomNumberHash, uint64 _timestamp, uint256 _expireHeight, uint256 _outAmount, uint256 _praAmount);
     event Claimed(address indexed _msgSender, address _recipientAddr, string indexed _receiverAddr, bytes32 indexed _swapID, bytes32 _randomNumber);
     event Refunded(address indexed _msgSender, address _recipientAddr, string indexed _receiverAddr, bytes32 indexed _swapID, bytes32 _randomNumberHash);
-    
+
     // Storage, key: swapID
     mapping (bytes32 => Swap) private swaps;
     mapping (bytes32 => States) private swapStates;
@@ -127,7 +127,7 @@ contract ERC20HTLC {
 
         // Emit initialization event
         emit HTLC(msg.sender, _recipientAddr, _receiverAddr, swapID, _randomNumberHash, _timestamp, swap.expireHeight, _outAmount, _praAmount);
-        
+
         return true;
     }
 

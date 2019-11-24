@@ -67,8 +67,8 @@ use constants::{time::*, currency::*};
 
 mod did;
 mod check;
-
 mod oracle;
+mod swaps;
 
 // Make the WASM binary available.
 #[cfg(feature = "std")]
@@ -519,6 +519,15 @@ impl oracle::Trait for Runtime {
 	type SubmitTransaction = SubmitTransactionOracle;
 }
 
+impl swaps::Trait for Runtime {
+    //type Call = Call;
+    type Event = Event;
+    //type Balance = Balance;
+    //type AuthorityId = OracleId;
+    //type SubmitTransaction = SubmitTransaction;
+    type Currency = Balances;
+}
+
 construct_runtime!(
 	pub enum Runtime where
 		Block = Block,
@@ -552,6 +561,7 @@ construct_runtime!(
 		Nicks: nicks::{Module, Call, Storage, Event<T>},
 		Did: did::{Module, Storage, Call, Config<T>, Event<T>},
 		Oracle: oracle::{Module, Storage, Call, Event<T>, ValidateUnsigned},
+		SWAPS: swaps::{Module, Storage, Call, Event<T>},
 	}
 );
 
