@@ -75,10 +75,26 @@ To start up the Prochain node, run:
     "subordinate_count": "u64",
     "external_address": "ExternalAddress"
   },
-  "Value": "u32"
+  "Value": "u32",
+	"HTLC": {
+    "block_number": "u32",
+    "out_amount": "Balance",
+    "expire_height": "BlockNumber",
+    "random_number_hash": "Hash",
+    "swap_id": "Hash",
+    "timestamp": "Moment",
+    "sender_addr": "Vec<u8>",
+    "sender_chain_type": "u64",
+    "receiver_addr": "AccountId",
+    "receiver_chain_type": "u64",
+    "recipient_addr": "Vec<u8>"
+  },
+	"BlockNumber": "u32",
+  "BTCValue": {
+    "price": "u32",
+    "block_number": "u32"
+  }
 }
-
-
 ```
 
 # Development
