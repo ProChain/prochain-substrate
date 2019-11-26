@@ -124,6 +124,8 @@ decl_module! {
 
 			let htlc = Self::swap_data(swap_id).unwrap();
 
+			//T::Currency::ensure_can_withdraw(&sender);
+
 			// transfer locked asset to receiver
 			//Self::transfer_to(&sender, &(htlc.receiver_addr.clone()), htlc.out_amount);
 
