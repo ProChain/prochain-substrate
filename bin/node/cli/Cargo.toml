@@ -42,16 +42,19 @@ sr-primitives = { git = "https://github.com/ProChain/substrate.git" }
 sp-timestamp = { git = "https://github.com/ProChain/substrate.git", default-features = false }
 
 # core dependencies
+sp-finality-tracker = { git = "https://github.com/ProChain/substrate.git", default-features = false }
+inherents = { package = "substrate-inherents", git = "https://github.com/ProChain/substrate.git" }
+keyring = { package = "substrate-keyring", git = "https://github.com/ProChain/substrate.git" }
 runtime-io = { package = "sr-io", git = "https://github.com/ProChain/substrate.git" }
+
+# client dependencies
 client-api = { package = "substrate-client-api", git = "https://github.com/ProChain/substrate.git" }
 client = { package = "substrate-client", git = "https://github.com/ProChain/substrate.git" }
-inherents = { package = "substrate-inherents", git = "https://github.com/ProChain/substrate.git" }
 chain-spec = { package = "substrate-chain-spec", git = "https://github.com/ProChain/substrate.git" }
-transaction_pool = { package = "substrate-transaction-pool", git = "https://github.com/ProChain/substrate.git" }
+transaction_pool = { package = "sc-transaction-pool", git = "https://github.com/ProChain/substrate.git" }
 network = { package = "substrate-network", git = "https://github.com/ProChain/substrate.git" }
 babe = { package = "substrate-consensus-babe", git = "https://github.com/ProChain/substrate.git" }
 grandpa = { package = "substrate-finality-grandpa", git = "https://github.com/ProChain/substrate.git" }
-keyring = { package = "substrate-keyring", git = "https://github.com/ProChain/substrate.git" }
 client_db = { package = "substrate-client-db", git = "https://github.com/ProChain/substrate.git", default-features = false }
 offchain = { package = "substrate-offchain", git = "https://github.com/ProChain/substrate.git" }
 substrate-rpc = { package = "substrate-rpc", git = "https://github.com/ProChain/substrate.git" }
@@ -63,7 +66,6 @@ authority-discovery = { package = "substrate-authority-discovery", git = "https:
 # frame dependencies
 indices = { package = "pallet-indices", git = "https://github.com/ProChain/substrate.git" }
 timestamp = { package = "pallet-timestamp", git = "https://github.com/ProChain/substrate.git", default-features = false }
-sp-finality-tracker = { git = "https://github.com/ProChain/substrate.git", default-features = false }
 contracts = { package = "pallet-contracts", git = "https://github.com/ProChain/substrate.git" }
 system = { package = "frame-system", git = "https://github.com/ProChain/substrate.git" }
 balances = { package = "pallet-balances", git = "https://github.com/ProChain/substrate.git" }

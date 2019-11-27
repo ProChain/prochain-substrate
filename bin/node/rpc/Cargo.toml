@@ -12,5 +12,5 @@ node-runtime = { path = "../runtime" }
 sr-primitives = { git = "https://github.com/ProChain/substrate.git" }
 pallet-contracts-rpc = { git = "https://github.com/ProChain/substrate.git" }
 pallet-transaction-payment-rpc = { git = "https://github.com/ProChain/substrate.git" }
-frame-system-rpc = { git = "https://github.com/ProChain/substrate.git" }
-transaction_pool = { package = "substrate-transaction-pool", git = "https://github.com/ProChain/substrate.git" }
+substrate-frame-rpc-system = { path = "../../../utils/frame/rpc/system" }
+transaction_pool = { package = "sc-transaction-pool", git = "https://github.com/ProChain/substrate.git" }

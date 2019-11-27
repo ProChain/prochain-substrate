@@ -16,4 +16,5 @@ primitives = { package = "substrate-primitives", git = "https://github.com/ProCh
 sr-api = { git = "https://github.com/ProChain/substrate.git" }
 sr-primitives = { git = "https://github.com/ProChain/substrate.git" }
 substrate-service = { git = "https://github.com/ProChain/substrate.git" }
+sp-blockchain = { git = "https://github.com/ProChain/substrate.git" }
 

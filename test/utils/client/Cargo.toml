@@ -16,4 +16,5 @@ keyring = { package = "substrate-keyring", git = "https://github.com/ProChain/su
 codec = { package = "parity-scale-codec", version = "1.0.0" }
 primitives = { package = "substrate-primitives", git = "https://github.com/ProChain/substrate.git" }
 sr-primitives = {  git = "https://github.com/ProChain/substrate.git" }
+sp-blockchain = { git = "https://github.com/ProChain/substrate.git" }
 state_machine = { package = "substrate-state-machine", git = "https://github.com/ProChain/substrate.git" }

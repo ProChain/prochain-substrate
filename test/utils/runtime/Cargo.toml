@@ -35,7 +35,7 @@ pallet-timestamp = { git = "https://github.com/ProChain/substrate.git", default-
 substrate-client = { git = "https://github.com/ProChain/substrate.git", optional = true }
 substrate-trie = { git = "https://github.com/ProChain/substrate.git", default-features = false }
 transaction-pool-api = { package = "substrate-transaction-pool-runtime-api", git = "https://github.com/ProChain/substrate.git", default-features = false }
-trie-db = { version = "0.16.0", default-features = false }
+trie-db = { version = "0.15.2", default-features = false }
 
 [dev-dependencies]
 substrate-executor = { git = "https://github.com/ProChain/substrate.git" }
