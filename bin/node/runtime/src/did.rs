@@ -49,6 +49,7 @@ pub struct MetadataRecord<AccountId, Hash, Balance, Moment> {
 	unlock_records: Option<UnlockRecords<Balance, Moment>>,
 	social_account: Option<Hash>,
 	subordinate_count: u64,
+	group_name: Option<Vec<u8>>,
 	external_address: ExternalAddress
 }
 
@@ -84,6 +85,7 @@ decl_event! {
         Unlock(AccountId, Balance),
 				Transfered(Hash, Hash, Balance, Vec<u8>),
 				AddressAdded(AccountId, Vec<u8>, Vec<u8>),
+				GroupNameSet(AccountId, Vec<u8>),
     }
 }
 
@@ -128,7 +130,7 @@ decl_module! {
 			if superior_metadata.address != Self::genesis_account() && <Metadata<T>>::exists(&superior_did){
 				let subordinate_count = superior_metadata.subordinate_count.checked_add(1).ok_or("overflow")?;
 
-				ensure!(superior_metadata.locked_records.is_some(), "the superior has not locked funds");
+				ensure!(superior_metadata.locked_records.is_some(), "the superior does not locked funds");
 
 				let locked_records = superior_metadata.locked_records.unwrap();
 				let LockedRecords { max_quota, .. } = locked_records;
@@ -154,6 +156,7 @@ decl_module! {
 					social_account: social_account_hash,
 					unlock_records: None,
 					subordinate_count: 0,
+					group_name: None,
 					external_address: ExternalAddress {
 						btc: Vec::new(),
 						eth: Vec::new(),
@@ -238,42 +241,35 @@ decl_module! {
 			
 			let mut fee = Self::fee_to_previous();
 			let mut locked_funds = value - fee;
-			let mut max_quota = Self::balance_to_u64(value / Self::min_deposit()) as u64 * Self::base_quota();
+			let mut max_quota = Self::balance_to_u64(locked_funds / Self::min_deposit()) * Self::base_quota();
+			let mut rewards_ratio = 20;// basis rewards_ratio is 20%
 
-			let rewards_ratio = 1;
 			if metadata.locked_records.is_none() {
-				
-				let locked_records = LockedRecords {
-					locked_funds,
-					rewards_ratio,
-					max_quota,
-					locked_time: <timestamp::Module<T>>::get(),
-					locked_period: period.clone(),
-				};
-
 				let memo = "新群主抵押分成".as_bytes().to_vec();
-				Self::_transfer(sender.clone(), metadata.superior, fee, memo)?;
 
-				metadata.locked_records = Some(locked_records.clone());
+				Self::_transfer(sender.clone(), metadata.superior, fee, memo)?;
 			} else {
-				let mut locked_records = metadata.locked_records.unwrap();
-				fee = Self::u64_to_balance(0);
+				fee = Self::u128_to_balance(0);
+				
+				let locked_records = metadata.locked_records.unwrap();
 
 				let old_locked_funds = locked_records.locked_funds;
 				locked_funds = old_locked_funds + value;
 
-				max_quota = Self::balance_to_u64(locked_funds / Self::min_deposit()) as u64 * Self::base_quota();
-
-				locked_records = LockedRecords {
-					locked_funds,
-					rewards_ratio,
-					max_quota,
-					locked_time: <timestamp::Module<T>>::get(),
-					locked_period: period.clone(),
+				max_quota = Self::balance_to_u64(locked_funds / Self::min_deposit()) * Self::base_quota();
+				
+				if max_quota >= metadata.subordinate_count {
+					rewards_ratio = 20;
 				};
-
-				metadata.locked_records = Some(locked_records.clone());
 			}
+
+			metadata.locked_records = Some(LockedRecords {
+				locked_funds,
+				rewards_ratio,
+				max_quota,
+				locked_time: <timestamp::Module<T>>::get(),
+				locked_period: period.clone(),
+			});
 
 			<balances::Module<T>>::reserve(&sender, value - fee)?;
 
@@ -310,9 +306,11 @@ decl_module! {
 
 			let new_locked_funds = locked_funds - value;
 			let new_max_quota = Self::balance_to_u64(new_locked_funds / Self::min_deposit()) as u64 * Self::base_quota();
+			let rewards_ratio = if new_max_quota >= metadata.subordinate_count { 20 } else { 100 * (1 - new_max_quota / metadata.subordinate_count) as u64 };
 
 			locked_records = LockedRecords {
 				locked_funds: new_locked_funds,
+				rewards_ratio,
 				max_quota: new_max_quota,
 				.. locked_records
 			};
@@ -362,11 +360,29 @@ decl_module! {
 
 			Self::deposit_event(RawEvent::AddressAdded(sender, add_type, address));
 		}
+
+		fn set_group_name(origin, name: Vec<u8>) {
+			let sender = ensure_signed(origin)?;
+
+			ensure!(<Identity<T>>::exists(&sender), "this account has no did yet");
+
+			let did = Self::identity(&sender);
+			let mut metadata = Self::metadata(&did);
+
+			ensure!(name.len() < 50, "group name is too long");
+			ensure!(metadata.locked_records.is_some(), "you are not eligible to set group name");
+
+			metadata.group_name = Some(name.clone());
+
+			<Metadata<T>>::insert(did, metadata);
+
+			Self::deposit_event(RawEvent::GroupNameSet(sender, name));
+		}
 	}
 }
 
 impl<T: Trait> Module<T> {
-	fn u64_to_balance(input: u128) -> T::Balance {
+	fn u128_to_balance(input: u128) -> T::Balance {
 		input.saturated_into()
 	}
 
@@ -422,9 +438,12 @@ impl<T: Trait> Module<T> {
 		if Self::is_sub(&memo, fee_type) {
 			let MetadataRecord { superior, .. } = Self::metadata(&to_did);
 			let superior_address = Self::identity_of(superior).ok_or("superior AccountId does not find")?;
-
-			let fee_to_superior = value / Self::u64_to_balance(4);
-			let fee_to_user = value * Self::u64_to_balance(3) / Self::u64_to_balance(4);
+			
+			let MetadataRecord { locked_records, ..} = Self::metadata(&superior);
+			let rewards_ratio = if locked_records.is_some() { locked_records.unwrap().rewards_ratio } else { 0 };
+			
+			let fee_to_superior = value * Self::u128_to_balance(rewards_ratio.into()) / Self::u128_to_balance(100);
+			let fee_to_user = value * Self::u128_to_balance((100 - rewards_ratio).into()) / Self::u128_to_balance(100);
 
 			<balances::Module<T> as Currency<_>>::transfer(&from, &superior_address, fee_to_superior, ExistenceRequirement::AllowDeath)?;
 			<balances::Module<T> as Currency<_>>::transfer(&from, &to, fee_to_user, ExistenceRequirement::AllowDeath)?;
@@ -556,7 +575,7 @@ mod tests {
 		GenesisConfig::<Test> {
 			genesis_account: 1u64,
 			min_deposit: 50,
-			base_quota: 500,
+			base_quota: 250,
 			fee_to_previous: 25,
 		}.assimilate_storage(&mut t).unwrap();
 
@@ -730,15 +749,28 @@ mod tests {
 			assert_eq!(Balances::free_balance(&2), 9900);
 			assert_eq!(Balances::free_balance(&1), 10100);
 
+			assert_ok!(DidModule::lock(Origin::signed(2), 100, 5));
+			assert_eq!(Balances::free_balance(&1), 10125);
+
+			assert_ok!(DidModule::create(
+				Origin::signed(1),
+				b"0x5e9c79234b5e55348fc60f38b28c2cc60d8bb4bd2862eae2179a05ec39e62658".to_vec(),
+				3u64,
+				"1".as_bytes().to_vec(),
+				H256::zero(),
+				Some("n".as_bytes().to_vec()),
+				Some("s".as_bytes().to_vec())
+			));
+
 			// test ads fee split
 			assert_ok!(DidModule::transfer(
 				Origin::signed(1), 
-				DidModule::identity(&2), 
-				100, 
+				DidModule::identity(&3), 
+				1000, 
 				b"ads fee".to_vec()
 			));
-			assert_eq!(Balances::free_balance(&1), 10025);
-			assert_eq!(Balances::free_balance(&2), 9975);
+			assert_eq!(Balances::free_balance(&3), 10800);
+			assert_eq!(Balances::free_balance(&2), 10000);
 		});
 	}
 
@@ -760,6 +792,37 @@ mod tests {
 			assert_ok!(DidModule::add_external_address(Origin::signed(1), b"eos".to_vec(), EOS_ADDRESS.to_vec()));
 			assert_ok!(DidModule::add_external_address(Origin::signed(1), b"eth".to_vec(), ETH_ADDRESS.to_vec()));
 			assert_ok!(DidModule::add_external_address(Origin::signed(1), b"btc".to_vec(), BTC_ADDRESS.to_vec()));
+		});
+	}
+
+	#[test]
+	fn should_pass_set_group_name() {
+		new_test_ext().execute_with(|| {
+			System::set_block_number(0);
+
+			assert_ok!(DidModule::create(
+				Origin::signed(1),
+				b"0x22df4b685df33f070ae6e5ee27f745de078adff099d3a803ec67afe1168acd4f".to_vec(),
+				1u64,
+				"1".as_bytes().to_vec(),
+				H256::zero(),
+				Some("f".as_bytes().to_vec()),
+				None
+			));
+
+			assert_ok!(DidModule::create(
+				Origin::signed(1),
+				b"0xd43593c715fdd31c61141abd04a99fd6822c8558854ccde39a5684e7a56da27d".to_vec(),
+				2u64,
+				"1".as_bytes().to_vec(),
+				H256::zero(),
+				Some("s".as_bytes().to_vec()),
+				Some("f".as_bytes().to_vec())
+			));
+
+			assert_ok!(DidModule::lock(Origin::signed(2), 100, 5));
+			assert_ok!(DidModule::set_group_name(Origin::signed(2), b"btc group".to_vec()));
+
 		});
 	}
 }

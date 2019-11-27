@@ -292,7 +292,7 @@ pub fn testnet_genesis(
 		did: Some(DidConfig {
 			genesis_account: hex!["22df4b685df33f070ae6e5ee27f745de078adff099d3a803ec67afe1168acd4f"].into(),
 			min_deposit: 50 * MILLICENTS,
-			base_quota: 500,
+			base_quota: 250,
 			fee_to_previous: 25 * MILLICENTS,
 		}),
 	}
