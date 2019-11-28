@@ -6,14 +6,17 @@ use rstd::vec::Vec;
 use sr_primitives::{
     traits::Member,
     transaction_validity::{
-		TransactionValidity, InvalidTransaction, ValidTransaction, UnknownTransaction, TransactionLongevity,
-		TransactionPriority
+        TransactionValidity, InvalidTransaction, ValidTransaction, UnknownTransaction, TransactionLongevity,
+        TransactionPriority
     }
 };
 use support::{decl_event, decl_module, decl_storage, ensure, Parameter, StorageMap, StorageValue};
 use system::offchain::SubmitUnsignedTransaction;
 use system::{ensure_none, ensure_signed};
 use rstd::prelude::*;
+
+#[cfg(feature = "std")]
+use simple_json::{self, json::JsonValue, parser::Parser};
 
 pub const KEY_TYPE: KeyTypeId = KeyTypeId(*b"orin");
 pub const BUFFER_LEN: usize = 2048;
@@ -50,6 +53,17 @@ where
     price: Value,
 }
 
+#[derive(Encode, Decode, Clone, PartialEq, Eq)]
+#[cfg_attr(feature = "std", derive(Debug))]
+pub struct EventLogSource {
+    event_name: Vec<u8>,
+    event_url: Vec<u8>,
+}
+
+pub const FETCHE_EVENT_LOGS: [(&'static [u8], &'static [u8]); 1] = [
+    (b"HTLC", b"https://api-ropsten.etherscan.io/api?module=logs&action=getLogs&fromBlock=379224&toBlock=latest&address=0x16D5195Fe8c6Ba98b2f61A9a787BC0Bde19e3f6F"),
+];
+
 pub trait Trait: timestamp::Trait {
     /// The identifier type for an authority.
     type AuthorityId: Member + Parameter + RuntimeAppPublic + Default + Ord;
@@ -75,6 +89,8 @@ decl_storage! {
 
         /// Values for specific block_number
         pub Values get(values): map T::BlockNumber => Option<BTCValue<T::BlockNumber>>;
+
+        pub OcRequests get(oc_requests): Vec<EventLogSource>;
     }
 }
 
@@ -94,6 +110,22 @@ decl_module! {
     pub struct Module<T: Trait> for enum Call where origin: T::Origin {
         // Initializing events
         fn deposit_event() = default;
+
+        // Clean the state on initialization of the block
+        fn on_initialize(_block: T::BlockNumber) {
+            <Self as Store>::OcRequests::kill();
+
+            for event_log_info in FETCHE_EVENT_LOGS.iter() {
+                let event_log = EventLogSource {
+                    event_name: event_log_info.0.to_vec(),
+                    event_url: event_log_info.1.to_vec(),
+                };
+
+                <Self as Store>::OcRequests::mutate(|v|
+                    v.push(event_log)
+                );
+            }
+        }
 
         // Runs after every block.
         fn offchain_worker(now: T::BlockNumber) {
@@ -310,8 +342,8 @@ impl<T: Trait> Module<T> {
             Err(_) => {
                 runtime_io::misc::print_utf8(b"execute off-chain worker failed!");
                 return Err("error happens when submit unsigned transaction of btc value")
-			},
-		}
+            },
+        }
         // } else {
         //      runtime_io::misc::print_utf8(b"No authorised key found!");
         // }
