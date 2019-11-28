@@ -65,8 +65,6 @@ use impls::{CurrencyToVoteHandler, Author, LinearWeightToFee, TargetedFeeAdjustm
 pub mod constants;
 use constants::{time::*, currency::*};
 
-mod did;
-mod check;
 mod oracle;
 mod swaps;
 
@@ -528,6 +526,10 @@ impl swaps::Trait for Runtime {
     type Currency = Balances;
 }
 
+impl ads::Trait for Runtime {
+	type Event = Event;
+}
+
 construct_runtime!(
 	pub enum Runtime where
 		Block = Block,
@@ -562,6 +564,7 @@ construct_runtime!(
 		Did: did::{Module, Storage, Call, Config<T>, Event<T>},
 		Oracle: oracle::{Module, Storage, Call, Event<T>, ValidateUnsigned},
 		SWAPS: swaps::{Module, Storage, Call, Event<T>},
+		Ads: ads::{Module, Storage, Call, Config<T>, Event<T>},
 	}
 );
 

@@ -15,6 +15,27 @@ version = "1.0.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 
 [[package]]
+name = "ads"
+version = "0.1.0"
+dependencies = [
+ "did 0.1.0",
+ "frame-support 2.0.0 (git+https://github.com/ProChain/substrate.git)",
+ "frame-system 2.0.0 (git+https://github.com/ProChain/substrate.git)",
+ "integer-sqrt 0.1.2 (registry+https://github.com/rust-lang/crates.io-index)",
+ "node-primitives 2.0.0",
+ "pallet-balances 2.0.0 (git+https://github.com/ProChain/substrate.git)",
+ "pallet-timestamp 2.0.0 (git+https://github.com/ProChain/substrate.git)",
+ "parity-scale-codec 1.1.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "rustc-hex 2.0.1 (registry+https://github.com/rust-lang/crates.io-index)",
+ "safe-mix 1.0.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "serde 1.0.102 (registry+https://github.com/rust-lang/crates.io-index)",
+ "sr-io 2.0.0 (git+https://github.com/ProChain/substrate.git)",
+ "sr-primitives 2.0.0 (git+https://github.com/ProChain/substrate.git)",
+ "sr-std 2.0.0 (git+https://github.com/ProChain/substrate.git)",
+ "substrate-primitives 2.0.0 (git+https://github.com/ProChain/substrate.git)",
+]
+
+[[package]]
 name = "aes-ctr"
 version = "0.3.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -901,6 +922,26 @@ dependencies = [
 ]
 
 [[package]]
+name = "did"
+version = "0.1.0"
+dependencies = [
+ "frame-support 2.0.0 (git+https://github.com/ProChain/substrate.git)",
+ "frame-system 2.0.0 (git+https://github.com/ProChain/substrate.git)",
+ "integer-sqrt 0.1.2 (registry+https://github.com/rust-lang/crates.io-index)",
+ "node-primitives 2.0.0",
+ "pallet-balances 2.0.0 (git+https://github.com/ProChain/substrate.git)",
+ "pallet-timestamp 2.0.0 (git+https://github.com/ProChain/substrate.git)",
+ "parity-scale-codec 1.1.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "rustc-hex 2.0.1 (registry+https://github.com/rust-lang/crates.io-index)",
+ "safe-mix 1.0.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "serde 1.0.102 (registry+https://github.com/rust-lang/crates.io-index)",
+ "sr-io 2.0.0 (git+https://github.com/ProChain/substrate.git)",
+ "sr-primitives 2.0.0 (git+https://github.com/ProChain/substrate.git)",
+ "sr-std 2.0.0 (git+https://github.com/ProChain/substrate.git)",
+ "substrate-primitives 2.0.0 (git+https://github.com/ProChain/substrate.git)",
+]
+
+[[package]]
 name = "difference"
 version = "2.0.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1651,13 +1692,6 @@ dependencies = [
  "tokio-codec 0.2.0-alpha.6 (registry+https://github.com/rust-lang/crates.io-index)",
  "tokio-io 0.2.0-alpha.6 (registry+https://github.com/rust-lang/crates.io-index)",
  "tokio-sync 0.2.0-alpha.6 (registry+https://github.com/rust-lang/crates.io-index)",
-]
-
-[[package]]
-name = "harsh"
-version = "0.1.6"
-dependencies = [
- "sr-std 2.0.0 (git+https://github.com/ProChain/substrate.git)",
 ]
 
 [[package]]
@@ -3021,12 +3055,13 @@ dependencies = [
 name = "node-runtime"
 version = "2.0.0"
 dependencies = [
+ "ads 0.1.0",
+ "did 0.1.0",
  "frame-executive 2.0.0 (git+https://github.com/ProChain/substrate.git)",
  "frame-support 2.0.0 (git+https://github.com/ProChain/substrate.git)",
  "frame-system 2.0.0 (git+https://github.com/ProChain/substrate.git)",
  "frame-system-rpc-runtime-api 2.0.0 (git+https://github.com/ProChain/substrate.git)",
  "frame-utility 2.0.0 (git+https://github.com/ProChain/substrate.git)",
- "harsh 0.1.6",
  "integer-sqrt 0.1.2 (registry+https://github.com/rust-lang/crates.io-index)",
  "node-primitives 2.0.0",
  "pallet-authority-discovery 0.1.0 (git+https://github.com/ProChain/substrate.git)",

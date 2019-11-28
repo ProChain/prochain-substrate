@@ -1,9 +1,3 @@
-//! A Rust-native implementation of Hashids.
-
-#![warn(missing_docs)]
-
-#![cfg_attr(not(feature = "std"), no_std)]
-
 use rstd::vec::Vec;
 use rstd::prelude::{Box};
 
@@ -16,12 +10,12 @@ const MINIMUM_ALPHABET_LENGTH: usize = 16;
 /// A hashids-compatible hasher.
 ///
 /// It's probably not a great idea to use the default, because in that case
-/// your values will be entirely trivial to decode. On the other hand, this is
+/// your values will be entirely trivial to _decode. On the other hand, this is
 /// not intended to be cryptographically-secure, so go nuts!
 #[derive(Clone, Debug)]
 pub struct Harsh {
     salt: Box<[u8]>,
-    alphabet: Box<[u8]>,
+    _alphabet: Box<[u8]>,
     separators: Box<[u8]>,
     hash_length: usize,
     guards: Box<[u8]>,
@@ -36,28 +30,28 @@ impl Harsh {
 
         let nhash = create_nhash(values);
 
-        let mut alphabet = self.alphabet.clone();
+        let mut _alphabet = self._alphabet.clone();
         let mut buffer = Vec::new();
 
-        let idx = (nhash % alphabet.len() as u64) as usize;
-        let lottery = alphabet[idx];
+        let idx = (nhash % _alphabet.len() as u64) as usize;
+        let lottery = _alphabet[idx];
         buffer.push(lottery);
 
         for (idx, &value) in values.iter().enumerate() {
             let mut value = value;
 
             let temp = {
-                let mut temp = Vec::with_capacity(self.salt.len() + alphabet.len() + 1);
+                let mut temp = Vec::with_capacity(self.salt.len() + _alphabet.len() + 1);
                 temp.push(lottery);
                 temp.extend_from_slice(&self.salt);
-                temp.extend_from_slice(&alphabet);
+                temp.extend_from_slice(&_alphabet);
                 temp
             };
 
-            let alphabet_len = alphabet.len();
-            shuffle(&mut alphabet, &temp[..alphabet_len]);
+            let alphabet_len = _alphabet.len();
+            shuffle(&mut _alphabet, &temp[..alphabet_len]);
 
-            let last = hash(value, &alphabet);
+            let last = hash(value, &_alphabet);
             buffer.append(&mut last.clone());
 
             if idx + 1 < values.len() {
@@ -83,14 +77,14 @@ impl Harsh {
             }
         }
 
-        let half_length = alphabet.len() / 2;
+        let half_length = _alphabet.len() / 2;
         while buffer.len() < self.hash_length {
             {
-                let alphabet_copy = alphabet.clone();
-                shuffle(&mut alphabet, &alphabet_copy);
+                let alphabet_copy = _alphabet.clone();
+                shuffle(&mut _alphabet, &alphabet_copy);
             }
 
-            let (left, right) = alphabet.split_at(half_length);
+            let (left, right) = _alphabet.split_at(half_length);
             
             buffer = [left, &buffer[..], right].concat();
 
@@ -105,7 +99,7 @@ impl Harsh {
     }
 
     /// Decodes a single hashid into a slice of `u64` values.
-    pub fn decode(&self, value: &[u8]) -> Option<Vec<u64>> {
+    pub fn _decode(&self, value: &[u8]) -> Option<Vec<u64>> {
         let mut value = value.as_ref().to_vec();
 
         if let Some(guard_idx) = value.iter().rposition(|u| self.guards.contains(u)) {
@@ -121,7 +115,7 @@ impl Harsh {
             return None;
         }
 
-        let mut alphabet = self.alphabet.clone();
+        let mut _alphabet = self._alphabet.clone();
 
         let lottery = value[0];
         let value = &value[1..];
@@ -131,16 +125,16 @@ impl Harsh {
             .into_iter()
             .map(|segment| {
                 let buffer = {
-                    let mut buffer = Vec::with_capacity(self.salt.len() + alphabet.len() + 1);
+                    let mut buffer = Vec::with_capacity(self.salt.len() + _alphabet.len() + 1);
                     buffer.push(lottery);
                     buffer.extend_from_slice(&self.salt);
-                    buffer.extend_from_slice(&alphabet);
+                    buffer.extend_from_slice(&_alphabet);
                     buffer
                 };
 
-                let alphabet_len = alphabet.len();
-                shuffle(&mut alphabet, &buffer[..alphabet_len]);
-                unhash(segment, &alphabet)
+                let alphabet_len = _alphabet.len();
+                shuffle(&mut _alphabet, &buffer[..alphabet_len]);
+                _unhash(segment, &_alphabet)
             })
             .collect()
     }
@@ -156,7 +150,7 @@ impl Default for Harsh {
 #[derive(Debug, Default)]
 pub struct HarshBuilder {
     salt: Option<Vec<u8>>,
-    alphabet: Option<Vec<u8>>,
+    _alphabet: Option<Vec<u8>>,
     separators: Option<Vec<u8>>,
     hash_length: usize,
 }
@@ -166,7 +160,7 @@ impl HarshBuilder {
     pub fn new() -> HarshBuilder {
         HarshBuilder {
             salt: None,
-            alphabet: None,
+            _alphabet: None,
             separators: None,
             hash_length: 0,
         }
@@ -181,12 +175,12 @@ impl HarshBuilder {
         self
     }
 
-    /// Provides an alphabet.
+    /// Provides an _alphabet.
     ///
-    /// Note that this alphabet will be converted into a `[u8]` before use, meaning
+    /// Note that this _alphabet will be converted into a `[u8]` before use, meaning
     /// that multi-byte utf8 character values should be avoided.
-    pub fn alphabet<T: Into<Vec<u8>>>(mut self, alphabet: T) -> HarshBuilder {
-        self.alphabet = Some(alphabet.into());
+    pub fn _alphabet<T: Into<Vec<u8>>>(mut self, _alphabet: T) -> HarshBuilder {
+        self._alphabet = Some(_alphabet.into());
         self
     }
 
@@ -194,7 +188,7 @@ impl HarshBuilder {
     ///
     /// Note that these separators will be converted into a `[u8]` before use,
     /// meaning that multi-byte utf8 character values should be avoided.
-    pub fn separators<T: Into<Vec<u8>>>(mut self, separators: T) -> HarshBuilder {
+    pub fn _separators<T: Into<Vec<u8>>>(mut self, separators: T) -> HarshBuilder {
         self.separators = Some(separators.into());
         self
     }
@@ -211,19 +205,19 @@ impl HarshBuilder {
     ///
     /// This method will consume the `HarshBuilder`.
     pub fn init(self) -> Result<Harsh, &'static str> {
-        let alphabet = unique_alphabet(&self.alphabet)?;
-        if alphabet.len() < MINIMUM_ALPHABET_LENGTH {
-            return Err("alphabet length error");
+        let _alphabet = unique_alphabet(&self._alphabet)?;
+        if _alphabet.len() < MINIMUM_ALPHABET_LENGTH {
+            return Err("_alphabet length error");
         }
 
         let salt = self.salt.unwrap_or_else(Vec::new);
-        let (mut alphabet, mut separators) =
-            alphabet_and_separators(&self.separators, &alphabet, &salt);
-        let guards = guards(&mut alphabet, &mut separators);
+        let (mut _alphabet, mut separators) =
+            alphabet_and_separators(&self.separators, &_alphabet, &salt);
+        let guards = guards(&mut _alphabet, &mut separators);
 
         Ok(Harsh {
             salt: salt.into_boxed_slice(),
-            alphabet: alphabet.into_boxed_slice(),
+            _alphabet: _alphabet.into_boxed_slice(),
             separators: separators.into_boxed_slice(),
             hash_length: self.hash_length,
             guards: guards.into_boxed_slice(),
@@ -239,20 +233,20 @@ fn create_nhash(values: &[u64]) -> u64 {
         .fold(0, |a, (idx, value)| a + (value % (idx + 100) as u64))
 }
 
-fn unique_alphabet(alphabet: &Option<Vec<u8>>) -> Result<Vec<u8>, &'static str> {
+fn unique_alphabet(_alphabet: &Option<Vec<u8>>) -> Result<Vec<u8>, &'static str> {
 
-    match *alphabet {
+    match *_alphabet {
         None => {
             let mut vec = [0; 62];
             vec.clone_from_slice(DEFAULT_ALPHABET);
             Ok(vec.to_vec())
         }
 
-        Some(ref alphabet) => {
+        Some(ref _alphabet) => {
             let mut reg = Vec::new();
             let mut ret = Vec::new();
 
-            for (idx, &item) in alphabet.iter().enumerate() {
+            for (idx, &item) in _alphabet.iter().enumerate() {
                 if item == b' ' {
                     return Err("illegal words");
                 }
@@ -274,7 +268,7 @@ fn unique_alphabet(alphabet: &Option<Vec<u8>>) -> Result<Vec<u8>, &'static str> 
 
 fn alphabet_and_separators(
     separators: &Option<Vec<u8>>,
-    alphabet: &[u8],
+    _alphabet: &[u8],
     salt: &[u8],
 ) -> (Vec<u8>, Vec<u8>) {
     let separators = match *separators {
@@ -285,9 +279,9 @@ fn alphabet_and_separators(
     let mut separators: Vec<_> = separators
         .iter()
         .cloned()
-        .filter(|item| alphabet.contains(item))
+        .filter(|item| _alphabet.contains(item))
         .collect();
-    let mut alphabet: Vec<_> = alphabet
+    let mut _alphabet: Vec<_> = _alphabet
         .iter()
         .cloned()
         .filter(|item| !separators.contains(item))
@@ -295,35 +289,35 @@ fn alphabet_and_separators(
 
     shuffle(&mut separators, salt);
 
-    if separators.is_empty() || (alphabet.len() as f64 / separators.len() as f64) > SEPARATOR_DIV {
-        let length = match (alphabet.len() as f64 / SEPARATOR_DIV) as usize {
+    if separators.is_empty() || (_alphabet.len() as f64 / separators.len() as f64) > SEPARATOR_DIV {
+        let length = match (_alphabet.len() as f64 / SEPARATOR_DIV) as usize {
             1 => 2,
             n => n,
         };
 
         if length > separators.len() {
             let diff = length - separators.len();
-            separators.extend_from_slice(&alphabet[..diff]);
-            alphabet = alphabet[diff..].to_vec();
+            separators.extend_from_slice(&_alphabet[..diff]);
+            _alphabet = _alphabet[diff..].to_vec();
         } else {
             separators = separators[..length].to_vec();
         }
     }
 
-    shuffle(&mut alphabet, salt);
-    (alphabet, separators)
+    shuffle(&mut _alphabet, salt);
+    (_alphabet, separators)
 }
 
-fn guards(alphabet: &mut Vec<u8>, separators: &mut Vec<u8>) -> Vec<u8> {
-    let guard_count = (alphabet.len() as f64 / GUARD_DIV) as usize;
-    // let guard_count = (alphabet.len() as f64 / GUARD_DIV).ceil() as usize;
-    if alphabet.len() < 3 {
+fn guards(_alphabet: &mut Vec<u8>, separators: &mut Vec<u8>) -> Vec<u8> {
+    let guard_count = (_alphabet.len() as f64 / GUARD_DIV) as usize;
+    // let guard_count = (_alphabet.len() as f64 / GUARD_DIV).ceil() as usize;
+    if _alphabet.len() < 3 {
         let guards = separators[..guard_count].to_vec();
         separators.drain(..guard_count);
         guards
     } else {
-        let guards = alphabet[..guard_count].to_vec();
-        alphabet.drain(..guard_count);
+        let guards = _alphabet[..guard_count].to_vec();
+        _alphabet.drain(..guard_count);
         guards
     }
 }
@@ -349,12 +343,12 @@ fn shuffle(values: &mut [u8], salt: &[u8]) {
     }
 }
 
-fn hash(mut value: u64, alphabet: &[u8]) -> Vec<u8> {
-    let length = alphabet.len() as u64;
+fn hash(mut value: u64, _alphabet: &[u8]) -> Vec<u8> {
+    let length = _alphabet.len() as u64;
     let mut hash = Vec::new();
 
     loop {
-        hash.push(alphabet[(value % length) as usize]);
+        hash.push(_alphabet[(value % length) as usize]);
         value /= length;
 
         if value == 0 {
@@ -364,10 +358,10 @@ fn hash(mut value: u64, alphabet: &[u8]) -> Vec<u8> {
     }
 }
 
-fn unhash(input: &[u8], alphabet: &[u8]) -> Option<u64> {
+fn _unhash(input: &[u8], _alphabet: &[u8]) -> Option<u64> {
     input.iter().enumerate().fold(Some(0), |a, (idx, &value)| {
-        let pos = alphabet.iter().position(|&item| item == value)? as u64;
-        a.map(|a| a + (pos * (alphabet.len() as u64).pow((input.len() - idx - 1) as u32)))
+        let pos = _alphabet.iter().position(|&item| item == value)? as u64;
+        a.map(|a| a + (pos * (_alphabet.len() as u64).pow((input.len() - idx - 1) as u32)))
     })
 }
 
@@ -443,12 +437,12 @@ mod tests {
 
         assert_eq!(
             &[1226198605112],
-            &harsh.decode(b"4o6Z7KqxE").expect("failed to decode")[..],
+            &harsh._decode(b"4o6Z7KqxE").expect("failed to _decode")[..],
             "error decoding \"4o6Z7KqxE\""
         );
         assert_eq!(
             &[1u64, 2, 3],
-            &harsh.decode(b"laHquq").expect("failed to decode")[..]
+            &harsh._decode(b"laHquq").expect("failed to _decode")[..]
         );
     }
 
@@ -462,7 +456,7 @@ mod tests {
 
         assert_eq!(
             &[1u64, 2, 3],
-            &harsh.decode(b"GlaHquq0").expect("failed to decode")[..]
+            &harsh._decode(b"GlaHquq0").expect("failed to _decode")[..]
         );
     }
 
@@ -476,14 +470,14 @@ mod tests {
 
         assert_eq!(
             &[1u64, 2, 3],
-            &harsh.decode(b"9LGlaHquq06D").expect("failed to decode")[..]
+            &harsh._decode(b"9LGlaHquq06D").expect("failed to _decode")[..]
         );
     }
 
     #[test]
     fn can_encode_with_custom_alphabet() {
         let harsh = HarshBuilder::new()
-            .alphabet("abcdefghijklmnopqrstuvwxyz")
+            ._alphabet("abcdefghijklmnopqrstuvwxyz")
             .init()
             .expect("failed to initialize harsh");
         
@@ -498,21 +492,21 @@ mod tests {
     #[test]
     fn can_decode_with_invalid_alphabet() {
         let harsh = Harsh::default();
-        assert_eq!(None, harsh.decode(b"this$ain't|a\number"));
+        assert_eq!(None, harsh._decode(b"this$ain't|a\number"));
     }
 
     #[test]
     fn can_decode_with_custom_alphabet() {
         let harsh = HarshBuilder::new()
-            .alphabet("abcdefghijklmnopqrstuvwxyz")
+            ._alphabet("abcdefghijklmnopqrstuvwxyz")
             .init()
             .expect("failed to initialize harsh");
 
         // mdfphx
         assert_eq!(
             &[1, 2, 3],
-            &harsh.decode(b"lqfqhr").expect("failed to decode")[..],
-            "failed to decode lqfqhr"
+            &harsh._decode(b"lqfqhr").expect("failed to _decode")[..],
+            "failed to _decode lqfqhr"
         );
     }
 
@@ -533,7 +527,7 @@ mod tests {
     fn alphabet_and_separator_generation() {
         use super::{DEFAULT_ALPHABET, DEFAULT_SEPARATORS};
 
-        let (alphabet, separators) = super::alphabet_and_separators(
+        let (_alphabet, separators) = super::alphabet_and_separators(
             &Some(DEFAULT_SEPARATORS.to_vec()),
             DEFAULT_ALPHABET,
             b"this is my salt",
@@ -541,7 +535,7 @@ mod tests {
 
         assert_eq!(
             b"AdG05N6y2rljDQak4xgzn8ZR1oKYLmJpEbVq3OBv9WwXPMe7".to_vec(),
-            alphabet.as_slice()
+            _alphabet.as_slice()
         );
         assert_eq!(
             b"UHuhtcITCsFifS",
@@ -554,7 +548,7 @@ mod tests {
         use super::DEFAULT_ALPHABET;
 
         let separators = b"fu";
-        let (alphabet, separators) = super::alphabet_and_separators(
+        let (_alphabet, separators) = super::alphabet_and_separators(
             &Some(separators.to_vec()),
             DEFAULT_ALPHABET,
             b"this is my salt",
@@ -563,7 +557,7 @@ mod tests {
         // 4RVQrYM87wKPNSyTBGU1E6FIC9ALtH0ZD2Wxz3vs5OXJ
         assert_eq!(
             b"57148IVEH6sKq2B3UAtXYLyRMwvJCWNrSxzZFOG9TQ0PD".to_vec(),
-            alphabet
+            _alphabet
         );
 
         // ufabcdeghijklmnopq
