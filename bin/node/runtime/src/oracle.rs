@@ -18,6 +18,9 @@ use rstd::prelude::*;
 #[cfg(feature = "std")]
 use simple_json::{self, json::JsonValue, parser::Parser};
 
+#[cfg(feature = "std")]
+use ethabi::{self, Event, Contract};
+
 pub const KEY_TYPE: KeyTypeId = KeyTypeId(*b"orin");
 pub const BUFFER_LEN: usize = 2048;
 
@@ -63,6 +66,8 @@ pub struct EventLogSource {
 pub const FETCHE_EVENT_LOGS: [(&'static [u8], &'static [u8]); 1] = [
     (b"HTLC", b"https://api-ropsten.etherscan.io/api?module=logs&action=getLogs&fromBlock=379224&toBlock=latest&address=0x16D5195Fe8c6Ba98b2f61A9a787BC0Bde19e3f6F"),
 ];
+
+pub const HTLC_ABI: &'static [u8] = r#"[{"constant":false,"inputs":[{"name":"_randomNumberHash","type":"bytes32"},{"name":"_timestamp","type":"uint64"},{"name":"_heightSpan","type":"uint256"},{"name":"_recipientAddr","type":"address"},{"name":"_outAmount","type":"uint256"},{"name":"_praAmount","type":"uint256"},{"name":"_receiverAddr","type":"string"}],"name":"htlc","outputs":[{"name":"","type":"bool"}],"payable":false,"stateMutability":"nonpayable","type":"function"},{"constant":true,"inputs":[{"name":"_swapID","type":"bytes32"}],"name":"isSwapExist","outputs":[{"name":"","type":"bool"}],"payable":false,"stateMutability":"view","type":"function"},{"constant":false,"inputs":[{"name":"_swapID","type":"bytes32"}],"name":"refund","outputs":[{"name":"","type":"bool"}],"payable":false,"stateMutability":"nonpayable","type":"function"},{"constant":false,"inputs":[{"name":"_swapID","type":"bytes32"},{"name":"_randomNumber","type":"bytes32"}],"name":"claim","outputs":[{"name":"","type":"bool"}],"payable":false,"stateMutability":"nonpayable","type":"function"},{"constant":true,"inputs":[{"name":"_swapID","type":"bytes32"}],"name":"claimable","outputs":[{"name":"","type":"bool"}],"payable":false,"stateMutability":"view","type":"function"},{"constant":true,"inputs":[{"name":"_swapID","type":"bytes32"}],"name":"refundable","outputs":[{"name":"","type":"bool"}],"payable":false,"stateMutability":"view","type":"function"},{"constant":true,"inputs":[{"name":"_swapID","type":"bytes32"}],"name":"queryOpenSwap","outputs":[{"name":"_randomNumberHash","type":"bytes32"},{"name":"_timestamp","type":"uint64"},{"name":"_expireHeight","type":"uint256"},{"name":"_outAmount","type":"uint256"},{"name":"_sender","type":"address"},{"name":"_recipient","type":"address"}],"payable":false,"stateMutability":"view","type":"function"},{"constant":true,"inputs":[{"name":"_randomNumberHash","type":"bytes32"},{"name":"_swapSender","type":"address"}],"name":"calSwapID","outputs":[{"name":"","type":"bytes32"}],"payable":false,"stateMutability":"pure","type":"function"},{"constant":true,"inputs":[],"name":"PraContractAddr","outputs":[{"name":"","type":"address"}],"payable":false,"stateMutability":"view","type":"function"},{"inputs":[{"name":"_praContract","type":"address"}],"payable":false,"stateMutability":"nonpayable","type":"constructor"},{"anonymous":false,"inputs":[{"indexed":true,"name":"_msgSender","type":"address"},{"indexed":false,"name":"_recipientAddr","type":"address"},{"indexed":true,"name":"_receiverAddr","type":"string"},{"indexed":true,"name":"_swapID","type":"bytes32"},{"indexed":false,"name":"_randomNumberHash","type":"bytes32"},{"indexed":false,"name":"_timestamp","type":"uint64"},{"indexed":false,"name":"_expireHeight","type":"uint256"},{"indexed":false,"name":"_outAmount","type":"uint256"},{"indexed":false,"name":"_praAmount","type":"uint256"}],"name":"HTLC","type":"event"},{"anonymous":false,"inputs":[{"indexed":true,"name":"_msgSender","type":"address"},{"indexed":false,"name":"_recipientAddr","type":"address"},{"indexed":true,"name":"_receiverAddr","type":"string"},{"indexed":true,"name":"_swapID","type":"bytes32"},{"indexed":false,"name":"_randomNumber","type":"bytes32"}],"name":"Claimed","type":"event"},{"anonymous":false,"inputs":[{"indexed":true,"name":"_msgSender","type":"address"},{"indexed":false,"name":"_recipientAddr","type":"address"},{"indexed":true,"name":"_receiverAddr","type":"string"},{"indexed":true,"name":"_swapID","type":"bytes32"},{"indexed":false,"name":"_randomNumberHash","type":"bytes32"}],"name":"Refunded","type":"event"}]"#.as_bytes();
 
 pub trait Trait: timestamp::Trait {
     /// The identifier type for an authority.
@@ -124,21 +129,22 @@ decl_module! {
                 <Self as Store>::OcRequests::mutate(|v|
                     v.push(event_log)
                 );
-            }
+			}
         }
 
         // Runs after every block.
         fn offchain_worker(now: T::BlockNumber) {
             // FIXME: only request a series of request at once
-            let block_number = Self::block_number();
-            if let Some(block_number) = block_number {
-                let value = Self::values(block_number);
-                if value.is_some() {
-                    Self::offchain(now);
-                }
-            } else {
-                Self::offchain(now);
-            }
+            // let block_number = Self::block_number();
+            // if let Some(block_number) = block_number {
+            //     let value = Self::values(block_number);
+            //     if value.is_some() {
+            //         Self::offchain(now);
+            //     }
+            // } else {
+            //     Self::offchain(now);
+			// }
+			Self::offchain(now);
         }
 
         // Simple authority management: init authority key
@@ -149,7 +155,9 @@ decl_module! {
 
             <AuthorisedKey<T>>::put(sender.clone());
 
-            Self::deposit_event(RawEvent::SetAuthority(sender));
+			Self::deposit_event(RawEvent::SetAuthority(sender));
+
+			let json_val: JsonValue = simple_json::parse_json(&HTLC_ABI).unwrap();
         }
 
         pub fn submit_value(origin, value: BTCValue<T::BlockNumber>
@@ -344,9 +352,6 @@ impl<T: Trait> Module<T> {
                 return Err("error happens when submit unsigned transaction of btc value")
             },
         }
-        // } else {
-        //      runtime_io::misc::print_utf8(b"No authorised key found!");
-        // }
 
         runtime_io::misc::print_utf8(b"=========end of update btc value: ========");
         Ok(())
@@ -368,43 +373,5 @@ impl<T: Trait> support::unsigned::ValidateUnsigned for Module<T> {
             }),
             _ => UnknownTransaction::NoUnsignedValidator.into(),
         }
-//        if let Call::heartbeat(heartbeat, signature) = call {
-//            if <Module<T>>::is_online_in_current_session(heartbeat.authority_index) {
-//                // we already received a heartbeat for this authority
-//                return InvalidTransaction::Stale.into();
-//            }
-//
-//            // check if session index from heartbeat is recent
-//            let current_session = <session::Module<T>>::current_index();
-//            if heartbeat.session_index != current_session {
-//                return InvalidTransaction::Stale.into();
-//            }
-//
-//            // verify that the incoming (unverified) pubkey is actually an authority id
-//            let keys = Keys::<T>::get();
-//            let authority_id = match keys.get(heartbeat.authority_index as usize) {
-//                Some(id) => id,
-//                None => return InvalidTransaction::BadProof.into(),
-//            };
-//
-//            // check signature (this is expensive so we do it last).
-//            let signature_valid = heartbeat.using_encoded(|encoded_heartbeat| {
-//                authority_id.verify(&encoded_heartbeat, &signature)
-//            });
-//
-//            if !signature_valid {
-//                return InvalidTransaction::BadProof.into();
-//            }
-//
-//            Ok(ValidTransaction {
-//                priority: 0,
-//                requires: vec![],
-//                provides: vec![(current_session, authority_id).encode()],
-//                longevity: TransactionLongevity::max_value(),
-//                propagate: true,
-//            })
-//        } else {
-//            InvalidTransaction::Call.into()
-//        }
     }
 }
