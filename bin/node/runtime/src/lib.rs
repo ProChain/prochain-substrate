@@ -154,9 +154,9 @@ impl indices::Trait for Runtime {
 }
 
 parameter_types! {
-	pub const ExistentialDeposit: Balance = 1 * DOLLARS;
-	pub const TransferFee: Balance = 1 * CENTS;
-	pub const CreationFee: Balance = 1 * CENTS;
+	pub const ExistentialDeposit: Balance = 1 * MILLICENTS;
+	pub const TransferFee: Balance = 1 * MILLICENTS;
+	pub const CreationFee: Balance = 1 * MILLICENTS;
 }
 
 impl balances::Trait for Runtime {
@@ -172,8 +172,8 @@ impl balances::Trait for Runtime {
 }
 
 parameter_types! {
-	pub const TransactionBaseFee: Balance = 1 * CENTS;
-	pub const TransactionByteFee: Balance = 10 * MILLICENTS;
+	pub const TransactionBaseFee: Balance = 10 * MILLICENTS;
+	pub const TransactionByteFee: Balance = MILLICENTS;
 	// setting this to zero will disable the weight fee.
 	pub const WeightFeeCoefficient: Balance = 1_000;
 	// for a sane configuration, this should always be less than `AvailableBlockRatio`.
@@ -373,11 +373,11 @@ impl treasury::Trait for Runtime {
 }
 
 parameter_types! {
-	pub const ContractTransferFee: Balance = 1 * CENTS;
-	pub const ContractCreationFee: Balance = 1 * CENTS;
-	pub const ContractTransactionBaseFee: Balance = 1 * CENTS;
+	pub const ContractTransferFee: Balance = 1 * MILLICENTS;
+	pub const ContractCreationFee: Balance = 1 * MILLICENTS;
+	pub const ContractTransactionBaseFee: Balance = 1 * MILLICENTS;
 	pub const ContractTransactionByteFee: Balance = 10 * MILLICENTS;
-	pub const ContractFee: Balance = 1 * CENTS;
+	pub const ContractFee: Balance = 1 * MILLICENTS;
 	pub const TombstoneDeposit: Balance = 1 * DOLLARS;
 	pub const RentByteFee: Balance = 1 * DOLLARS;
 	pub const RentDepositOffset: Balance = 1000 * DOLLARS;

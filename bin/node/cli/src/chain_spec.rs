@@ -41,6 +41,11 @@ pub use node_runtime::GenesisConfig;
 type AccountPublic = <Signature as Verify>::Signer;
 
 const STAGING_TELEMETRY_URL: &str = "wss://telemetry.polkadot.io/submit/";
+const PRA_PROPERTIES: &str = r#"
+		{
+			"tokenDecimals": 12,
+			"tokenSymbol": "PRA"
+		}"#;
 
 /// Node `ChainSpec` extensions.
 ///
@@ -220,8 +225,8 @@ pub fn testnet_genesis(
 		]
 	});
 
-	const ENDOWMENT: Balance = 10_000_000 * DOLLARS;
-	const STASH: Balance = 100 * DOLLARS;
+	const ENDOWMENT: Balance = 10_000 * DOLLARS;
+	const STASH: Balance = 10 * DOLLARS;
 
 	GenesisConfig {
 		system: Some(SystemConfig {
@@ -315,6 +320,7 @@ fn development_config_genesis() -> GenesisConfig {
 
 /// Development config (single validator Alice)
 pub fn development_config() -> ChainSpec {
+	let properties = serde_json::from_str(PRA_PROPERTIES).unwrap();
 	ChainSpec::from_genesis(
 		"Development",
 		"dev",
@@ -322,7 +328,7 @@ pub fn development_config() -> ChainSpec {
 		vec![],
 		None,
 		None,
-		None,
+		properties,
 		Default::default(),
 	)
 }
@@ -400,6 +406,7 @@ fn prochain_testnet_genesis() -> GenesisConfig {
 
 	/// prochain testnet config
 	pub fn prochain_testnet_config() -> ChainSpec {
+		let properties = serde_json::from_str(PRA_PROPERTIES).unwrap();
 		ChainSpec::from_genesis(
 			"Prochain Testnet",
 			"prochain_testnet",
@@ -407,7 +414,7 @@ fn prochain_testnet_genesis() -> GenesisConfig {
 			vec![],
 			None,
 			None,
-			None,
+			properties,
 			Default::default(),
 		)
 	}

@@ -7,7 +7,7 @@ mod tests;
 use codec::{Decode, Encode};
 use rstd::vec::Vec;
 use support::{
-	decl_event, decl_module, decl_storage, ensure, traits::{Currency, ReservableCurrency, ExistenceRequirement}, dispatch::Result, print,
+	decl_event, decl_module, decl_storage, ensure, traits::{Currency, ReservableCurrency, ExistenceRequirement, Get}, dispatch::Result, print,
 };
 use sr_primitives::traits::{CheckedSub, CheckedAdd, Hash, SaturatedConversion};
 use system::ensure_signed;
@@ -203,6 +203,11 @@ decl_module! {
 			ensure!(<Metadata<T>>::exists(did), "did does not exsit");
 			ensure!(!<Identity<T>>::exists(&to), "the public key has been taken");
 
+			let money = <balances::Module<T>>::free_balance(sender.clone())
+					- T::TransferFee::get()
+					- T::CreationFee::get();
+			<balances::Module<T> as Currency<_>>::transfer(&sender, &to, money, ExistenceRequirement::AllowDeath,)?;
+			
 			// 更新account映射
 			<Identity<T>>::remove(sender.clone());
 			<Identity<T>>::insert(to.clone(), &did);
@@ -214,9 +219,6 @@ decl_module! {
 			metadata.address = to.clone();
 
 			<Metadata<T>>::insert(did, metadata);
-
-			let money = <balances::Module<T>>::free_balance(sender.clone());
-			<balances::Module<T> as Currency<_>>::transfer(&sender, &to, money, ExistenceRequirement::AllowDeath,)?;
 
 			Self::deposit_event(RawEvent::Updated(to, did, money));
 		}

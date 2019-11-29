@@ -2946,6 +2946,7 @@ dependencies = [
  "rand 0.7.2 (registry+https://github.com/rust-lang/crates.io-index)",
  "sc-transaction-pool 2.0.0 (git+https://github.com/ProChain/substrate.git)",
  "serde 1.0.102 (registry+https://github.com/rust-lang/crates.io-index)",
+ "serde_json 1.0.41 (registry+https://github.com/rust-lang/crates.io-index)",
  "sp-finality-tracker 2.0.0 (git+https://github.com/ProChain/substrate.git)",
  "sp-timestamp 2.0.0 (git+https://github.com/ProChain/substrate.git)",
  "sr-io 2.0.0 (git+https://github.com/ProChain/substrate.git)",
