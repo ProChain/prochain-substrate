@@ -76,8 +76,22 @@ To start up the Prochain node, run:
     "external_address": "ExternalAddress"
   },
   "Value": "u32",
-	"HTLC": {
-    "block_number": "u32",
+  "BTCValue": {
+    "price": "u32",
+    "block_number": "u32"
+  },
+  "AdsMetadata": {
+    "advertiser": "Vec<u8>",
+    "topic": "Vec<u8>",
+    "total_amount": "Balance",
+    "surplus": "Balance",
+    "gas_fee_used": "Balance",
+    "single_click_fee": "Balance",
+    "create_time": "Moment",
+    "period": "Moment"
+  },
+  "HTLC": {
+    "block_number": "BlockNumber",
     "out_amount": "Balance",
     "expire_height": "BlockNumber",
     "random_number_hash": "Hash",
@@ -89,10 +103,13 @@ To start up the Prochain node, run:
     "receiver_chain_type": "u64",
     "recipient_addr": "Vec<u8>"
   },
-	"BlockNumber": "u32",
-  "BTCValue": {
-    "price": "u32",
-    "block_number": "u32"
+  "States": {
+    "_enum": [
+      "INVALID",
+      "OPEN",
+      "COMPLETED",
+      "EXPIRED"
+    ]
   }
 }
 ```

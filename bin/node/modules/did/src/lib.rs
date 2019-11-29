@@ -1,6 +1,4 @@
 #![cfg_attr(not(feature = "std"), no_std)]
-// `construct_runtime!` does a lot of recursion and requires us to increase the limit to 256.
-#![recursion_limit="256"]
 
 mod harsh;
 mod check;
@@ -73,7 +71,7 @@ decl_storage! {
 		pub Metadata get(metadata): map T::Hash => MetadataRecord<T::AccountId, T::Hash, T::Balance, T::Moment>;
 
 		pub AllDidCount get(all_did_count): u64;
-		pub AllDidsArray get(did_by_index): map Vec<u8> => T::Hash;
+		pub AllDidsArray get(did_by_index): map T::Hash => T::Hash;
 		pub AllDidsIndex: map T::Hash => Vec<u8>;
 	}
 }
@@ -184,10 +182,11 @@ decl_module! {
 					.ok_or("Overflow adding a new did")?;
 			<AllDidCount>::put(new_count);
 
-			let harsher = HarshBuilder::new().salt("prochain did").length(4).init().unwrap();
+			let harsher = HarshBuilder::new().salt("prochain did").length(6).init().unwrap();
 			let idx = harsher.encode(&[all_did_count]).unwrap();
+			let idx_hash = T::Hashing::hash(&idx);
 
-			<AllDidsArray<T>>::insert(&idx, &did_hash);
+			<AllDidsArray<T>>::insert(&idx_hash, &did_hash);
 			<AllDidsIndex<T>>::insert(&did_hash, idx);
 
 			// broadcast event
