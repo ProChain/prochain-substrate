@@ -95,9 +95,7 @@ impl Trait for Test {
 }
 
 type AdsModule = Module<Test>;
-type System = system::Module<Test>;
 type Balances = balances::Module<Test>;
-type Timestamp = timestamp::Module<Test>;
 type DidModule = did::Module<Test>;
 
 // This function basically just builds a genesis storage key/value store according to
