@@ -12,10 +12,7 @@ integer-sqrt = { version = "0.1.2" }
 safe-mix = { version = "1.0", default-features = false }
 rustc-hex = { version = "2.0", optional = true }
 serde = { version = "1.0.102", optional = true }
-harsh = { path = "../harsh", default-features = false }
-simple-json = { version = '0.1.0', git = "https://github.com/jingleizhang/simple-json.git", optional = true }
-ethabi = { package = "ethabi", git = "https://github.com/paritytech/ethabi", optional = true }
-## log = { version = '0.4.8' }
+simple-json = { version = '0.1.0', git = "https://github.com/xlc/lite-json.git", default-features = false }
 
 # primitives
 authority-discovery-primitives = { package = "substrate-authority-discovery-primitives", git = "https://github.com/ProChain/substrate.git", default-features = false }
@@ -94,7 +91,6 @@ std = [
 	"democracy/std",
 	"elections-phragmen/std",
 	"executive/std",
-	"ethabi",
 	"finality-tracker/std",
 	"grandpa/std",
 	"im-online/std",
@@ -113,7 +109,7 @@ std = [
 	"safe-mix/std",
 	"serde",
 	"session/std",
-	"simple-json",
+	"simple-json/std",
 	"sr-api/std",
 	"sr-primitives/std",
 	"sr-staking-primitives/std",
