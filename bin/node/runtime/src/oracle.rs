@@ -1,3 +1,5 @@
+#![cfg_attr(not(feature = "std"), no_std)]
+
 use sr_primitives::app_crypto::{KeyTypeId, RuntimeAppPublic};
 use codec::{Decode, Encode};
 use primitives::offchain::{Duration, HttpRequestId, HttpRequestStatus};
@@ -6,14 +8,15 @@ use rstd::vec::Vec;
 use sr_primitives::{
     traits::Member,
     transaction_validity::{
-		TransactionValidity, InvalidTransaction, ValidTransaction, UnknownTransaction, TransactionLongevity,
-		TransactionPriority
+        TransactionValidity, InvalidTransaction, ValidTransaction, UnknownTransaction, TransactionLongevity,
+        TransactionPriority
     }
 };
-use support::{decl_event, decl_module, decl_storage, ensure, Parameter, StorageMap, StorageValue};
+use support::{decl_event, decl_module, decl_storage, ensure, Parameter, StorageMap, StorageValue, dispatch::Result as dispatch_result};
 use system::offchain::SubmitUnsignedTransaction;
 use system::{ensure_none, ensure_signed};
 use rstd::prelude::*;
+use simple_json::{self, json::JsonValue, parser::Parser};
 
 pub const KEY_TYPE: KeyTypeId = KeyTypeId(*b"orin");
 pub const BUFFER_LEN: usize = 2048;
@@ -30,10 +33,6 @@ pub mod sr25519 {
         }
     }
 
-    /// An oracle signature using sr25519 as its crypto.
-    // pub type AuthoritySignature = app_sr25519::Signature;
-
-    /// An oracle identifier using sr25519 as its crypto.
     pub type AuthorityId = app_sr25519::Public;
 }
 
@@ -50,6 +49,19 @@ where
     price: Value,
 }
 
+#[derive(Encode, Decode, Clone, PartialEq, Eq)]
+#[cfg_attr(feature = "std", derive(Debug))]
+pub struct EventLogSource {
+    event_name: Vec<u8>,
+    event_url: Vec<u8>,
+}
+
+pub const FETCHE_EVENT_LOGS: [(&'static [u8], &'static [u8]); 1] = [
+    (b"HTLC", b"https://api-ropsten.etherscan.io/api?module=logs&action=getLogs&fromBlock=379224&toBlock=latest&address=0x16D5195Fe8c6Ba98b2f61A9a787BC0Bde19e3f6F"),
+];
+
+pub const ABI_DATA: &'static str = r#"{"status":"1","message":"OK","result":[{"address":"0x16d5195fe8c6ba98b2f61a9a787bc0bde19e3f6f","topics":["0x924028c31cbef81354a146f585e1c91ea6a9caa2a9880e0e2f195cb8894823aa","0x000000000000000000000000f7fea1722f9b27b0666919a5664bab486a4b18d3","0xc731f90c0df8fd2a27268bb7942ea7a53e0861ddd57227869645e5157f685913","0x952dc77591ca272bcb010e6acce188a078be41ca4598987ef122e28c2ae9d707"],"data":"0x000000000000000000000000cf5becb7245e2e6ee2e092f0bd63f6bd79ef19fe6c00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000005dca9f440000000000000000000000000000000000000000000000000000000000674f9800000000000000000000000000000000000000000000000000000000009896800000000000000000000000000000000000000000000000000000000000989680","blockNumber":"0x672888","timeStamp":"0x5dcaa1cb","gasPrice":"0x3b9aca00","gasUsed":"0x43bac","logIndex":"0x7","transactionHash":"0x196ee30fa9076bcb4b1e04a37df215ef754c27db7cdca926395116a2971ab1cf","transactionIndex":"0x39"},{"address":"0x16d5195fe8c6ba98b2f61a9a787bc0bde19e3f6f","topics":["0x924028c31cbef81354a146f585e1c91ea6a9caa2a9880e0e2f195cb8894823aa","0x000000000000000000000000603a2abcbb0414a5c13a8bb22c20daf2f9388ad8","0xef85676f7752cb4d76942df4fff5c46a4e57dec88aa96766ddafe084cbe59421","0xbf19265f61734f9e5483b03aa5b97693dee83c88858a2cda0de6fd55b01624fc"],"data":"0x000000000000000000000000cf5becb7245e2e6ee2e092f0bd63f6bd79ef19fe6c00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000005dd7c7610000000000000000000000000000000000000000000000000000000000684a1e00000000000000000000000000000000000000000000000000000000009896800000000000000000000000000000000000000000000000000000000000989680","blockNumber":"0x68230e","timeStamp":"0x5dd7c789","gasPrice":"0x1a13b8600","gasUsed":"0x40114","logIndex":"0x16","transactionHash":"0x42fb1b4b113a0fb9d0b2c8ce6cb888ff37bb70db4b789e300b5ed424413ad589","transactionIndex":"0x1c"}]}"#;
+
 pub trait Trait: timestamp::Trait {
     /// The identifier type for an authority.
     type AuthorityId: Member + Parameter + RuntimeAppPublic + Default + Ord;
@@ -64,10 +76,6 @@ pub trait Trait: timestamp::Trait {
 // This module's storage items.
 decl_storage! {
     trait Store for Module<T: Trait> as Oracle {
-        /// The key used to sign the payload
-        /// TODO: the type may change to `AuthorityId`
-        pub AuthorisedKey get(authorised_key): Option<T::AccountId>;
-
         pub BlockNumber get(block_number): Option<T::BlockNumber>;
 
         /// Provide price value for external api consuming
@@ -75,16 +83,17 @@ decl_storage! {
 
         /// Values for specific block_number
         pub Values get(values): map T::BlockNumber => Option<BTCValue<T::BlockNumber>>;
+
+        pub OcRequests get(oc_requests): Vec<EventLogSource>;
     }
 }
 
 decl_event!(
     pub enum Event<T>
     where
-        <T as system::Trait>::AccountId,
+		<T as system::Trait>::BlockNumber,
     {
-        SetAuthority(AccountId),
-        UpdateValue(Value),
+        UpdateValue(Value, BlockNumber),
     }
 );
 
@@ -95,29 +104,42 @@ decl_module! {
         // Initializing events
         fn deposit_event() = default;
 
+		pub fn kickoff_pricefetch(origin) -> dispatch_result {
+			let who = ensure_signed(origin)?;
+
+			runtime_io::misc::print_utf8(b"======== kickoff pricefetch");
+
+			<Self as Store>::OcRequests::kill();
+
+			for event_log_info in FETCHE_EVENT_LOGS.iter() {
+                let event_log = EventLogSource {
+                    event_name: event_log_info.0.to_vec(),
+                    event_url: event_log_info.1.to_vec(),
+                };
+
+                <Self as Store>::OcRequests::mutate(|v|
+                    v.push(event_log)
+                );
+			}
+
+			Self::parse_abi_data();
+
+			Ok(())
+		}
+
+		pub fn kill_pricefetch(origin) -> dispatch_result {
+			let _ = ensure_signed(origin)?;
+
+			runtime_io::misc::print_utf8(b"======== kill pricefetch");
+			<Self as Store>::OcRequests::kill();
+
+			Ok(())
+		}
+
         // Runs after every block.
         fn offchain_worker(now: T::BlockNumber) {
-            // FIXME: only request a series of request at once
-            let block_number = Self::block_number();
-            if let Some(block_number) = block_number {
-                let value = Self::values(block_number);
-                if value.is_some() {
-                    Self::offchain(now);
-                }
-            } else {
-                Self::offchain(now);
-            }
-        }
-
-        // Simple authority management: init authority key
-        pub fn set_authority(origin) {
-            // Should be protected by a root-call (e.g. through governance like `sudo`).
-            // TODO: let sender = ensure_root(origin)?;
-            let sender = ensure_signed(origin)?;
-
-            <AuthorisedKey<T>>::put(sender.clone());
-
-            Self::deposit_event(RawEvent::SetAuthority(sender));
+			//TODO: check block_number to fetch only once per block
+			Self::offchain(now);
         }
 
         pub fn submit_value(origin, value: BTCValue<T::BlockNumber>
@@ -127,19 +149,11 @@ decl_module! {
             runtime_io::misc::print_num(value.price as u64);
             ensure_none(origin)?;
 
-            // verify the signature
-            let _public = Self::authorised_key();
-            // TODO: public doesn't have `verify` function
-            // let signature_valid = value.using_encoded(|encoded_value| {
-            //     public.verify(&encoded_value, &signature)
-            // });
-            // ensure!(signature_valid, "Invalid value signature.");
-
             // update value in storage
             <Values<T>>::insert(value.block_number, &value);
             <PriceValue>::put(32);
 
-            Self::deposit_event(RawEvent::UpdateValue(value.price));
+            Self::deposit_event(RawEvent::UpdateValue(value.price, value.block_number));
         }
     }
 }
@@ -154,10 +168,10 @@ impl<T: Trait> Module<T> {
 
         let values: [u32; 3] = [cmc_value, cds_value, nom_value];
         runtime_io::misc::print_utf8(b"=====result values:");
-        runtime_io::misc::print_utf8(&cmc_value.to_be_bytes());
+        runtime_io::misc::print_num(cmc_value.clone() as u64) ;
         if let Some(average_value) = Self::average_values(values) {
             Self::update_value(average_value);
-        }
+		}
     }
 
     fn parse_result(res: [u8; BUFFER_LEN], start: &str) -> Value {
@@ -172,7 +186,25 @@ impl<T: Trait> Module<T> {
         } else {
             return 0;
         }
-    }
+	}
+
+	fn parse_abi_data() -> Option<Value> {
+		runtime_io::misc::print_utf8(b"======== start parse_json");
+
+		// let result = simple_json::parse_json(ABI_DATA).unwrap();
+		// match result {
+		// 	JsonValue::String(JsonObject) => {
+		// 		let vec_of_u8s: Vec<u8> = JsonObject.iter().map(|c| *c as u8).collect();
+		// 		let c: &[u8] = &vec_of_u8s;
+		// 		runtime_io::misc::print_utf8(c);
+		// 	},
+		// 	_ => return None,
+		// }
+
+		runtime_io::misc::print_utf8(b"json should parsed ========");
+
+		Some(1001u32)
+	}
 
     // request limited
     fn _request_cmc_value() -> Value {
@@ -291,16 +323,13 @@ impl<T: Trait> Module<T> {
         ensure!(block_number.is_some(), "block number can not be empty");
         let block_number = block_number.unwrap();
 
-        // let key = Self::authorised_key();
-        // if let Some(_key) = key {
         runtime_io::misc::print_utf8(b"update btc value: ========");
         runtime_io::misc::print_num(value as u64);
         let btc_value = BTCValue {
             block_number,
             price: value,
         };
-        // TODO: key doesn't have `sign` function
-        // let signature = key.sign(&value.encode()).ok_or("Offchain error: signing failed!")?;
+
         let call = Call::submit_value(btc_value);
 
         // submit unsigned transaction
@@ -310,11 +339,8 @@ impl<T: Trait> Module<T> {
             Err(_) => {
                 runtime_io::misc::print_utf8(b"execute off-chain worker failed!");
                 return Err("error happens when submit unsigned transaction of btc value")
-			},
-		}
-        // } else {
-        //      runtime_io::misc::print_utf8(b"No authorised key found!");
-        // }
+            },
+        }
 
         runtime_io::misc::print_utf8(b"=========end of update btc value: ========");
         Ok(())
@@ -325,7 +351,6 @@ impl<T: Trait> support::unsigned::ValidateUnsigned for Module<T> {
     type Call = Call<T>;
 
     fn validate_unsigned(call: &Self::Call) -> TransactionValidity {
-//        let current_session = <session::Module<T>>::current_index();
         match call {
             Call::submit_value(_) => Ok(ValidTransaction {
                 priority: TransactionPriority::max_value(),
@@ -336,43 +361,5 @@ impl<T: Trait> support::unsigned::ValidateUnsigned for Module<T> {
             }),
             _ => UnknownTransaction::NoUnsignedValidator.into(),
         }
-//        if let Call::heartbeat(heartbeat, signature) = call {
-//            if <Module<T>>::is_online_in_current_session(heartbeat.authority_index) {
-//                // we already received a heartbeat for this authority
-//                return InvalidTransaction::Stale.into();
-//            }
-//
-//            // check if session index from heartbeat is recent
-//            let current_session = <session::Module<T>>::current_index();
-//            if heartbeat.session_index != current_session {
-//                return InvalidTransaction::Stale.into();
-//            }
-//
-//            // verify that the incoming (unverified) pubkey is actually an authority id
-//            let keys = Keys::<T>::get();
-//            let authority_id = match keys.get(heartbeat.authority_index as usize) {
-//                Some(id) => id,
-//                None => return InvalidTransaction::BadProof.into(),
-//            };
-//
-//            // check signature (this is expensive so we do it last).
-//            let signature_valid = heartbeat.using_encoded(|encoded_heartbeat| {
-//                authority_id.verify(&encoded_heartbeat, &signature)
-//            });
-//
-//            if !signature_valid {
-//                return InvalidTransaction::BadProof.into();
-//            }
-//
-//            Ok(ValidTransaction {
-//                priority: 0,
-//                requires: vec![],
-//                provides: vec![(current_session, authority_id).encode()],
-//                longevity: TransactionLongevity::max_value(),
-//                propagate: true,
-//            })
-//        } else {
-//            InvalidTransaction::Call.into()
-//        }
     }
 }
