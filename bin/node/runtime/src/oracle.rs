@@ -16,6 +16,12 @@ use support::{decl_event, decl_module, decl_storage, ensure, Parameter, StorageM
 use system::offchain::SubmitUnsignedTransaction;
 use system::{ensure_none, ensure_signed};
 use rstd::prelude::*;
+
+// #[cfg(not(feature = "std"))]
+// extern crate alloc;
+
+// #[cfg(not(feature = "std"))]
+// use alloc::{string::String as AllocString};
 use simple_json::{self, json::JsonValue, parser::Parser};
 
 pub const KEY_TYPE: KeyTypeId = KeyTypeId(*b"orin");
@@ -189,31 +195,38 @@ impl<T: Trait> Module<T> {
 	}
 
 	fn parse_abi_data() -> Option<Value> {
+		runtime_io::misc::print_utf8(ABI_DATA.as_bytes());
 		runtime_io::misc::print_utf8(b"======== start parse_json");
 
-		let result: JsonValue = simple_json::parse_json(ABI_DATA).unwrap().map_err(|_| "JSON parsing error")?;;
-		match result {
-			JsonValue::Object(obj) => {
+		let result: JsonValue = simple_json::parse_json(ABI_DATA).unwrap();
+		let data = result.get_object()[0].1.get_object();
 
-			},
-		 	JsonValue::String(JsonObject) => {
-				let i2: () = JsonObject[0];
-		// 		let vec_of_u8s: Vec<u8> = JsonObject.iter().map(|c| *c as u8).collect();
-		// 		let c: &[u8] = &vec_of_u8s;
-		// 		runtime_io::misc::print_utf8(c);
-			 },
-			 JsonValue::Array(JsonObject) => {
-				let i1: () = JsonObject[0];
-				//for n in JsonObject.iter() {
-					//println!("v[{}] = {}", i, n);
-					//let i1: () = n;
-				//}
-				//let i in &(JsonObject as JsonValue::Vec<JsonValue>) {
-				//	let i1: () = i;
-				//};
-			 },
-		 	_ => return None,
-		}
+		runtime_io::misc::print_utf8(b"======== data {}", data.as_bytes());
+
+
+
+		// match result {
+		// 	JsonValue::Object(obj) => {
+
+		// 	},
+		//  	JsonValue::String(JsonObject) => {
+		// 		let i2: () = JsonObject[0];
+		// // 		let vec_of_u8s: Vec<u8> = JsonObject.iter().map(|c| *c as u8).collect();
+		// // 		let c: &[u8] = &vec_of_u8s;
+		// // 		runtime_io::misc::print_utf8(c);
+		// 	 },
+		// 	 JsonValue::Array(JsonObject) => {
+		// 		let i1: () = JsonObject[0];
+		// 		//for n in JsonObject.iter() {
+		// 			//println!("v[{}] = {}", i, n);
+		// 			//let i1: () = n;
+		// 		//}
+		// 		//let i in &(JsonObject as JsonValue::Vec<JsonValue>) {
+		// 		//	let i1: () = i;
+		// 		//};
+		// 	 },
+		//  	_ => return None,
+		// }
 
 		runtime_io::misc::print_utf8(b"json should parsed ========");
 
