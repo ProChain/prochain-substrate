@@ -99,13 +99,13 @@ pub fn config(support_changes_trie: bool, code: Option<&[u8]>) -> GenesisConfig 
 		treasury: Some(Default::default()),
 		did: Some(DidConfig {
 			genesis_account: hex!["22df4b685df33f070ae6e5ee27f745de078adff099d3a803ec67afe1168acd4f"].into(),
-			min_deposit: 50 * MILLICENTS,
+			min_deposit: 50 * DOLLARS,
 			base_quota: 250,
-			fee_to_previous: 25 * MILLICENTS,
+			fee_to_previous: 25 * DOLLARS,
 		}),
 		ads: Some(AdsConfig {
 			contract: hex!["22df4b685df33f070ae6e5ee27f745de078adff099d3a803ec67afe1168acd4f"].into(),
-			min_deposit: 500 * MILLICENTS,
+			min_deposit: 500 * DOLLARS,
 		}),
 	}
 }

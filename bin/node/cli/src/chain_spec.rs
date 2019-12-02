@@ -43,7 +43,7 @@ type AccountPublic = <Signature as Verify>::Signer;
 const STAGING_TELEMETRY_URL: &str = "wss://telemetry.polkadot.io/submit/";
 const PRA_PROPERTIES: &str = r#"
 		{
-			"tokenDecimals": 12,
+			"tokenDecimals": 15,
 			"tokenSymbol": "PRA"
 		}"#;
 
@@ -225,8 +225,8 @@ pub fn testnet_genesis(
 		]
 	});
 
-	const ENDOWMENT: Balance = 10_000 * DOLLARS;
-	const STASH: Balance = 10 * DOLLARS;
+	const ENDOWMENT: Balance = 100_000_000 * DOLLARS;
+	const STASH: Balance = 10_000 * DOLLARS;
 
 	GenesisConfig {
 		system: Some(SystemConfig {
@@ -296,13 +296,13 @@ pub fn testnet_genesis(
 		treasury: Some(Default::default()),
 		did: Some(DidConfig {
 			genesis_account: hex!["22df4b685df33f070ae6e5ee27f745de078adff099d3a803ec67afe1168acd4f"].into(),
-			min_deposit: 50 * MILLICENTS,
+			min_deposit: 50 * DOLLARS,
 			base_quota: 250,
-			fee_to_previous: 25 * MILLICENTS,
+			fee_to_previous: 25 * DOLLARS,
 		}),
 		ads: Some(AdsConfig {
 			contract: hex!["22df4b685df33f070ae6e5ee27f745de078adff099d3a803ec67afe1168acd4f"].into(),
-			min_deposit: 500 * MILLICENTS,
+			min_deposit: 500 * DOLLARS,
 		}),
 	}
 }
