@@ -191,15 +191,29 @@ impl<T: Trait> Module<T> {
 	fn parse_abi_data() -> Option<Value> {
 		runtime_io::misc::print_utf8(b"======== start parse_json");
 
-		// let result = simple_json::parse_json(ABI_DATA).unwrap();
-		// match result {
-		// 	JsonValue::String(JsonObject) => {
+		let result: JsonValue = simple_json::parse_json(ABI_DATA).unwrap().map_err(|_| "JSON parsing error")?;;
+		match result {
+			JsonValue::Object(obj) => {
+
+			},
+		 	JsonValue::String(JsonObject) => {
+				let i2: () = JsonObject[0];
 		// 		let vec_of_u8s: Vec<u8> = JsonObject.iter().map(|c| *c as u8).collect();
 		// 		let c: &[u8] = &vec_of_u8s;
 		// 		runtime_io::misc::print_utf8(c);
-		// 	},
-		// 	_ => return None,
-		// }
+			 },
+			 JsonValue::Array(JsonObject) => {
+				let i1: () = JsonObject[0];
+				//for n in JsonObject.iter() {
+					//println!("v[{}] = {}", i, n);
+					//let i1: () = n;
+				//}
+				//let i in &(JsonObject as JsonValue::Vec<JsonValue>) {
+				//	let i1: () = i;
+				//};
+			 },
+		 	_ => return None,
+		}
 
 		runtime_io::misc::print_utf8(b"json should parsed ========");
 
