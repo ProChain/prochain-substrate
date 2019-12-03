@@ -9,6 +9,6 @@ build = "build.rs"
 ansi_term = "0.12.1"
 keystore = { package = "sc-keystore", git = "https://github.com/ProChain/substrate.git" }
 node-cli = { path = "../../../bin/node/cli" }
-primitives = { package = "sc-keystore",  git = "https://github.com/ProChain/substrate.git" }
+primitives = { package = "sp-core",  git = "https://github.com/ProChain/substrate.git" }
 rand = "0.7.2"
 structopt = "0.3.3"
