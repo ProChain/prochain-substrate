@@ -7,7 +7,7 @@ use rstd::vec::Vec;
 use support::{
 	decl_event, decl_module, decl_storage, ensure,
 };
-use sr_primitives::traits::{Zero, CheckedSub, CheckedAdd};
+use sp_runtime::traits::{Zero, CheckedSub, CheckedAdd};
 use system::ensure_signed;
 
 pub trait Trait: balances::Trait + timestamp::Trait + did::Trait {

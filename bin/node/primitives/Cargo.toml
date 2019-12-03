@@ -5,16 +5,16 @@ authors = ["Parity Technologies <admin@parity.io>"]
 edition = "2018"
 
 [dependencies]
-primitives = { package = "substrate-primitives", git = "https://github.com/ProChain/substrate.git", default-features = false }
-sr-primitives = { git = "https://github.com/ProChain/substrate.git", default-features = false }
+primitives = { package = "sp-core", git = "https://github.com/ProChain/substrate.git", default-features = false }
+sp-runtime = { git = "https://github.com/ProChain/substrate.git", default-features = false }
 
 [dev-dependencies]
-substrate-serializer = { git = "https://github.com/ProChain/substrate.git" }
+sp-serializer = { git = "https://github.com/ProChain/substrate.git" }
 pretty_assertions = "0.6.1"
 
 [features]
 default = ["std"]
 std = [
 	"primitives/std",
-	"sr-primitives/std",
+	"sp-runtime/std",
 ]

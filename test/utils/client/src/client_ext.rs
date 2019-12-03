@@ -11,7 +11,7 @@
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 // GNU General Public License for more details.
 
-// You should have received a copy of the GNU General Public License
+// You should have received a copy of the GNU General Public Licensef
 // along with Substrate.  If not, see <http://www.gnu.org/licenses/>.
 
 //! Client extension for tests.
@@ -23,9 +23,9 @@ use consensus::{
 	ForkChoiceStrategy,
 };
 use hash_db::Hasher;
-use sr_primitives::Justification;
-use sr_primitives::traits::{Block as BlockT};
-use sr_primitives::generic::BlockId;
+use sp_runtime::Justification;
+use sp_runtime::traits::{Block as BlockT};
+use sp_runtime::generic::BlockId;
 use primitives::Blake2Hasher;
 use codec::alloc::collections::hash_map::HashMap;
 
@@ -83,6 +83,7 @@ impl<B, E, RA, Block> ClientExt<Block> for Client<B, E, Block, RA>
 			auxiliary: Vec::new(),
 			fork_choice: ForkChoiceStrategy::LongestChain,
 			allow_missing_state: false,
+			import_existing: false,
 		};
 
 		BlockImport::import_block(&mut (&*self), import, HashMap::new()).map(|_| ())
@@ -102,6 +103,7 @@ impl<B, E, RA, Block> ClientExt<Block> for Client<B, E, Block, RA>
 			auxiliary: Vec::new(),
 			fork_choice: ForkChoiceStrategy::Custom(true),
 			allow_missing_state: false,
+			import_existing: false,
 		};
 
 		BlockImport::import_block(&mut (&*self), import, HashMap::new()).map(|_| ())
@@ -121,6 +123,7 @@ impl<B, E, RA, Block> ClientExt<Block> for Client<B, E, Block, RA>
 			auxiliary: Vec::new(),
 			fork_choice: ForkChoiceStrategy::Custom(true),
 			allow_missing_state: false,
+			import_existing: false,
 		};
 
 		BlockImport::import_block(&mut (&*self), import, HashMap::new()).map(|_| ())
@@ -143,6 +146,7 @@ impl<B, E, RA, Block> ClientExt<Block> for Client<B, E, Block, RA>
 			auxiliary: Vec::new(),
 			fork_choice: ForkChoiceStrategy::LongestChain,
 			allow_missing_state: false,
+			import_existing: false,
 		};
 
 		BlockImport::import_block(&mut (&*self), import, HashMap::new()).map(|_| ())

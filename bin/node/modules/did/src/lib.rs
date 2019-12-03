@@ -9,7 +9,7 @@ use rstd::vec::Vec;
 use support::{
 	decl_event, decl_module, decl_storage, ensure, traits::{Currency, ReservableCurrency, ExistenceRequirement, Get}, dispatch::Result, print,
 };
-use sr_primitives::traits::{CheckedSub, CheckedAdd, Hash, SaturatedConversion};
+use sp_runtime::traits::{CheckedSub, CheckedAdd, Hash, SaturatedConversion};
 use system::ensure_signed;
 use runtime_io::hashing::blake2_256;
 use harsh::{HarshBuilder};

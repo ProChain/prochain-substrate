@@ -8,18 +8,18 @@ edition = "2018"
 [dependencies]
 trie-root = "0.15.2"
 codec = { package = "parity-scale-codec", version = "1.0.0" }
-runtime_io = { package = "sr-io", git = "https://github.com/ProChain/substrate.git" }
-state_machine = { package = "substrate-state-machine", git = "https://github.com/ProChain/substrate.git" }
-substrate-executor = { git = "https://github.com/ProChain/substrate.git" }
-primitives = { package = "substrate-primitives", git = "https://github.com/ProChain/substrate.git" }
-trie = { package = "substrate-trie", git = "https://github.com/ProChain/substrate.git" }
+runtime_io = { package = "sp-io", git = "https://github.com/ProChain/substrate.git" }
+state_machine = { package = "sp-state-machine", git = "https://github.com/ProChain/substrate.git" }
+sc-executor = { git = "https://github.com/ProChain/substrate.git" }
+primitives = { package = "sp-core", git = "https://github.com/ProChain/substrate.git" }
+trie = { package = "sp-trie", git = "https://github.com/ProChain/substrate.git" }
 node-primitives = { path = "../primitives" }
 node-runtime = { path = "../runtime" }
 
 [dev-dependencies]
 node-testing = { path = "../testing" }
 test-client = { package = "substrate-test-client", path = "../../../test/utils/client" }
-sr-primitives = { git = "https://github.com/ProChain/substrate.git" }
+sp-runtime = { git = "https://github.com/ProChain/substrate.git" }
 runtime_support = { package = "frame-support", git = "https://github.com/ProChain/substrate.git" }
 balances = { package = "pallet-balances", git = "https://github.com/ProChain/substrate.git" }
 transaction-payment = { package = "pallet-transaction-payment", git = "https://github.com/ProChain/substrate.git" }
@@ -35,10 +35,10 @@ criterion = "0.3.0"
 
 [features]
 wasmtime = [
-    "substrate-executor/wasmtime",
+    "sc-executor/wasmtime",
 ]
 wasmi-errno = [
-	"substrate-executor/wasmi-errno",
+	"sc-executor/wasmi-errno",
 ]
 stress-test = []
 

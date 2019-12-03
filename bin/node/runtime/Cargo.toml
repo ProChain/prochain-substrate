@@ -15,21 +15,21 @@ serde = { version = "1.0.102", optional = true }
 simple-json = { version = '0.1.0', git = "https://github.com/xlc/lite-json.git", default-features = false }
 
 # primitives
-authority-discovery-primitives = { package = "substrate-authority-discovery-primitives", git = "https://github.com/ProChain/substrate.git", default-features = false }
-babe-primitives = { package = "substrate-consensus-babe-primitives", git = "https://github.com/ProChain/substrate.git", default-features = false }
-block-builder-api = { package = "substrate-block-builder-runtime-api", git = "https://github.com/ProChain/substrate.git", default-features = false}
-inherents = { package = "substrate-inherents", git = "https://github.com/ProChain/substrate.git", default-features = false }
+authority-discovery-primitives = { package = "sp-authority-discovery", git = "https://github.com/ProChain/substrate.git", default-features = false }
+babe-primitives = { package = "sp-consensus-babe", git = "https://github.com/ProChain/substrate.git", default-features = false }
+block-builder-api = { package = "sp-block-builder", git = "https://github.com/ProChain/substrate.git", default-features = false}
+inherents = { package = "sp-inherents", git = "https://github.com/ProChain/substrate.git", default-features = false }
 node-primitives = { path = "../primitives", default-features = false }
-offchain-primitives = { package = "substrate-offchain-primitives", git = "https://github.com/ProChain/substrate.git", default-features = false }
-primitives = { package = "substrate-primitives",  git = "https://github.com/ProChain/substrate.git", default-features = false }
-rstd = { package = "sr-std", git = "https://github.com/ProChain/substrate.git", default-features = false }
-sr-api = { git = "https://github.com/ProChain/substrate.git", default-features = false }
-sr-primitives = { git = "https://github.com/ProChain/substrate.git", default-features = false }
-sr-staking-primitives = { git = "https://github.com/ProChain/substrate.git", default-features = false }
-substrate-keyring = { git = "https://github.com/ProChain/substrate.git", optional = true }
-substrate-session = { git = "https://github.com/ProChain/substrate.git", default-features = false }
-tx-pool-api = { package = "substrate-transaction-pool-runtime-api", git = "https://github.com/ProChain/substrate.git", default-features = false }
-version = { package = "sr-version", git = "https://github.com/ProChain/substrate.git", default-features = false }
+offchain-primitives = { package = "sp-offchain", git = "https://github.com/ProChain/substrate.git", default-features = false }
+primitives = { package = "sp-core",  git = "https://github.com/ProChain/substrate.git", default-features = false }
+rstd = { package = "sp-std", git = "https://github.com/ProChain/substrate.git", default-features = false }
+sp-api = { git = "https://github.com/ProChain/substrate.git", default-features = false }
+sp-runtime = { git = "https://github.com/ProChain/substrate.git", default-features = false }
+sp-staking = { git = "https://github.com/ProChain/substrate.git", default-features = false }
+sp-keyring = { git = "https://github.com/ProChain/substrate.git", optional = true }
+sp-sesssion = { git = "https://github.com/ProChain/substrate.git", default-features = false }
+txpool-runtime-api = { package = "sp-transaction-pool-runtime-api", git = "https://github.com/ProChain/substrate.git", default-features = false }
+version = { package = "sp-version", git = "https://github.com/ProChain/substrate.git", default-features = false }
 
 # frame dependencies
 authority-discovery = { package = "pallet-authority-discovery", git = "https://github.com/ProChain/substrate.git", default-features = false }
@@ -51,7 +51,7 @@ nicks = { package = "pallet-nicks", git = "https://github.com/ProChain/substrate
 offences = { package = "pallet-offences", git = "https://github.com/ProChain/substrate.git", default-features = false }
 randomness-collective-flip = { package = "pallet-randomness-collective-flip", git = "https://github.com/ProChain/substrate.git", default-features = false }
 session = { package = "pallet-session", git = "https://github.com/ProChain/substrate.git", default-features = false, features = ["historical"] }
-staking = { package = "pallet-staking", git = "https://github.com/ProChain/substrate.git", default-features = false }
+staking = { package = "pallet-staking", git = "https://github.com/ProChain/substrate.git", default-features = false, features = ["migrate"] }
 pallet-staking-reward-curve = { git = "https://github.com/ProChain/substrate.git"}
 sudo = { package = "pallet-sudo", git = "https://github.com/ProChain/substrate.git", default-features = false }
 support = { package = "frame-support", git = "https://github.com/ProChain/substrate.git", default-features = false }
@@ -62,7 +62,7 @@ treasury = { package = "pallet-treasury", git = "https://github.com/ProChain/sub
 utility = { package = "frame-utility", git = "https://github.com/ProChain/substrate.git", default-features = false }
 transaction-payment = { package = "pallet-transaction-payment", git = "https://github.com/ProChain/substrate.git", default-features = false }
 transaction-payment-rpc-runtime-api = { package = "pallet-transaction-payment-rpc-runtime-api", git = "https://github.com/ProChain/substrate.git", default-features = false }
-runtime-io = { package = "sr-io", git = "https://github.com/ProChain/substrate.git", default-features = false }
+runtime-io = { package = "sp-io", git = "https://github.com/ProChain/substrate.git", default-features = false }
 
 # inner dependencies
 did = { path = "../modules/did", default-features = false }
@@ -110,12 +110,12 @@ std = [
 	"serde",
 	"session/std",
 	"simple-json/std",
-	"sr-api/std",
-	"sr-primitives/std",
-	"sr-staking-primitives/std",
+	"sp-api/std",
+	"sp-runtime/std",
+	"sp-staking/std",
 	"staking/std",
-	"substrate-keyring",
-	"substrate-session/std",
+	"sp-keyring",
+	"sp-sesssion/std",
 	"sudo/std",
 	"support/std",
 	"system-rpc-runtime-api/std",
@@ -124,7 +124,7 @@ std = [
 	"transaction-payment-rpc-runtime-api/std",
 	"transaction-payment/std",
 	"treasury/std",
-	"tx-pool-api/std",
+	"txpool-runtime-api/std",
 	"utility/std",
 	"version/std",
 	"did/std",

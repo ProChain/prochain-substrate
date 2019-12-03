@@ -1,11 +1,11 @@
 #![cfg_attr(not(feature = "std"), no_std)]
 
-use sr_primitives::app_crypto::{KeyTypeId, RuntimeAppPublic};
+use sp_runtime::app_crypto::{KeyTypeId, RuntimeAppPublic};
 use codec::{Decode, Encode};
 use primitives::offchain::{Duration, HttpRequestId, HttpRequestStatus};
 use rstd::result::Result;
 use rstd::vec::Vec;
-use sr_primitives::{
+use sp_runtime::{
     traits::Member,
     transaction_validity::{
         TransactionValidity, InvalidTransaction, ValidTransaction, UnknownTransaction, TransactionLongevity,
@@ -23,10 +23,10 @@ pub const BUFFER_LEN: usize = 2048;
 
 pub mod sr25519 {
     mod app_sr25519 {
-        use sr_primitives::app_crypto::{app_crypto, sr25519};
+        use sp_runtime::app_crypto::{app_crypto, sr25519};
         app_crypto!(sr25519, super::super::KEY_TYPE);
 
-        impl From<Signature> for sr_primitives::AnySignature {
+        impl From<Signature> for sp_runtime::AnySignature {
             fn from(sig: Signature) -> Self {
                 sr25519::Signature::from(sig).into()
             }

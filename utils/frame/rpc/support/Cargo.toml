@@ -11,7 +11,7 @@ jsonrpc-core = "14"
 parity-scale-codec = "1"
 serde = "1"
 frame-support = { git = "https://github.com/ProChain/substrate.git" }
-substrate-primitives-storage = { git = "https://github.com/ProChain/substrate.git" }
+sp-core-storage = { git = "https://github.com/ProChain/substrate.git" }
 sc-rpc-api = { git = "https://github.com/ProChain/substrate.git" }
 
 [dev-dependencies]

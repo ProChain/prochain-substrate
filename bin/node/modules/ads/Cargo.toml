@@ -17,16 +17,16 @@ did = { path = "../did", default-features = false }
 
 # primitives
 node-primitives = { path = "../../primitives", default-features = false }
-primitives = { package = "substrate-primitives",  git = "https://github.com/ProChain/substrate.git", default-features = false }
-rstd = { package = "sr-std", git = "https://github.com/ProChain/substrate.git", default-features = false }
-sr-primitives = { git = "https://github.com/ProChain/substrate.git", default-features = false }
+primitives = { package = "sp-core",  git = "https://github.com/ProChain/substrate.git", default-features = false }
+rstd = { package = "sp-std", git = "https://github.com/ProChain/substrate.git", default-features = false }
+sp-runtime = { git = "https://github.com/ProChain/substrate.git", default-features = false }
 
 # frame dependencies
 balances = { package = "pallet-balances", git = "https://github.com/ProChain/substrate.git", default-features = false }
 support = { package = "frame-support", git = "https://github.com/ProChain/substrate.git", default-features = false }
 system = { package = "frame-system", git = "https://github.com/ProChain/substrate.git", default-features = false }
 timestamp = { package = "pallet-timestamp", git = "https://github.com/ProChain/substrate.git", default-features = false }
-runtime-io = { package = "sr-io", git = "https://github.com/ProChain/substrate.git", default-features = false }
+runtime-io = { package = "sp-io", git = "https://github.com/ProChain/substrate.git", default-features = false }
 
 [dev-dependencies]
 
@@ -40,7 +40,7 @@ std = [
 	"rstd/std",
 	"rustc-hex",
 	"serde",
-	"sr-primitives/std",
+	"sp-runtime/std",
 	"support/std",
 	"system/std",
 	"timestamp/std",

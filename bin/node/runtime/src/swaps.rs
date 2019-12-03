@@ -1,5 +1,5 @@
 use codec::{Decode, Encode};
-use sr_primitives::traits::{Zero, Bounded, Member, SimpleArithmetic};
+use sp_runtime::traits::{Zero, Bounded, Member, SimpleArithmetic};
 use support::{
     decl_event, decl_module, decl_storage, ensure, Parameter, StorageMap, StorageValue,
     traits::{Currency, WithdrawReason, WithdrawReasons, ExistenceRequirement},

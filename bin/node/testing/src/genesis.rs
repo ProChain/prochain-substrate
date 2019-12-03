@@ -25,7 +25,7 @@ use node_runtime::{
 use hex_literal::hex;
 use node_runtime::constants::currency::*;
 use primitives::ChangesTrieConfiguration;
-use sr_primitives::Perbill;
+use sp_runtime::Perbill;
 
 
 /// Create genesis runtime configuration for tests.
