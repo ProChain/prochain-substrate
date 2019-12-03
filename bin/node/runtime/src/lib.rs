@@ -332,16 +332,16 @@ parameter_types! {
 impl elections_phragmen::Trait for Runtime {
 	type Event = Event;
 	type Currency = Balances;
+	type ChangeMembers = Council;
 	type CurrencyToVote = CurrencyToVoteHandler;
 	type CandidacyBond = CandidacyBond;
 	type VotingBond = VotingBond;
 	type TermDuration = TermDuration;
 	type DesiredMembers = DesiredMembers;
 	type DesiredRunnersUp = DesiredRunnersUp;
-	type LoserCandidate = ();
-	type BadReport = ();
-	type KickedMember = ();
-	type ChangeMembers = Council;
+	type LoserCandidate = Treasury;
+	type BadReport = Treasury;
+	type KickedMember = Treasury;
 }
 
 type TechnicalCollective = collective::Instance2;
@@ -515,7 +515,7 @@ impl did::Trait for Runtime {
 }
 
 use oracle::sr25519::AuthorityId as OracleId;
-/// We need to define the Transaction signer for that using the Key definition
+// We need to define the Transaction signer for that using the Key definition
 type SubmitTransactionOracle = TransactionSubmitter<OracleId, Runtime, UncheckedExtrinsic>;
 
 impl oracle::Trait for Runtime {
@@ -557,7 +557,7 @@ construct_runtime!(
 		Democracy: democracy::{Module, Call, Storage, Config, Event<T>},
 		Council: collective::<Instance1>::{Module, Call, Storage, Origin<T>, Event<T>, Config<T>},
 		TechnicalCommittee: collective::<Instance2>::{Module, Call, Storage, Origin<T>, Event<T>, Config<T>},
-		Elections: elections_phragmen::{Module, Call, Storage, Event<T>},
+		ElectionsPhragmen: elections_phragmen::{Module, Call, Storage, Event<T>},
 		TechnicalMembership: membership::<Instance1>::{Module, Call, Storage, Event<T>, Config<T>},
 		FinalityTracker: finality_tracker::{Module, Call, Inherent},
 		Grandpa: grandpa::{Module, Call, Storage, Config, Event},
