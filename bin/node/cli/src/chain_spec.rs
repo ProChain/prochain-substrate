@@ -28,12 +28,15 @@ use node_runtime::Block;
 use node_runtime::constants::currency::*;
 use sc_service;
 use hex_literal::hex;
+use std::fs::File;
+use std::io::Read;
 use sc_telemetry::TelemetryEndpoints;
 use grandpa_primitives::{AuthorityId as GrandpaId};
 use babe_primitives::{AuthorityId as BabeId};
 use im_online::sr25519::{AuthorityId as ImOnlineId};
 use authority_discovery_primitives::AuthorityId as AuthorityDiscoveryId;
 use sp_runtime::{Perbill, traits::{Verify, IdentifyAccount}};
+use hex::FromHex;
 
 pub use node_primitives::{AccountId, Balance, Signature};
 pub use node_runtime::GenesisConfig;
@@ -47,6 +50,10 @@ const PRA_PROPERTIES: &str = r#"
 			"tokenSymbol": "PRA"
 		}"#;
 
+#[derive(Serialize, Deserialize)]
+struct Allocation {
+    balances: Vec<(String, String)>,
+}
 /// Node `ChainSpec` extensions.
 ///
 /// Additional parameters for some Substrate core modules,
@@ -395,13 +402,92 @@ fn prochain_testnet_genesis() -> GenesisConfig {
 		].into();
 
 		let endowed_accounts: Vec<AccountId> = vec![root_key.clone()];
+		let intial_allocation_json = get_intial_allocation().unwrap();
+		let intial_allocation = intial_allocation_json.0;
+		let intial_total = intial_allocation_json.1;
 
-		testnet_genesis(
-			initial_authorities,
-			root_key,
-			Some(endowed_accounts),
-			false,
-		)
+		const STASH: Balance = 10_000 * DOLLARS;
+		const TOTAL_STASH: Balance = 20_000 * DOLLARS;
+		let endowed_amount: Balance = 100_000_000 * DOLLARS - intial_total - TOTAL_STASH;
+
+		GenesisConfig {
+			system: Some(SystemConfig {
+				code: WASM_BINARY.to_vec(),
+				changes_trie_config: Default::default(),
+			}),
+			balances: Some(BalancesConfig {
+				balances: endowed_accounts.iter().cloned()
+					.map(|k| (k, endowed_amount))
+					.chain(initial_authorities.iter().map(|x| (x.0.clone(), STASH)))
+					.chain(intial_allocation.iter().map(|x| (x.0.clone(), x.1.clone())))
+					.collect(),
+				vesting: vec![],
+			}),
+			indices: Some(IndicesConfig {
+				ids: endowed_accounts.iter().cloned()
+					.chain(initial_authorities.iter().map(|x| x.0.clone()))
+					.collect::<Vec<_>>(),
+			}),
+			session: Some(SessionConfig {
+				keys: initial_authorities.iter().map(|x| {
+					(x.0.clone(), session_keys(x.2.clone(), x.3.clone(), x.4.clone(), x.5.clone()))
+				}).collect::<Vec<_>>(),
+			}),
+			staking: Some(StakingConfig {
+				current_era: 0,
+				validator_count: initial_authorities.len() as u32 * 2,
+				minimum_validator_count: initial_authorities.len() as u32,
+				stakers: initial_authorities.iter().map(|x| {
+					(x.0.clone(), x.1.clone(), STASH, StakerStatus::Validator)
+				}).collect(),
+				invulnerables: initial_authorities.iter().map(|x| x.0.clone()).collect(),
+				slash_reward_fraction: Perbill::from_percent(10),
+				.. Default::default()
+			}),
+			democracy: Some(DemocracyConfig::default()),
+			collective_Instance1: Some(CouncilConfig {
+				members: vec![],
+				phantom: Default::default(),
+			}),
+			collective_Instance2: Some(TechnicalCommitteeConfig {
+				members: vec![],
+				phantom: Default::default(),
+			}),
+			contracts: Some(ContractsConfig {
+				current_schedule: contracts::Schedule {
+					enable_println: false, // this should only be enabled on development chains
+					..Default::default()
+				},
+				gas_price: 1 * MILLICENTS,
+			}),
+			sudo: Some(SudoConfig {
+				key: root_key,
+			}),
+			babe: Some(BabeConfig {
+				authorities: vec![],
+			}),
+			im_online: Some(ImOnlineConfig {
+				keys: vec![],
+			}),
+			authority_discovery: Some(AuthorityDiscoveryConfig {
+				keys: vec![],
+			}),
+			grandpa: Some(GrandpaConfig {
+				authorities: vec![],
+			}),
+			membership_Instance1: Some(Default::default()),
+			treasury: Some(Default::default()),
+			did: Some(DidConfig {
+				genesis_account: hex!["22df4b685df33f070ae6e5ee27f745de078adff099d3a803ec67afe1168acd4f"].into(),
+				min_deposit: 50 * DOLLARS,
+				base_quota: 250,
+				fee_to_previous: 25 * DOLLARS,
+			}),
+			ads: Some(AdsConfig {
+				contract: hex!["22df4b685df33f070ae6e5ee27f745de078adff099d3a803ec67afe1168acd4f"].into(),
+				min_deposit: 500 * DOLLARS,
+			}),
+		}
 	}
 
 	/// prochain testnet config
@@ -417,6 +503,28 @@ fn prochain_testnet_genesis() -> GenesisConfig {
 			properties,
 			Default::default(),
 		)
+	}
+
+	// Give each intial participant the allocation,
+	fn get_intial_allocation() -> Result<(Vec<(AccountId, Balance)>, Balance), String> {
+		let mut file = File::open("intial_drop.json").expect("Unable to open");
+		let mut data = String::new();
+		file.read_to_string(&mut data).unwrap();
+
+		let json: Allocation = serde_json::from_str(&data).unwrap();
+		let balances_json = json.balances;
+
+		let balances: Vec<(AccountId, Balance)> = balances_json.clone().into_iter().map(|e| {
+			return (
+				<[u8; 32]>::from_hex(e.0).unwrap().into(),
+				e.1.to_string().parse::<Balance>().unwrap(),
+			);
+		}).collect();
+
+		let total: Balance = balances_json.into_iter().map(|e| {
+			e.1.to_string().parse::<Balance>().unwrap()
+		}).sum();
+		Ok((balances, total))
 	}
 
 #[cfg(test)]
