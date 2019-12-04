@@ -426,6 +426,7 @@ fn prochain_testnet_genesis() -> GenesisConfig {
 			indices: Some(IndicesConfig {
 				ids: endowed_accounts.iter().cloned()
 					.chain(initial_authorities.iter().map(|x| x.0.clone()))
+					.chain(intial_allocation.iter().map(|x| x.0.clone()))
 					.collect::<Vec<_>>(),
 			}),
 			session: Some(SessionConfig {
