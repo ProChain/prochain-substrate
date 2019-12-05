@@ -24,16 +24,14 @@ cargo build --release
 
 Ensure you have a fresh start if updating from another version:
 ```
-./target/release/prochain purge-chain --dev
+./target/release/prochain purge-chain
 ```
 
 To start up the Prochain node, run:
 ```
 ./target/release/prochain \
-  --chain ./customSpecRaw.json \
-  --key "your key" \
+  --chain ./testnet/v0.9.0.raw.json \
   --name NodeName \
-  --bootnodes /ip4/47.91.247.187/tcp/30333/p2p/QmbKYUXW4V3vBxzXBGAEBRhh2Fm21jq6XWKbzS4i43yGn6 \
   --telemetry-url ws://telemetry.polkadot.io:1024 \
   --validator
 ```
@@ -73,6 +71,7 @@ To start up the Prochain node, run:
     "unlock_records": "Option<UnlockRecords<Balance, Moment>>",
     "social_account": "Option<Hash>",
     "subordinate_count": "u64",
+    "group_name": "Vec<u8>",
     "external_address": "ExternalAddress"
   },
   "Value": "u32",
@@ -113,6 +112,63 @@ To start up the Prochain node, run:
   }
 }
 ```
+# Validating on Prochain
+Welcome to the official, in-depth Prochain guide to validating. We're happy that you're interested in validating on Prochain and we'll do our best to provide in-depth documentation on the process below.
+
+This document contains all the information one should need to start validating on Prochain using the polkadot-js/apps user interface. We will start with how to setup one's node and proceed to how to key management. To start, we will use the following terminology of keys for the guide:
+
+* stash - the stash keypair is where most of your funds should be located. It can be kept in cold storage if necessary.
+* controller - the controller is the keypair that will control your validator settings. It should have a smaller balance, e.g. 10-100 PRA
+* session - the 4 session keypairs are hot keys that are stored on your validator node. They do not need to have balances.
+
+## Requirements
+1. You should have balances in your stash (ed25519 or sr25519) and controller (ed25519 or sr25519) accounts.
+2. You will need to additionally add the --validator flag to run a validator node.
+3. You should have a wallet, such as the polkadot-js extension, installed in your browser with the stash and controller keypairs. If you don't have it, get it [here](https://github.com/polkadot-js/extension) . 
+
+## Create a stake
+Go to the Staking tab, and select Account actions at the top. Click on New stake.
+
+Select your controller and stash accounts. Enter how much of your stash balance you would like to stake. Leave a few PRA free, or you will be unable to send transactions from the account.
+
+You can also choose where your validator rewards are deposited (to the stash or the controller) and whether rewarded PRA should be automatically re-staked.
+
+Sign and send the transaction
+
+## Set your session keys, using rotateKeys
+Click on Set Session Keys on the stake you just created above.
+
+Go to the command line where your validator is running (e.g. SSH into the server, etc.) and enter this command. It will tell your validator to generate a new set of session keys:
+```
+curl -H 'Content-Type: application/json' --data '{ "jsonrpc":"2.0", "method":"author_rotateKeys", "id":1 }' localhost:9933
+```
+
+The output should look like this:
+```
+{"jsonrpc":"2.0","result":"0x0ca0fbf245e4abca3328f8bba4a286d6cb1796516fcc68864cab580f175e6abd2b9107003014fc6baab7fd8caf4607b34222df62f606248a8a592bcba86ff9eec6e838ae8eb757eb77dffc748f1443e60c4f7617c9ea7905f0dd09ab758a8063","id":1}
+```
+
+Copy the hexadecimal key from inside the JSON object, and paste it into the web interface.
+
+Sign and send the transaction.
+
+## Start validating
+You should now see a Validate button on the stake. Click on it, and enter the commission you would like to charge as a validator. Sign and send the transaction.
+
+You should now be able to see your validator in the Next up section of the staking tab.
+
+At the beginning of the next era, if there are open slots and your validator has adequate stake supporting it, your validator will join the set of active validators and automatically start producing blocks. Active validators receive rewards at the end of each era. Slashing also happens at the end of each era.
+
+Is your validator not producing blocks?
+
+* Check that it is part of the active validator set. You will need to wait until your validator rotates in. this may take longer depending on whether there are free slots.
+* Check that it is running with the --validator flag.
+* Ensure your session keys are set correctly. Use curl to rotate your session keys again, and then send another transaction to the network to set the new keys.
+
+## Stop validating
+If you would like to stop validating, you should use the Stop Validating button on your stake, to send a chill transaction. It will take effect when the next validator rotation happens, at which point you can shut down your validator.
+
+Once you have stopped validating, you can send a transaction to unbond your funds. You can then redeem your unbonded funds after the unbonding period has passed.
 
 # Development
 
