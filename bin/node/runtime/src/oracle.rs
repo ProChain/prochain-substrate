@@ -2,20 +2,18 @@
 
 use sp_runtime::app_crypto::{KeyTypeId, RuntimeAppPublic};
 use codec::{Decode, Encode};
-use primitives::{offchain::Duration, offchain::HttpRequestId, offchain::HttpRequestStatus, offchain::Timestamp,
-	crypto::UncheckedInto};
+use primitives::{offchain::Duration, offchain::HttpRequestId, offchain::HttpRequestStatus};
 use rstd::{prelude::*, result::Result, vec::Vec};
 use sp_runtime::{
-    traits::Member, traits::Hash, traits::StaticLookup,
+    traits::Member, traits::Hash,
     transaction_validity::{
         TransactionValidity, TransactionPriority, ValidTransaction, UnknownTransaction, TransactionLongevity}
 };
 use support::{decl_event, decl_module, decl_storage, ensure, Parameter, StorageMap, StorageValue,
     dispatch::Result as dispatch_result, weights::SimpleDispatchInfo};
-use system::{offchain::SubmitUnsignedTransaction, ensure_none, ensure_signed};
+use system::{offchain::SubmitUnsignedTransaction, ensure_none, ensure_signed, ensure_root};
 use simple_json::{self, json::JsonValue};
 use hex::FromHex;
-use core::convert::TryFrom;
 
 pub const KEY_TYPE: KeyTypeId = KeyTypeId(*b"orin");
 pub const BUFFER_LEN: usize = 2048;
@@ -64,7 +62,7 @@ const MESSAGE_OK: &'static str = "OK";
 const STR_PREFIX: &'static str = "0x";
 
 #[derive(Encode, Decode, Clone, PartialEq, Eq, Debug)]
-pub struct EventHTLC<BlockNumber, Balance, Hash>
+pub struct EventHTLC<BlockNumber, Balance, Hash, AccountId>
 where
     BlockNumber: PartialEq + Eq + Decode + Encode,
 {
@@ -78,7 +76,7 @@ where
 	htlc_timestamp: u64,
     sender_addr: Vec<u8>,
     sender_chain_type: HTLCChain,
-    receiver_addr: Vec<u8>,
+    receiver_addr: AccountId,
     receiver_chain_type: HTLCChain,
 	recipient_addr: Vec<u8>,
 	out_amount: Balance,
@@ -116,11 +114,14 @@ decl_storage! {
         /// Stores the locked pra tokens
 		pub PraTokenAddr get(pra_token_addr): Option<T::AccountId>;
 
+		/// The current set of keys that may call update
+		pub Authorities get(authorities) config(): Vec<T::AccountId>;
+
 		/// Stores offchain request jobs
 		pub OcRequests get(oc_requests): Vec<EventLogSource>;
 
-		/// Key is swap_id
-		pub SwapData get(swap_data): map T::Hash => Option<EventHTLC<T::BlockNumber, T::Balance, T::Hash>>;
+		/// Key is swap_id, value is EventHTLC
+		pub SwapData get(swap_data): map T::Hash => Option<EventHTLC<T::BlockNumber, T::Balance, T::Hash, T::AccountId>>;
 
 		/// Key is swap_id, Value is HTLCStates
 		pub SwapStates get(swap_states): map T::Hash => Option<HTLCStates>;
@@ -135,11 +136,15 @@ decl_event!(
 		<T as system::Trait>::Hash,
 		<T as balances::Trait>::Balance,
     {
-		/// Set pra_token_addr
+		///Setup pra_token_addr
 		INIT(AccountId),
 
-		//eth_contract_addr, htlc_block_number, expire_height, random_number_hash, swap_id, sender_addr, out_amount, htlc_timestamp
-		UpdateHTLC(Vec<u8>, BlockNumber, u32, Vec<u8>, Hash, Vec<u8>, Balance, u64),
+		//receiver_addr, eth_contract_addr, htlc_block_number, expire_height, random_number_hash, swap_id, sender_addr, out_amount, htlc_timestamp
+		UpdateHTLC(AccountId, Vec<u8>, BlockNumber, u32, Vec<u8>, Hash, Vec<u8>, Balance, u64),
+
+		//ClaimHTLC
+
+		//RefundHTLC
     }
 );
 
@@ -150,8 +155,7 @@ decl_module! {
         // Initializing event fetch jobs
         #[weight = SimpleDispatchInfo::FixedNormal(500_000)]
         pub fn kickoff_event_fetch(origin, pra_token_addr: T::AccountId) -> dispatch_result {
-			//TODO: ensure root
-			let who = ensure_signed(origin)?;
+			ensure_root(origin)?;
 
 			runtime_io::misc::print_utf8(b"======== kickoff event fetch jobs");
             <Self as Store>::OcRequests::kill();
@@ -176,21 +180,31 @@ decl_module! {
         // Kill all event fetch jobs
         #[weight = SimpleDispatchInfo::FixedNormal(500_000)]
         pub fn kill_event_fetch(origin) -> dispatch_result {
-            let _ = ensure_signed(origin)?;
+            ensure_root(origin)?;
 
             runtime_io::misc::print_utf8(b"======== kill event fetch jobs");
             <Self as Store>::OcRequests::kill();
 
             Ok(())
-        }
+		}
+
+		// Add a new authority to the set of keys that are allowed to update.
+		pub fn add_authority(origin, who: T::AccountId) -> dispatch_result {
+			ensure_root(origin)?;
+
+			if !Self::is_authority(&who) {
+				<Authorities<T>>::mutate(|l| l.push(who));
+			}
+			Ok(())
+		}
 
         // Runs after every block.
         fn offchain_worker(now: T::BlockNumber) {
             Self::offchain_events(now);
         }
 
-		// Update htlc and status
-		fn update_enevt_htlc(origin, htlc: EventHTLC<T::BlockNumber, T::Balance, T::Hash>) {
+		// Update htlc and status, TODO: add auth control
+		fn update_enevt_htlc(origin, htlc: EventHTLC<T::BlockNumber, T::Balance, T::Hash, T::AccountId>) {
 			ensure_none(origin)?;
 
 			ensure!(!<SwapData<T>>::exists(htlc.swap_id), "htlc already exists");
@@ -199,7 +213,7 @@ decl_module! {
 			<SwapData<T>>::insert(htlc.swap_id, &htlc);
 			<SwapStates<T>>::insert(htlc.swap_id, HTLCStates::OPEN);
 
-			Self::deposit_event(RawEvent::UpdateHTLC(htlc.eth_contract_addr, htlc.htlc_block_number, htlc.expire_height,
+			Self::deposit_event(RawEvent::UpdateHTLC(htlc.receiver_addr, htlc.eth_contract_addr, htlc.htlc_block_number, htlc.expire_height,
 				htlc.random_number_hash, htlc.swap_id, htlc.sender_addr, htlc.out_amount, htlc.htlc_timestamp));
 		}
     }
@@ -211,6 +225,7 @@ impl<T: Trait> Module<T> {
             let res = Self::fetch_events(fetch_info.event_name, fetch_info.event_url);
 
             if let Err(err_msg) = res {
+				runtime_io::misc::print_utf8(b"======== fetch events err msg");
                 runtime_io::misc::print_utf8(err_msg.as_bytes());
             }
         }
@@ -244,15 +259,15 @@ impl<T: Trait> Module<T> {
         Ok(())
     }
 
-    fn parse_data(res: [u8; BUFFER_LEN]) -> Result<EventHTLC<T::BlockNumber, T::Balance, T::Hash>, &'static str> {
+    fn parse_data(res: [u8; BUFFER_LEN]) -> Result<EventHTLC<T::BlockNumber, T::Balance, T::Hash, T::AccountId>, &'static str> {
         runtime_io::misc::print_utf8(b"======== start parse_json");
         runtime_io::misc::print_utf8(&res);
 
 		let json_str = core::str::from_utf8(&res).map_err(|_| "err parse json from utf8")?;
 
         if let Ok(json_val) = simple_json::parse_json(json_str) {
-            let mut message = Vec::new();;
-            let mut status = Vec::new();;
+            let mut message = Vec::new();
+            let mut status = Vec::new();
             let mut results = Vec::new();
 
             json_val
@@ -357,18 +372,18 @@ impl<T: Trait> Module<T> {
     }
 
     fn parse_htlc_event(contract_addr: Vec<u8>, topics: Vec<Vec<u8>>, data: Vec<u8>,
-		event_block_number: Vec<u8>, event_time_stamp: Vec<u8>, tx_hash: Vec<u8>, tx_index: Vec<u8>)
-                        -> Result<EventHTLC<T::BlockNumber, T::Balance, T::Hash>, &'static str> {
+						event_block_number: Vec<u8>, event_time_stamp: Vec<u8>, tx_hash: Vec<u8>, tx_index: Vec<u8>)
+                        -> Result<EventHTLC<T::BlockNumber, T::Balance, T::Hash, T::AccountId>, &'static str> {
 
 		//indexed topics: _msgSender(Address); _receiverAddr(FixedBytes(32));_swapID(FixedBytes(32))
         let msg_sender = &topics[1][STR_PREFIX.len()..].to_vec();
         let receiver_addr = &topics[2][STR_PREFIX.len()..].to_vec();
 		let swap_id = &topics[3][STR_PREFIX.len()..].to_vec();
 
-		//let receiver_t = <[u8; 32]>::from_hex("Cx5qYMJDA7fuH8MAeRf5o4Xya4Zz9zAqqvSz1joXKoectda").unwrap();
-		//let pub_key = primitives::sr25519::Public::try_from(receiver_t.as_ref()).expect("Invalid hex length for account ID; should be 32 bytes");
-		//let pub_key2 = T::AccountId::from(core::str::from_utf8(&receiver_addr[..]).unwrap()).expect("Invalid hex length for account ID; should be 32 bytes");
-		//ensure!(receiver_accnt != Self::pra_token_addr().unwrap(), "");
+		//#4310, <T::AccountId as Decode>::decode(&mut &hex::from_hex())
+		let receiver_t = Vec::from_hex(&receiver_addr[STR_PREFIX.len()..]).map_err(|_| "err parse receiver_addr from utf8")?;
+		let receiver_accnt = <T::AccountId as Decode>::decode(&mut receiver_t.as_slice()).map_err(|_| "err parse receiver_t from utf8")?;
+		ensure!(receiver_accnt != Self::pra_token_addr().unwrap(), "Needs different accounts");
 
         //unindexed:_recipientAddr(Address);_randomNumberHash(FixedBytes(32));_timestamp(Uint(64));_expireHeight(Uint(256));_outAmount(Uint(256));_praAmount(Uint(256));
         let recipient_addr = &data[STR_PREFIX.len()..66].to_vec();
@@ -396,7 +411,7 @@ impl<T: Trait> Module<T> {
 		let htlc = EventHTLC {
 			eth_contract_addr: contract_addr,
 			event_block_number: T::BlockNumber::from(event_block_num),
-			htlc_block_number: T::BlockNumber::from(event_block_num),
+			htlc_block_number: <system::Module<T>>::block_number(),
 			out_amount: T::Balance::from(event_out_amount),
 			expire_height: expire_block_num - event_block_num,
 			random_number_hash: random_num_hash.clone(),
@@ -405,13 +420,18 @@ impl<T: Trait> Module<T> {
 			htlc_timestamp: htlc_ts,
 			sender_addr: msg_sender.clone(),
 			sender_chain_type: HTLCChain::ETHMain,
-			receiver_addr: receiver_addr.clone(),
+			receiver_addr: receiver_accnt,
 			receiver_chain_type: HTLCChain::PRA,
 			recipient_addr: recipient_addr.clone(),
         };
 
         Ok(htlc)
-    }
+	}
+
+	//TODO: parse claim event
+	fn parse_claim_event() -> Result<EventHTLC<T::BlockNumber, T::Balance, T::Hash, T::AccountId>, &'static str> {
+		Err("")
+	}
 
     fn http_request_get(uri: &str, header: Option<(&str, &str)>) -> Result<[u8; BUFFER_LEN], &'static str> {
         runtime_io::misc::print_utf8(b"request http request ========");
@@ -443,6 +463,34 @@ impl<T: Trait> Module<T> {
             }
             Err(_) => return Err("Parse body failed"),
         }
+	}
+
+	//Helper that confirms whether the given `AccountId` has auth
+	fn is_authority(who: &T::AccountId) -> bool {
+		Self::authorities().into_iter().find(|i| i == who).is_some()
+	}
+
+	//if HTLC exists
+	fn is_swap_exist(swap_id: T::Hash) -> bool {
+		let state = Self::swap_states(swap_id);
+
+		state.is_some() && state.unwrap() != HTLCStates::INVALID
+	}
+
+	//if HTLC claimable
+	fn is_claimable(swap_id: T::Hash) -> bool {
+		let state = Self::swap_states(swap_id);
+
+		if state.is_some() && state.unwrap() == HTLCStates::OPEN {
+			let swap = Self::swap_data(swap_id);
+			if swap.is_some() {
+				let swap = swap.unwrap();
+				if <system::Module<T>>::block_number() < swap.htlc_block_number + T::BlockNumber::from(swap.expire_height) {
+					return true;
+				}
+			}
+		}
+		false
 	}
 }
 
