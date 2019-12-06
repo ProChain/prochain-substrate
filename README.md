@@ -44,7 +44,6 @@ To start up the Prochain node, run:
 
 
 ```json
-
 {
   "ExternalAddress": {
     "btc": "Vec<u8>",
@@ -97,7 +96,7 @@ To start up the Prochain node, run:
     "sender_chain_type": "HTLCChain",
     "receiver_addr": "Vec<u8>",
     "receiver_chain_type": "HTLCChain",
-    "recipient_addr": "Vec<u8>",
+    "recipient_addr": "AccountId",
     "out_amount": "Balance"
   },
   "HTLCChain": {
