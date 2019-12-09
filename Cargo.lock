@@ -3046,6 +3046,7 @@ dependencies = [
  "frame-system 2.0.0 (git+https://github.com/ProChain/substrate.git)",
  "frame-system-rpc-runtime-api 2.0.0 (git+https://github.com/ProChain/substrate.git)",
  "frame-utility 2.0.0 (git+https://github.com/ProChain/substrate.git)",
+ "hex 0.4.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "integer-sqrt 0.1.2 (registry+https://github.com/rust-lang/crates.io-index)",
  "node-primitives 2.0.0",
  "pallet-authority-discovery 0.1.0 (git+https://github.com/ProChain/substrate.git)",
