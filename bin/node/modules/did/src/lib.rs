@@ -250,7 +250,7 @@ decl_module! {
 			
 			let mut fee = Self::fee_to_previous();
 			let mut locked_funds = value - fee;
-			let mut max_quota = Self::balance_to_u64(locked_funds / Self::min_deposit()) * Self::base_quota();
+			let mut max_quota = Self::balance_to_u64(locked_funds) * Self::base_quota() / Self::balance_to_u64(Self::min_deposit());
 			let mut rewards_ratio = 20;// basis rewards_ratio is 20%
 
 			if metadata.locked_records.is_none() {
@@ -265,7 +265,7 @@ decl_module! {
 				let old_locked_funds = locked_records.locked_funds;
 				locked_funds = old_locked_funds + value;
 
-				max_quota = Self::balance_to_u64(locked_funds / Self::min_deposit()) * Self::base_quota();
+				max_quota = Self::balance_to_u64(locked_funds) * Self::base_quota() / Self::balance_to_u64(Self::min_deposit());
 				
 				if max_quota >= metadata.subordinate_count {
 					rewards_ratio = 20;
@@ -314,7 +314,7 @@ decl_module! {
 			};
 
 			let new_locked_funds = locked_funds - value;
-			let new_max_quota = Self::balance_to_u64(new_locked_funds / Self::min_deposit()) as u64 * Self::base_quota();
+			let new_max_quota = Self::balance_to_u64(new_locked_funds) * Self::base_quota() / Self::balance_to_u64(Self::min_deposit());
 			let rewards_ratio = if new_max_quota >= metadata.subordinate_count { 20 } else { 100 * (1 - new_max_quota / metadata.subordinate_count) as u64 };
 
 			locked_records = LockedRecords {

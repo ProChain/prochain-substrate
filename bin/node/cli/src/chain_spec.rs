@@ -270,11 +270,13 @@ pub fn testnet_genesis(
 		}),
 		democracy: Some(DemocracyConfig::default()),
 		collective_Instance1: Some(CouncilConfig {
-			members: vec![],
+			members: endowed_accounts.iter().cloned()
+				.collect::<Vec<_>>()[..].to_vec(),
 			phantom: Default::default(),
 		}),
 		collective_Instance2: Some(TechnicalCommitteeConfig {
-			members: vec![],
+			members: endowed_accounts.iter().cloned()
+				.collect::<Vec<_>>()[..].to_vec(),
 			phantom: Default::default(),
 		}),
 		contracts: Some(ContractsConfig {
@@ -447,11 +449,13 @@ fn prochain_testnet_genesis() -> GenesisConfig {
 			}),
 			democracy: Some(DemocracyConfig::default()),
 			collective_Instance1: Some(CouncilConfig {
-				members: vec![],
+				members: endowed_accounts.iter().cloned()
+				.collect::<Vec<_>>()[..].to_vec(),
 				phantom: Default::default(),
 			}),
 			collective_Instance2: Some(TechnicalCommitteeConfig {
-				members: vec![],
+				members: endowed_accounts.iter().cloned()
+				.collect::<Vec<_>>()[..].to_vec(),
 				phantom: Default::default(),
 			}),
 			contracts: Some(ContractsConfig {

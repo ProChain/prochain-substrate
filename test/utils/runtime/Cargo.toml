@@ -25,7 +25,7 @@ runtime_io = { package = "sp-io", git = "https://github.com/ProChain/substrate.g
 runtime_support = { package = "frame-support", git = "https://github.com/ProChain/substrate.git", default-features = false }
 runtime_version = { package = "sp-version", git = "https://github.com/ProChain/substrate.git", default-features = false }
 serde = { version = "1.0.101", optional = true, features = ["derive"] }
-session = { package = "sp-sesssion", git = "https://github.com/ProChain/substrate.git", default-features = false }
+session = { package = "sp-session", git = "https://github.com/ProChain/substrate.git", default-features = false }
 sp-api = { git = "https://github.com/ProChain/substrate.git", default-features = false }
 sp-runtime = {  git = "https://github.com/ProChain/substrate.git", default-features = false }
 pallet-babe = { git = "https://github.com/ProChain/substrate.git", default-features = false }
@@ -34,7 +34,7 @@ frame-system-rpc-runtime-api = { git = "https://github.com/ProChain/substrate.gi
 pallet-timestamp = { git = "https://github.com/ProChain/substrate.git", default-features = false }
 sc-client = { git = "https://github.com/ProChain/substrate.git", optional = true }
 sp-trie = { git = "https://github.com/ProChain/substrate.git", default-features = false }
-txpool-runtime-api = { package = "sp-transaction-pool-runtime-api", git = "https://github.com/ProChain/substrate.git", default-features = false }
+sp-transaction-pool = { package = "sp-transaction-pool-api", git = "https://github.com/ProChain/substrate.git", default-features = false }
 trie-db = { version = "0.16.0", default-features = false }
 
 [dev-dependencies]
@@ -78,6 +78,6 @@ std = [
 	"pallet-timestamp/std",
 	"sc-client",
 	"sp-trie/std",
-	"txpool-runtime-api/std",
+	"sp-transaction-pool/std",
 	"trie-db/std",
 ]
