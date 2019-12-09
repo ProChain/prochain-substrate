@@ -43,8 +43,7 @@ To start up the Prochain node, run:
 2) Go to *Settings*, open *Developer* tab. Insert in textbox description of types (copy&paste from here) and Save it.
 
 
-```bash
-
+```json
 {
   "ExternalAddress": {
     "btc": "Vec<u8>",
@@ -71,13 +70,8 @@ To start up the Prochain node, run:
     "unlock_records": "Option<UnlockRecords<Balance, Moment>>",
     "social_account": "Option<Hash>",
     "subordinate_count": "u64",
-    "group_name": "Vec<u8>",
+    "group_name": "Option<Vec<u8>>",
     "external_address": "ExternalAddress"
-  },
-  "Value": "u32",
-  "BTCValue": {
-    "price": "u32",
-    "block_number": "u32"
   },
   "AdsMetadata": {
     "advertiser": "Vec<u8>",
@@ -89,26 +83,39 @@ To start up the Prochain node, run:
     "create_time": "Moment",
     "period": "Moment"
   },
-  "HTLC": {
-    "block_number": "BlockNumber",
-    "out_amount": "Balance",
-    "expire_height": "BlockNumber",
-    "random_number_hash": "Hash",
+  "EventHTLC": {
+    "eth_contract_addr": "Vec<u8>",
+    "htlc_block_number": "BlockNumber",
+    "event_block_number": "BlockNumber",
+    "expire_height": "u32",
+    "random_number_hash": "Vec<u8>",
     "swap_id": "Hash",
-    "timestamp": "Moment",
+    "event_timestamp": "u64",
+    "htlc_timestamp": "u64",
     "sender_addr": "Vec<u8>",
-    "sender_chain_type": "u64",
+    "sender_chain_type": "HTLCChain",
     "receiver_addr": "AccountId",
-    "receiver_chain_type": "u64",
-    "recipient_addr": "Vec<u8>"
+    "receiver_chain_type": "HTLCChain",
+    "recipient_addr": "Vec<u8>",
+    "out_amount": "Balance"
   },
-  "States": {
+  "HTLCChain": {
+    "_enum": [
+      "ETHMain",
+      "PRA"
+    ]
+  },
+  "HTLCStates": {
     "_enum": [
       "INVALID",
       "OPEN",
       "COMPLETED",
       "EXPIRED"
     ]
+  },
+  "EventLogSource": {
+    "event_name": "Vec<u8>",
+    "event_url": "Vec<u8>"
   }
 }
 ```

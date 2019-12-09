@@ -2,22 +2,18 @@
 
 use sp_runtime::app_crypto::{KeyTypeId, RuntimeAppPublic};
 use codec::{Decode, Encode};
-use primitives::offchain::{Duration, HttpRequestId, HttpRequestStatus};
-use rstd::result::Result;
-use rstd::vec::Vec;
+use primitives::{offchain::Duration, offchain::HttpRequestId, offchain::HttpRequestStatus};
+use rstd::{prelude::*, result::Result, vec::Vec};
 use sp_runtime::{
-    traits::Member,
+    traits::Member, traits::Hash,
     transaction_validity::{
-        TransactionValidity, TransactionPriority, ValidTransaction, UnknownTransaction, TransactionLongevity,
-    }
+        TransactionValidity, TransactionPriority, ValidTransaction, UnknownTransaction, TransactionLongevity}
 };
 use support::{decl_event, decl_module, decl_storage, ensure, Parameter, StorageMap, StorageValue,
     dispatch::Result as dispatch_result, weights::SimpleDispatchInfo};
-use system::offchain::SubmitUnsignedTransaction;
-use system::{ensure_none, ensure_signed};
-use rstd::prelude::*;
-
-use simple_json::{self, json::JsonValue, parser::Parser};
+use system::{offchain::SubmitUnsignedTransaction, ensure_none, ensure_signed, ensure_root};
+use simple_json::{self, json::JsonValue};
+use hex::FromHex;
 
 pub const KEY_TYPE: KeyTypeId = KeyTypeId(*b"orin");
 pub const BUFFER_LEN: usize = 2048;
@@ -35,19 +31,6 @@ pub mod sr25519 {
     }
 
     pub type AuthorityId = app_sr25519::Public;
-}
-
-// TODO: add Value to Trait, config outside
-pub type Value = u32;
-
-// TODO: BTCValue is just an example, feel free to replace it with another name
-#[derive(Encode, Decode, Clone, PartialEq, Eq, Debug)]
-pub struct BTCValue<BlockNumber>
-where
-    BlockNumber: PartialEq + Eq + Decode + Encode,
-{
-    block_number: BlockNumber,
-    price: Value,
 }
 
 #[derive(Encode, Decode, Clone, PartialEq, Eq)]
@@ -78,23 +61,41 @@ const STATUS_OK: &'static str = "1";
 const MESSAGE_OK: &'static str = "OK";
 const STR_PREFIX: &'static str = "0x";
 
-#[cfg_attr(feature = "std", derive(Debug))]
-#[derive(Encode, Decode, Clone, PartialEq, Eq)]
-pub struct EventHTLC<BlockNumber, Balance, Moment>
+#[derive(Encode, Decode, Clone, PartialEq, Eq, Debug)]
+pub struct EventHTLC<BlockNumber, Balance, Hash, AccountId>
 where
     BlockNumber: PartialEq + Eq + Decode + Encode,
 {
-    block_number: BlockNumber,
-    out_amount: Balance,
+	eth_contract_addr: Vec<u8>,
+	htlc_block_number: BlockNumber,
+    event_block_number: BlockNumber,
     expire_height: u32,
     random_number_hash: Vec<u8>,
-    swap_id: Vec<u8>,
-    timestamp: Moment,
+    swap_id: Hash,
+	event_timestamp: u64,
+	htlc_timestamp: u64,
     sender_addr: Vec<u8>,
-    sender_chain_type: u64,
-    receiver_addr: Vec<u8>,
-    receiver_chain_type: u64,
-    recipient_addr: Vec<u8>,
+    sender_chain_type: HTLCChain,
+    receiver_addr: AccountId,
+    receiver_chain_type: HTLCChain,
+	recipient_addr: Vec<u8>,
+	out_amount: Balance,
+}
+
+#[derive(Encode, Decode, PartialEq, Eq, Clone, Debug)]
+pub enum HTLCStates {
+    INVALID,
+    OPEN,
+    COMPLETED,
+    EXPIRED,
+}
+
+#[derive(Encode, Decode, PartialEq, Eq, Clone, Debug)]
+pub enum HTLCChain {
+    /// Ethereum Mainnet
+    ETHMain,
+    /// Prochain
+    PRA,
 }
 
 pub trait Trait: balances::Trait + timestamp::Trait {
@@ -108,44 +109,55 @@ pub trait Trait: balances::Trait + timestamp::Trait {
     type SubmitTransaction: SubmitUnsignedTransaction<Self, <Self as Trait>::Call>;
 }
 
-// This module's storage items.
 decl_storage! {
     trait Store for Module<T: Trait> as Oracle {
-        pub BlockNumber get(block_number): Option<T::BlockNumber>;
+        /// Stores the locked pra tokens
+		pub PraTokenAddr get(pra_token_addr): Option<T::AccountId>;
 
-        /// Provide price value for external api consuming
-        pub PriceValue get(price_value): Option<u32>;
+		/// The current set of keys that may call update
+		pub Authorities get(authorities) config(): Vec<T::AccountId>;
 
-        /// Values for specific block_number
-        pub Values get(values): map T::BlockNumber => Option<BTCValue<T::BlockNumber>>;
+		/// Stores offchain request jobs
+		pub OcRequests get(oc_requests): Vec<EventLogSource>;
 
-        pub OcRequests get(oc_requests): Vec<EventLogSource>;
+		/// Key is swap_id, value is EventHTLC
+		pub SwapData get(swap_data): map T::Hash => Option<EventHTLC<T::BlockNumber, T::Balance, T::Hash, T::AccountId>>;
+
+		/// Key is swap_id, Value is HTLCStates
+		pub SwapStates get(swap_states): map T::Hash => Option<HTLCStates>;
     }
 }
 
 decl_event!(
     pub enum Event<T>
     where
-        <T as system::Trait>::BlockNumber,
+		<T as system::Trait>::BlockNumber,
+		<T as system::Trait>::AccountId,
+		<T as system::Trait>::Hash,
+		<T as balances::Trait>::Balance,
     {
-        UpdateValue(Value, BlockNumber),
+		///Setup pra_token_addr
+		INIT(AccountId),
+
+		//receiver_addr, eth_contract_addr, htlc_block_number, expire_height, random_number_hash, swap_id, sender_addr, out_amount, htlc_timestamp
+		UpdateHTLC(AccountId, Vec<u8>, BlockNumber, u32, Vec<u8>, Hash, Vec<u8>, Balance, u64),
+
+		//ClaimHTLC
+
+		//RefundHTLC
     }
 );
 
-// The module's dispatchable functions.
 decl_module! {
-    /// The module declaration.
     pub struct Module<T: Trait> for enum Call where origin: T::Origin {
-        // Initializing events
         fn deposit_event() = default;
 
-        // Initializing event fetch tasks
+        // Initializing event fetch jobs
         #[weight = SimpleDispatchInfo::FixedNormal(500_000)]
-        pub fn kickoff_pricefetch(origin) -> dispatch_result {
-            let who = ensure_signed(origin)?;
+        pub fn kickoff_event_fetch(origin, pra_token_addr: T::AccountId) -> dispatch_result {
+			ensure_root(origin)?;
 
-            runtime_io::misc::print_utf8(b"======== kickoff pricefetch");
-
+			runtime_io::misc::print_utf8(b"======== kickoff event fetch jobs");
             <Self as Store>::OcRequests::kill();
 
             for event_log_info in FETCHE_EVENT_LOGS.iter() {
@@ -157,99 +169,105 @@ decl_module! {
                 <Self as Store>::OcRequests::mutate(|v|
                     v.push(event_log)
                 );
-            }
+			}
+
+			<PraTokenAddr<T>>::put(pra_token_addr.clone());
+			Self::deposit_event(RawEvent::INIT(pra_token_addr));
 
             Ok(())
         }
 
-        // Kill all event fetch tasks
+        // Kill all event fetch jobs
         #[weight = SimpleDispatchInfo::FixedNormal(500_000)]
-        pub fn kill_pricefetch(origin) -> dispatch_result {
-            let _ = ensure_signed(origin)?;
+        pub fn kill_event_fetch(origin) -> dispatch_result {
+            ensure_root(origin)?;
 
-            runtime_io::misc::print_utf8(b"======== kill pricefetch");
+            runtime_io::misc::print_utf8(b"======== kill event fetch jobs");
             <Self as Store>::OcRequests::kill();
 
             Ok(())
-        }
+		}
+
+		// Add a new authority to the set of keys that are allowed to update.
+		pub fn add_authority(origin, who: T::AccountId) -> dispatch_result {
+			ensure_root(origin)?;
+
+			if !Self::is_authority(&who) {
+				<Authorities<T>>::mutate(|l| l.push(who));
+			}
+			Ok(())
+		}
 
         // Runs after every block.
         fn offchain_worker(now: T::BlockNumber) {
-            //TODO: check block_number to fetch only once per block
             Self::offchain_events(now);
         }
 
-        // Submit values
-        pub fn submit_value(origin, value: BTCValue<T::BlockNumber>) {
-            ensure_none(origin)?;
+		// Update htlc and status, TODO: add auth control
+		fn update_enevt_htlc(origin, htlc: EventHTLC<T::BlockNumber, T::Balance, T::Hash, T::AccountId>) {
+			ensure_none(origin)?;
 
-            // update value in storage
-            <Values<T>>::insert(value.block_number, &value);
-            <PriceValue>::put(32);
+			ensure!(!<SwapData<T>>::exists(htlc.swap_id), "htlc already exists");
+			ensure!(!<SwapStates<T>>::exists(htlc.swap_id), "htlc already exists");
 
-            Self::deposit_event(RawEvent::UpdateValue(value.price, value.block_number));
-        }
+			<SwapData<T>>::insert(htlc.swap_id, &htlc);
+			<SwapStates<T>>::insert(htlc.swap_id, HTLCStates::OPEN);
+
+			Self::deposit_event(RawEvent::UpdateHTLC(htlc.receiver_addr, htlc.eth_contract_addr, htlc.htlc_block_number, htlc.expire_height,
+				htlc.random_number_hash, htlc.swap_id, htlc.sender_addr, htlc.out_amount, htlc.htlc_timestamp));
+		}
     }
 }
 
 impl<T: Trait> Module<T> {
     fn offchain_events(now: T::BlockNumber) {
-        <BlockNumber<T>>::put(now);
-
         for fetch_info in Self::oc_requests() {
             let res = Self::fetch_events(fetch_info.event_name, fetch_info.event_url);
 
             if let Err(err_msg) = res {
+				runtime_io::misc::print_utf8(b"======== fetch events err msg");
                 runtime_io::misc::print_utf8(err_msg.as_bytes());
             }
         }
     }
 
     fn fetch_events(src: Vec<u8>, remote_url: Vec<u8>) -> Result<(), &'static str> {
-        runtime_io::misc::print_utf8(&src);
         runtime_io::misc::print_utf8(&remote_url);
-        runtime_io::misc::print_utf8(b"--- fetch_events");
 
-        let block_number = Self::block_number();
-        ensure!(block_number.is_some(), "block number can not be empty");
-        let block_number = block_number.unwrap();
+		let pra_token_addr = Self::pra_token_addr();
+        ensure!(pra_token_addr.is_some(), "pra_token_addr can not be empty");
 
         let remote_url_str: &str = core::str::from_utf8(&remote_url).unwrap();
         let res = Self::http_request_get(remote_url_str, None);
 
         if let Ok(buf) = res {
-            let value = Self::parse_data(buf)?;
+            let htlc = Self::parse_data(buf)?;
 
-            let btc_value = BTCValue {
-                block_number,
-                price: value,
-            };
+			if !<SwapData<T>>::exists(htlc.swap_id) {
+				let call = Call::update_enevt_htlc(htlc);
 
-            let call = Call::submit_value(btc_value);
-            let result = T::SubmitTransaction::submit_unsigned(call);
-            match result {
-                Ok(_) => runtime_io::misc::print_utf8(b"execute off-chain worker success"),
-                Err(_) => {
-                    runtime_io::misc::print_utf8(b"execute off-chain worker failed!");
-                    return Err("error happens when submit unsigned transaction")
-                },
-            }
+				let result = T::SubmitTransaction::submit_unsigned(call);
+				match result {
+					Ok(_) => runtime_io::misc::print_utf8(b"execute off-chain worker success"),
+					Err(_) => {
+						runtime_io::misc::print_utf8(b"execute off-chain worker failed!");
+						return Err("error happens when submit unsigned transaction")
+					},
+				}
+			}
         }
         Ok(())
     }
 
-    fn parse_data(res: [u8; BUFFER_LEN]) -> Result<Value, &'static str> {
+    fn parse_data(res: [u8; BUFFER_LEN]) -> Result<EventHTLC<T::BlockNumber, T::Balance, T::Hash, T::AccountId>, &'static str> {
         runtime_io::misc::print_utf8(b"======== start parse_json");
         runtime_io::misc::print_utf8(&res);
 
-        let json_str = core::str::from_utf8(&res);
-        if let Err(err) = json_str {
-            return Err("err parse from utf8");
-        }
+		let json_str = core::str::from_utf8(&res).map_err(|_| "err parse json from utf8")?;
 
-        if let Ok(json_val) = simple_json::parse_json(json_str.unwrap()) {
-            let mut message = Vec::new();;
-            let mut status = Vec::new();;
+        if let Ok(json_val) = simple_json::parse_json(json_str) {
+            let mut message = Vec::new();
+            let mut status = Vec::new();
             let mut results = Vec::new();
 
             json_val
@@ -280,8 +298,6 @@ impl<T: Trait> Module<T> {
                 }
             });
 
-            runtime_io::misc::print_utf8(status.as_slice());
-            runtime_io::misc::print_utf8(message.as_slice());
             ensure!(status == b"1", "not valid status");
             ensure!(message == b"OK", "not valid message");
 
@@ -289,8 +305,8 @@ impl<T: Trait> Module<T> {
                 let mut contract_addr = Vec::new();
                 let mut topics = Vec::new();
                 let mut data = Vec::new();
-                let mut block_number = Vec::new();
-                let mut time_stamp = Vec::new();
+                let mut event_block_number = Vec::new();
+                let mut event_time_stamp = Vec::new();
                 let mut tx_hash = Vec::new();
                 let mut tx_index = Vec::new();
 
@@ -329,11 +345,11 @@ impl<T: Trait> Module<T> {
                         }
                     } else if key == KEY_BLOCK_NUMBER {
                         if let JsonValue::String(obj) = v {
-                            block_number = obj.iter().map(|c| *c as u8).collect::<Vec<u8>>();
+                            event_block_number = obj.iter().map(|c| *c as u8).collect::<Vec<u8>>();
                         }
                     } else if key == KEY_TIME_STAMP {
                         if let JsonValue::String(obj) = v {
-                            time_stamp = obj.iter().map(|c| *c as u8).collect::<Vec<u8>>();
+                            event_time_stamp = obj.iter().map(|c| *c as u8).collect::<Vec<u8>>();
                         }
                     } else if key == KEY_TX_HASH {
                         if let JsonValue::String(obj) = v {
@@ -347,69 +363,75 @@ impl<T: Trait> Module<T> {
                 });
 
                 ensure!(topics.len() == 4, "not valid htlc topics length");
-                ensure!(data.len() == 386, "not valid htlc data");
-                Self::parse_htlc_event(contract_addr, topics, data, block_number, time_stamp, tx_hash, tx_index)?;
+                ensure!(data.len() == 386, "not valid htlc data length");
+				return Self::parse_htlc_event(contract_addr, topics, data, event_block_number, event_time_stamp, tx_hash, tx_index);
             }
         }
 
-        Ok(1u32)
-        //Err("simple_json::parse_json parse failed")
+        Err("parse data fail")
     }
 
     fn parse_htlc_event(contract_addr: Vec<u8>, topics: Vec<Vec<u8>>, data: Vec<u8>,
-                        block_number: Vec<u8>, time_stamp: Vec<u8>, tx_hash: Vec<u8>, tx_index: Vec<u8>)
-                        -> rstd::result::Result<EventHTLC<T::BlockNumber, T::Balance, T::Moment>, &'static str> {
-        runtime_io::misc::print_utf8(b"======== got parsed event log");
+						event_block_number: Vec<u8>, event_time_stamp: Vec<u8>, tx_hash: Vec<u8>, tx_index: Vec<u8>)
+                        -> Result<EventHTLC<T::BlockNumber, T::Balance, T::Hash, T::AccountId>, &'static str> {
 
-        //indexed topics: _msgSender(Address); _receiverAddr(FixedBytes(32));_swapID(FixedBytes(32))
+		//indexed topics: _msgSender(Address); _receiverAddr(FixedBytes(32));_swapID(FixedBytes(32))
         let msg_sender = &topics[1][STR_PREFIX.len()..].to_vec();
         let receiver_addr = &topics[2][STR_PREFIX.len()..].to_vec();
-        let swap_id = &topics[3][STR_PREFIX.len()..].to_vec();
+		let swap_id = &topics[3][STR_PREFIX.len()..].to_vec();
 
-        //unindexed:_recipientAddr(Address);_randomNumberHash(FixedBytes(32));_timestamp(Uint(64));
-                    //_expireHeight(Uint(256));_outAmount(Uint(256));_praAmount(Uint(256));
-        let recipient_addr = &data[STR_PREFIX.len()..65].to_vec();
-        let random_num_hash = &data[STR_PREFIX.len()+65..65+64].to_vec();
-        let out_amount = &data[STR_PREFIX.len()+65..65+64].to_vec();
+		//#4310, <T::AccountId as Decode>::decode(&mut &hex::from_hex())
+		let receiver_t = Vec::from_hex(&receiver_addr[STR_PREFIX.len()..]).map_err(|_| "err parse receiver_addr from utf8")?;
+		let receiver_accnt = <T::AccountId as Decode>::decode(&mut receiver_t.as_slice()).map_err(|_| "err parse receiver_t from utf8")?;
+		ensure!(receiver_accnt != Self::pra_token_addr().unwrap(), "Needs different accounts");
 
-        /*
-        runtime_io::misc::print_utf8(data.as_slice());
-        runtime_io::misc::print_utf8(msg_sender.as_slice());
-        runtime_io::misc::print_utf8(receiver_addr.as_slice());
-        runtime_io::misc::print_utf8(swap_id.as_slice());
-        runtime_io::misc::print_utf8(recipient_addr.as_slice());
-        runtime_io::misc::print_utf8(random_num_hash.as_slice());
-        runtime_io::misc::print_utf8(time_stamp.as_slice());
-        runtime_io::misc::print_utf8(tx_hash.as_slice());
-        runtime_io::misc::print_utf8(tx_index.as_slice());
-        */
+        //unindexed:_recipientAddr(Address);_randomNumberHash(FixedBytes(32));_timestamp(Uint(64));_expireHeight(Uint(256));_outAmount(Uint(256));_praAmount(Uint(256));
+        let recipient_addr = &data[STR_PREFIX.len()..66].to_vec();
+		let random_num_hash = &data[STR_PREFIX.len()+64..66+64].to_vec();
+		let htlc_time_stamp = &data[STR_PREFIX.len()+64+64..66+64+64].to_vec();
+		let expire_height = &data[STR_PREFIX.len()+64+64+64..66+64+64+64].to_vec();
+		let out_amount = &data[STR_PREFIX.len()+64+64+64+64..66+64+64+64+64].to_vec();
+		let pra_amount = &data[STR_PREFIX.len()+64+64+64+64+64..].to_vec();
 
-        let ts = u64::from_str_radix(core::str::from_utf8(&time_stamp[STR_PREFIX.len()..]).unwrap(), 16);
-        if let Err(_err) = ts {
-            return Err("err parse ts from json");
-        }
+		let event_ts = u64::from_str_radix(core::str::from_utf8(&event_time_stamp[STR_PREFIX.len()..]).unwrap(), 16)
+				.map_err(|_| "err parse event_time_stamp from utf8")?;
+		let htlc_ts = u64::from_str_radix(core::str::from_utf8(&htlc_time_stamp[STR_PREFIX.len()..]).unwrap(), 16)
+				.map_err(|_| "err parse htlc_time_stamp from utf8")?;
+		let event_block_num = u32::from_str_radix(core::str::from_utf8(&event_block_number[STR_PREFIX.len()..]).unwrap(), 16)
+				.map_err(|_| "err parse event_block_num from utf8")?;
+		let expire_block_num = u32::from_str_radix(core::str::from_utf8(&expire_height[STR_PREFIX.len()..]).unwrap(), 16)
+				.map_err(|_| "err parse event_block_num from utf8")?;
+		let event_out_amount = u32::from_str_radix(core::str::from_utf8(&out_amount[STR_PREFIX.len()..]).unwrap(), 16)
+				.map_err(|_| "err parse out_amount from utf8")?;
+		let event_pra_amount = u32::from_str_radix(core::str::from_utf8(&pra_amount[STR_PREFIX.len()..]).unwrap(), 16)
+				.map_err(|_| "err parse pra_amount from utf8")?;
 
-        let block_num = u32::from_str_radix(core::str::from_utf8(&block_number[STR_PREFIX.len()..]).unwrap(), 16);
-        if let Err(_err) = block_num {
-            return Err("err parse block_num from json");
-        }
+		ensure!(event_out_amount > 0 && event_out_amount == event_pra_amount, "not valid out_amount or pra_amount");
 
-        let htlc = EventHTLC {
-             block_number: T::BlockNumber::from(block_num.unwrap()),
-             out_amount: T::Balance::from(100u32),
-             expire_height: 100,
-             random_number_hash: random_num_hash.clone(),
-             swap_id: swap_id.clone(),
-             timestamp: <timestamp::Module<T>>::get(),
-             sender_addr: msg_sender.clone(),
-             sender_chain_type: 0,
-             receiver_addr: receiver_addr.clone(),
-             receiver_chain_type: 1,
-             recipient_addr: recipient_addr.clone(),
+		let htlc = EventHTLC {
+			eth_contract_addr: contract_addr,
+			event_block_number: T::BlockNumber::from(event_block_num),
+			htlc_block_number: <system::Module<T>>::block_number(),
+			out_amount: T::Balance::from(event_out_amount),
+			expire_height: expire_block_num - event_block_num,
+			random_number_hash: random_num_hash.clone(),
+			swap_id: T::Hashing::hash(&swap_id[..]),
+			event_timestamp: event_ts,
+			htlc_timestamp: htlc_ts,
+			sender_addr: msg_sender.clone(),
+			sender_chain_type: HTLCChain::ETHMain,
+			receiver_addr: receiver_accnt,
+			receiver_chain_type: HTLCChain::PRA,
+			recipient_addr: recipient_addr.clone(),
         };
 
         Ok(htlc)
-    }
+	}
+
+	//TODO: parse claim event
+	fn parse_claim_event() -> Result<EventHTLC<T::BlockNumber, T::Balance, T::Hash, T::AccountId>, &'static str> {
+		Err("")
+	}
 
     fn http_request_get(uri: &str, header: Option<(&str, &str)>) -> Result<[u8; BUFFER_LEN], &'static str> {
         runtime_io::misc::print_utf8(b"request http request ========");
@@ -441,7 +463,35 @@ impl<T: Trait> Module<T> {
             }
             Err(_) => return Err("Parse body failed"),
         }
-    }
+	}
+
+	//Helper that confirms whether the given `AccountId` has auth
+	fn is_authority(who: &T::AccountId) -> bool {
+		Self::authorities().into_iter().find(|i| i == who).is_some()
+	}
+
+	//if HTLC exists
+	fn is_swap_exist(swap_id: T::Hash) -> bool {
+		let state = Self::swap_states(swap_id);
+
+		state.is_some() && state.unwrap() != HTLCStates::INVALID
+	}
+
+	//if HTLC claimable
+	fn is_claimable(swap_id: T::Hash) -> bool {
+		let state = Self::swap_states(swap_id);
+
+		if state.is_some() && state.unwrap() == HTLCStates::OPEN {
+			let swap = Self::swap_data(swap_id);
+			if swap.is_some() {
+				let swap = swap.unwrap();
+				if <system::Module<T>>::block_number() < swap.htlc_block_number + T::BlockNumber::from(swap.expire_height) {
+					return true;
+				}
+			}
+		}
+		false
+	}
 }
 
 impl<T: Trait> support::unsigned::ValidateUnsigned for Module<T> {
@@ -449,7 +499,8 @@ impl<T: Trait> support::unsigned::ValidateUnsigned for Module<T> {
 
     fn validate_unsigned(call: &Self::Call) -> TransactionValidity {
         match call {
-            Call::submit_value(_) => Ok(ValidTransaction {
+            Call::update_enevt_htlc(_) => Ok(
+			ValidTransaction {
                 priority: TransactionPriority::max_value(),
                 requires: vec![],
                 provides: vec![0.encode()],
