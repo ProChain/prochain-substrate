@@ -239,7 +239,6 @@ decl_module! {
 
 			let sender_balance = <balances::Module<T>>::free_balance(sender.clone());
 			ensure!(sender_balance >= value, "you dont have enough free balance");
-			ensure!(value >= Self::min_deposit(), "you must lock at least 50 pra per time");
 			ensure!(<Identity<T>>::exists(&sender), "this account has no did yet");
 
 			let did = Self::identity(&sender);
@@ -254,6 +253,8 @@ decl_module! {
 			let mut rewards_ratio = 20;// basis rewards_ratio is 20%
 
 			if metadata.locked_records.is_none() {
+				ensure!(value >= Self::min_deposit(), "you must lock at least 50 pra first time");
+
 				let memo = "新群主抵押分成".as_bytes().to_vec();
 
 				Self::transfer_by_did(did.clone(), metadata.superior, fee, memo)?;
