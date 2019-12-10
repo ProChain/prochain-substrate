@@ -600,7 +600,7 @@ impl<T: Trait> Module<T> {
 	fn http_request_get(uri: &str, header: Option<(&str, &str)>) -> Result<[u8; BUFFER_LEN], &'static str> {
 		runtime_io::misc::print_utf8(b"request http request ========");
 		let id: HttpRequestId = runtime_io::offchain::http_request_start("GET", uri, &[0]).unwrap();
-		let deadline = runtime_io::offchain::timestamp().add(Duration::from_millis(5_000));
+		let deadline = runtime_io::offchain::timestamp().add(Duration::from_millis(10_000));
 
 		if let Some((name, value)) = header {
 			match runtime_io::offchain::http_request_add_header(id, name, value) {
