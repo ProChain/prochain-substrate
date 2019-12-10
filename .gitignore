@@ -19,3 +19,5 @@ rls*.log
 *.rej
 **/wip/*.stderr
 .local
+node_modules
+package-lock.json
