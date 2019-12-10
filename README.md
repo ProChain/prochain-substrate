@@ -97,7 +97,8 @@ To start up the Prochain node, run:
     "receiver_addr": "AccountId",
     "receiver_chain_type": "HTLCChain",
     "recipient_addr": "Vec<u8>",
-    "out_amount": "Balance"
+    "out_amount": "Balance",
+		"event_type": "HTLCType"
   },
   "HTLCChain": {
     "_enum": [
@@ -116,6 +117,13 @@ To start up the Prochain node, run:
   "EventLogSource": {
     "event_name": "Vec<u8>",
     "event_url": "Vec<u8>"
+  },
+	"HTLCType": {
+    "_enum": [
+      "HTLC",
+      "Claimed",
+      "Refunded"
+    ]
   }
 }
 ```
