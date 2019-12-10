@@ -199,11 +199,13 @@ fn should_pass_lock() {
       Some("f".as_bytes().to_vec())
     ));
 
+    assert_noop!(DidModule::lock(Origin::signed(2), 10, 5), "you must lock at least 50 pra first time");
+
     assert_ok!(DidModule::lock(Origin::signed(2), 100, 5));
 
-    assert_noop!(DidModule::lock(Origin::signed(2), 10, 5), "you must lock at least 50 pra per time");
+    assert_ok!(DidModule::lock(Origin::signed(2), 10, 5));
 
-    assert_eq!(Balances::free_balance(&2), 9900);
+    assert_eq!(Balances::free_balance(&2), 9890);
     assert_eq!(Balances::free_balance(&1), 10025); // get 25 from locked funds
 
   });
