@@ -475,13 +475,11 @@ fn prochain_testnet_genesis() -> GenesisConfig {
 			}),
 			democracy: Some(DemocracyConfig::default()),
 			collective_Instance1: Some(CouncilConfig {
-				members: endowed_accounts.iter().cloned()
-				.collect::<Vec<_>>()[..].to_vec(),
+				members: initial_authorities.iter().map(|x| x.0.clone()).collect(),
 				phantom: Default::default(),
 			}),
 			collective_Instance2: Some(TechnicalCommitteeConfig {
-				members: endowed_accounts.iter().cloned()
-				.collect::<Vec<_>>()[..].to_vec(),
+				members: initial_authorities.iter().map(|x| x.0.clone()).collect(),
 				phantom: Default::default(),
 			}),
 			contracts: Some(ContractsConfig {

@@ -629,13 +629,19 @@
       "collectiveInstance1": {
         "phantom": null,
         "members": [
-          "5CrRpNbQBTiBmTjpUgJ6mH9YRmopVweLsjffVz7muskYEo2r"
+          "5GTDPKDnqavJMa9Wsqp8ospmjs3riV6zg8obQNLPqn7c3wh5",
+          "5ECkqhw4dCCwX6zzanbjNCgA9VxMeK6qR7snfrWefbumLBrQ",
+          "5HLCVgpCPQrSXasbzHahRR9HuT1uEj2NQmMiEC4fS3J15azc",
+          "5DSVnbWsmju4raE6nALKAdg6iiJau87vU6cvpwexVZ3Pr2f2"
         ]
       },
       "collectiveInstance2": {
         "phantom": null,
         "members": [
-          "5CrRpNbQBTiBmTjpUgJ6mH9YRmopVweLsjffVz7muskYEo2r"
+          "5GTDPKDnqavJMa9Wsqp8ospmjs3riV6zg8obQNLPqn7c3wh5",
+          "5ECkqhw4dCCwX6zzanbjNCgA9VxMeK6qR7snfrWefbumLBrQ",
+          "5HLCVgpCPQrSXasbzHahRR9HuT1uEj2NQmMiEC4fS3J15azc",
+          "5DSVnbWsmju4raE6nALKAdg6iiJau87vU6cvpwexVZ3Pr2f2"
         ]
       },
       "membershipInstance1": {
