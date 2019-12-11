@@ -2,9 +2,15 @@
   "name": "Prochain Testnet",
   "id": "prochain_testnet",
   "bootNodes": [
-    "/ip4/127.0.0.1/tcp/30333/p2p/QmYXeVYgsedNkCmzZJ9P3uUSoUfsjthGqnMAPtLJ8uMjiY"
+    "/ip4/39.106.220.238/tcp/30333/p2p/QmdcynTigKkriECrcE48DW5hdd45cmnQwiZfBGW6AoQ8EA",
+    "/ip4/123.206.52.244/tcp/30333/p2p/QmVwKhj4XjcjTfBCUpN7QUHpWvniwPVQvoSGsgJn8Y5BAH"
   ],
-  "telemetryEndpoints": null,
+  "telemetryEndpoints": [
+    [
+      "wss://telemetry.polkadot.io/submit/",
+      0
+    ]
+  ],
   "protocolId": null,
   "properties": {
     "tokenDecimals": 15,
@@ -26,6 +32,8 @@
           "5CrRpNbQBTiBmTjpUgJ6mH9YRmopVweLsjffVz7muskYEo2r",
           "5GTDPKDnqavJMa9Wsqp8ospmjs3riV6zg8obQNLPqn7c3wh5",
           "5ECkqhw4dCCwX6zzanbjNCgA9VxMeK6qR7snfrWefbumLBrQ",
+          "5HLCVgpCPQrSXasbzHahRR9HuT1uEj2NQmMiEC4fS3J15azc",
+          "5DSVnbWsmju4raE6nALKAdg6iiJau87vU6cvpwexVZ3Pr2f2",
           "5FcQBGXyDoDqorhXUgPkcRcap929WS7HSBiJcYTXBYY1ifC6",
           "5CqvWuRe2rWGo63shnJdnSiAyhdMH5fXjAywpEi3wLRoTEcp",
           "5Ceuib6t81VURBhkejHUTADsbrTqyfqvtqeqhjczTDKR2hJY",
@@ -122,7 +130,7 @@
         "balances": [
           [
             "5CrRpNbQBTiBmTjpUgJ6mH9YRmopVweLsjffVz7muskYEo2r",
-            99976625000000000538000
+            99956625000000000538000
           ],
           [
             "5GTDPKDnqavJMa9Wsqp8ospmjs3riV6zg8obQNLPqn7c3wh5",
@@ -130,6 +138,14 @@
           ],
           [
             "5ECkqhw4dCCwX6zzanbjNCgA9VxMeK6qR7snfrWefbumLBrQ",
+            10000000000000000000
+          ],
+          [
+            "5HLCVgpCPQrSXasbzHahRR9HuT1uEj2NQmMiEC4fS3J15azc",
+            10000000000000000000
+          ],
+          [
+            "5DSVnbWsmju4raE6nALKAdg6iiJau87vU6cvpwexVZ3Pr2f2",
             10000000000000000000
           ],
           [
@@ -496,11 +512,13 @@
         "vesting": []
       },
       "staking": {
-        "validatorCount": 4,
-        "minimumValidatorCount": 2,
+        "validatorCount": 8,
+        "minimumValidatorCount": 4,
         "invulnerables": [
           "5GTDPKDnqavJMa9Wsqp8ospmjs3riV6zg8obQNLPqn7c3wh5",
-          "5ECkqhw4dCCwX6zzanbjNCgA9VxMeK6qR7snfrWefbumLBrQ"
+          "5ECkqhw4dCCwX6zzanbjNCgA9VxMeK6qR7snfrWefbumLBrQ",
+          "5HLCVgpCPQrSXasbzHahRR9HuT1uEj2NQmMiEC4fS3J15azc",
+          "5DSVnbWsmju4raE6nALKAdg6iiJau87vU6cvpwexVZ3Pr2f2"
         ],
         "currentEra": 0,
         "forceEra": "NotForcing",
@@ -516,6 +534,18 @@
           [
             "5ECkqhw4dCCwX6zzanbjNCgA9VxMeK6qR7snfrWefbumLBrQ",
             "5H4F6CRnkUaMGSYckLXMViNTECpa4pC8KNAKW4X9qjKF73CC",
+            10000000000000000000,
+            "Validator"
+          ],
+          [
+            "5HLCVgpCPQrSXasbzHahRR9HuT1uEj2NQmMiEC4fS3J15azc",
+            "5HYyYS4tVA5QCH1WfyfWfSrZpTnEoCq7V7MsbjgaGYU5FK4C",
+            10000000000000000000,
+            "Validator"
+          ],
+          [
+            "5DSVnbWsmju4raE6nALKAdg6iiJau87vU6cvpwexVZ3Pr2f2",
+            "5Cetf6wLBM55RxmDqrqLnLMCsaNgJRgEs5iMp945nhKZDbPz",
             10000000000000000000,
             "Validator"
           ]
@@ -539,6 +569,24 @@
               "babe": "5DXCactxvDJtXyR4auEd3WDc2Z1ZgQWETUbCDm2o476VBX1h",
               "im_online": "5GhERWzdYM5qwQfWduULHPRKwgB9MGtmNXyresnbX4vWWv11",
               "authority_discovery": "5EeDYacpVo7zvjno5VGiHJocc6gvHFj3envE4enALRLxayrN"
+            }
+          ],
+          [
+            "5HLCVgpCPQrSXasbzHahRR9HuT1uEj2NQmMiEC4fS3J15azc",
+            {
+              "grandpa": "5CYgmnEBHHxT5BdZxYqYqBgSDE1SvCY7SbT4NeLSNZX1Dm7R",
+              "babe": "5EHYQX755SfGXKtbaxGZARwsL2D5d1nxt3GfjshTNGypSfe5",
+              "im_online": "5Eh1BeG8xNhk6NmmK2VYVgvxnMdvvfvMQomUsN3XRktaH5v6",
+              "authority_discovery": "5Gj1Q4eVG8tdEVyGbrLBK6mdp9df1wmsxxHMR4nn7vA1n8hw"
+            }
+          ],
+          [
+            "5DSVnbWsmju4raE6nALKAdg6iiJau87vU6cvpwexVZ3Pr2f2",
+            {
+              "grandpa": "5DnEMQX5BgSJZ235UQidEDwRvt4xGjPUE8M3hsFiRpXakipz",
+              "babe": "5Dvj8ZbJc8eqJpqKLf4qLvc463iXcgwK7zbdPcuqK69n73U3",
+              "im_online": "5G3ix9U3gdMFbTQgLrvwuKyya1ok9FkECvri21cEe56968Rm",
+              "authority_discovery": "5G1BHvm3h9D3PriPiqpbQFjR9p7JPrQtwknS7VevpKqGS8ym"
             }
           ]
         ]

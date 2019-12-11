@@ -395,6 +395,32 @@ fn prochain_testnet_genesis() -> GenesisConfig {
 			hex!["cccca9f7232c7ee9dc60dcc301425dff18087b79963020166b4b6cd432bb3075"].unchecked_into(),
 			// 5EeDYacpVo7zvjno5VGiHJocc6gvHFj3envE4enALRLxayrN
 			hex!["7207812127e3c66678df599e100b93426b2a28b2bf85fb57685351e00ab2f162"].unchecked_into(),
+		),(
+			// 5HLCVgpCPQrSXasbzHahRR9HuT1uEj2NQmMiEC4fS3J15azc
+			hex!["e8fe40d68fc1efe504b9a709bd8591e4402f3162b8297155708e34a46cd7272d"].into(),
+			// 5HYyYS4tVA5QCH1WfyfWfSrZpTnEoCq7V7MsbjgaGYU5FK4C
+			hex!["f2bcd74b3e1775d68c5aadd804500b312e05a434ec3ad4df2b1db91a666f7601"].into(),
+			// 5CYgmnEBHHxT5BdZxYqYqBgSDE1SvCY7SbT4NeLSNZX1Dm7R
+			hex!["155738a81c5eb4040922493a4f834b7b935013061af1d1ea85264addc43bf84f"].unchecked_into(),
+			// 5EHYQX755SfGXKtbaxGZARwsL2D5d1nxt3GfjshTNGypSfe5
+			hex!["6242d7c10c7887734f367c6ab2f4bbc5ef7bde7a5aff4fbbbb35cbdbc7898231"].unchecked_into(),
+			// 5Eh1BeG8xNhk6NmmK2VYVgvxnMdvvfvMQomUsN3XRktaH5v6
+			hex!["7427a13d0757415eeadeffc33c490a402f3bf46a6dfba2f6a1145ae3cd747c6d"].unchecked_into(),
+			// 5Gj1Q4eVG8tdEVyGbrLBK6mdp9df1wmsxxHMR4nn7vA1n8hw
+			hex!["ce274ef545a0ca52952d7e3043431afc1007ba4b6a440e6b60517cf817a3c03e"].unchecked_into(),
+		),(
+			// 5DSVnbWsmju4raE6nALKAdg6iiJau87vU6cvpwexVZ3Pr2f2
+			hex!["3cdb0017aef46c82411926506f0335157cb3b706cd03f1b65c99bdf7b0288444"].into(),
+			// 5Cetf6wLBM55RxmDqrqLnLMCsaNgJRgEs5iMp945nhKZDbPz
+			hex!["1a12b3a84fba82e444b51586f62ec7ed41b8ce09b6a7bd4639dd4e4c6c782e33"].into(),
+			// 5DnEMQX5BgSJZ235UQidEDwRvt4xGjPUE8M3hsFiRpXakipz
+			hex!["4be7f3b31f770d59d29e38d19592d65ec3f1ea72c62b35df2094d093ba7b0076"].unchecked_into(),
+			// 5Dvj8ZbJc8eqJpqKLf4qLvc463iXcgwK7zbdPcuqK69n73U3
+			hex!["5262cade2d3e92a6f164c8ef93f9e5c1570761e92b5e98e31f721cf43cb9913b"].unchecked_into(),
+			// 5G3ix9U3gdMFbTQgLrvwuKyya1ok9FkECvri21cEe56968Rm
+			hex!["b0315f660d8a57f6833b9f6403ae3c2eb4a015fc0431e8f1ff24d0c65fefaf52"].unchecked_into(),
+			// 5G1BHvm3h9D3PriPiqpbQFjR9p7JPrQtwknS7VevpKqGS8ym
+			hex!["ae404eede3214ba00d5a34964820d5b6da578b8d0199527b20c27d2e0e04de29"].unchecked_into(),
 		)];
 
 		// generated with secret: subkey inspect "$secret"/fir
@@ -409,8 +435,8 @@ fn prochain_testnet_genesis() -> GenesisConfig {
 		let intial_total = intial_allocation_json.1;
 
 		const STASH: Balance = 10_000 * DOLLARS;
-		const TOTAL_STASH: Balance = 20_000 * DOLLARS;
-		let endowed_amount: Balance = 100_000_000 * DOLLARS - intial_total - TOTAL_STASH;
+		let total_stash: Balance = 10_000 * initial_authorities.len() as u128 * DOLLARS;
+		let endowed_amount: Balance = 100_000_000 * DOLLARS - intial_total - total_stash;
 
 		GenesisConfig {
 			system: Some(SystemConfig {
@@ -497,13 +523,17 @@ fn prochain_testnet_genesis() -> GenesisConfig {
 
 	/// prochain testnet config
 	pub fn prochain_testnet_config() -> ChainSpec {
+		let boot_nodes = vec![
+			"/ip4/39.106.220.238/tcp/30333/p2p/QmdcynTigKkriECrcE48DW5hdd45cmnQwiZfBGW6AoQ8EA".to_string(),
+			"/ip4/123.206.52.244/tcp/30333/p2p/QmVwKhj4XjcjTfBCUpN7QUHpWvniwPVQvoSGsgJn8Y5BAH".to_string(),
+		];
 		let properties = serde_json::from_str(PRA_PROPERTIES).unwrap();
 		ChainSpec::from_genesis(
 			"Prochain Testnet",
 			"prochain_testnet",
 			prochain_testnet_genesis,
-			vec![],
-			None,
+			boot_nodes,
+			Some(TelemetryEndpoints::new(vec![(STAGING_TELEMETRY_URL.to_string(), 0)])),
 			None,
 			properties,
 			Default::default(),
