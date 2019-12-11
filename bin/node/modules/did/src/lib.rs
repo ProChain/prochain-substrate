@@ -238,7 +238,7 @@ decl_module! {
 			let sender = ensure_signed(origin)?;
 
 			let sender_balance = <balances::Module<T>>::free_balance(sender.clone());
-			ensure!(sender_balance >= value, "you dont have enough free balance");
+			ensure!(sender_balance >= value + Self::u128_to_balance(1), "you dont have enough free balance");
 			ensure!(<Identity<T>>::exists(&sender), "this account has no did yet");
 
 			let did = Self::identity(&sender);
