@@ -71,15 +71,18 @@
 #### 测试物料和样例
 
 ##### Ropsten测试网
-- 测试网入口 https://ropsten.infura.io/v3/32d3935c7ba0400d97a7d8f983753a34
+- 测试网API入口 https://ropsten.infura.io/v3/32d3935c7ba0400d97a7d8f983753a34
 - UserA: 0xf7FeA1722F9b27B0666919A5664BaB486a4b18D3
 - UserB: 0xCF5bECb7245E2e6eE2E092F0BD63F6Bd79eF19Fe
-- `ProToken`合约地址: 0x143E2218eBD3d6c1C09289fe7Ed8e2c4AA6bb682
-- `ERC20HTLC`合约地址: 0x16D5195Fe8c6Ba98b2f61A9a787BC0Bde19e3f6F
-- HTLC randomNumber : 0xaabbccddaabbccddaabbccddaabbccddaabbccddaabbccddaabbccddaabbccdd
-- HTLC randomNumber hash : 0x685b9ce6be12fd697fed42cff5dcace2cccc87616d140f7fab53b4486203b044
-- PRA DID : "did:pra:Lt23xGimVoUNvZ3EXM9FcgBsJXzrSaUo8p"
-- Swap ID : 0x52410cc304086dd9d31963f57ff1cc193d7e00f350a3e4c0fc0ad967850f76ec
+- `ProToken`合约地址: 0x605FE1c2BE58FE2fC3fbc409a7488635ea8AcBd8
+- `ERC20HTLC`合约地址: 0xbd261550e087f19A842e375D0031a85525B9714F
+- PRA DEV地址（receiver）: 5CiPPseXPECbkjWCa6MnjNokrgYjMqmKndv2rSnekmSK2DjL
+
+#### 根据randomNumber和timestamp，计算randomNumberHash和swapID
+- 使用当前目录下的calculate-ids模块
+- npm install
+- 在calculate-ids.js写入randomNumber, receiver
+- 执行node calculate-ids.js得到randomNumberHash, swapID
 
 #### 扩展
 - 可用于erc20-erc20的原子交换

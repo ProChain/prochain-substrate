@@ -16,11 +16,11 @@ contract ERC20HTLC {
         uint256 expireHeight;  //The height of blocks to wait before the asset can be returned to sender
         bytes32 randomNumberHash;
         uint64  timestamp;
-        address senderAddr;    //The swap creator ethereum address
+        address senderAddr;    //The swap creator address
         uint256 senderChainType;
-        string  receiverAddr;  //The PRA address (DID) to swap out
         uint256 receiverChainType;
-        address recipientAddr; //The ethereum address to lock swapped assets
+        address recipientAddr; //The ethereum address to lock swapped assets, counter-party of senderAddr
+		string receiverAddr;  //The PRA address (DID) to swap out
     }
 
     enum States {
@@ -36,9 +36,9 @@ contract ERC20HTLC {
     }
 
     // Events
-    event HTLC(address indexed _msgSender, address _recipientAddr, string indexed _receiverAddr, bytes32 indexed _swapID, bytes32 _randomNumberHash, uint64 _timestamp, uint256 _expireHeight, uint256 _outAmount, uint256 _praAmount);
-    event Claimed(address indexed _msgSender, address _recipientAddr, string indexed _receiverAddr, bytes32 indexed _swapID, bytes32 _randomNumber);
-    event Refunded(address indexed _msgSender, address _recipientAddr, string indexed _receiverAddr, bytes32 indexed _swapID, bytes32 _randomNumberHash);
+    event HTLC(address indexed _msgSender, address indexed _recipientAddr, bytes32 indexed _swapID, bytes32 _randomNumberHash, uint64 _timestamp, uint256 _expireHeight, uint256 _outAmount, uint256 _praAmount, string _receiverAddr);
+    event Claimed(address indexed _msgSender, address indexed _recipientAddr, bytes32 indexed _swapID, bytes32 _randomNumber, string _receiverAddr);
+    event Refunded(address indexed _msgSender, address indexed _recipientAddr, bytes32 indexed _swapID, bytes32 _randomNumberHash, string _receiverAddr);
 
     // Storage, key: swapID
     mapping (bytes32 => Swap) private swaps;
@@ -93,18 +93,19 @@ contract ERC20HTLC {
         address _recipientAddr,
         uint256 _outAmount,
         uint256 _praAmount,
-        string  calldata _receiverAddr
-    ) external  returns (bool) {
-        bytes32 swapID = calSwapID(_randomNumberHash, msg.sender);
+        string memory _receiverAddr
+    ) public returns (bool) {
+        bytes32 swapID = calSwapID(_randomNumberHash, _receiverAddr);
         require(swapStates[swapID] == States.INVALID, "swap is opened previously");
-        // Assume average block time interval is 10 second
-        // The heightSpan period should be more than 10 minutes and less than one week
-        require(_heightSpan >= 60 && _heightSpan <= 60480, "_heightSpan should be in [60, 60480]");
+        // Assume average block time interval is 3 second
+        // The heightSpan period should be more than 5 minutes and less than one week
+        require(_heightSpan >= 100 && _heightSpan <= 60480, "_heightSpan should be in [60, 60480]");
         require(_recipientAddr != address(0), "_recipientAddr should not be zero");
         require(_outAmount > 0, "_outAmount must be more than 0");
         require(_timestamp > now - 1800 && _timestamp < now + 900, "Timestamp can neither be 15 minutes ahead of the current time, nor 30 minutes later");
         require(_outAmount == _praAmount, "_outAmount must be equal _praAmount");
         //TODO: check _receiverAddr is valid
+		//TODO: check _recipientAddr's auth
 
         // Store the details of the swap.
         Swap memory swap = Swap({
@@ -126,7 +127,7 @@ contract ERC20HTLC {
         require(ERC20(PraContractAddr).transferFrom(msg.sender, address(this), _outAmount), "failed to transfer client asset to swap contract");
 
         // Emit initialization event
-        emit HTLC(msg.sender, _recipientAddr, _receiverAddr, swapID, _randomNumberHash, _timestamp, swap.expireHeight, _outAmount, _praAmount);
+        emit HTLC(msg.sender, _recipientAddr, swapID, _randomNumberHash, _timestamp, swap.expireHeight, _outAmount, _praAmount, _receiverAddr);
 
         return true;
     }
@@ -140,7 +141,7 @@ contract ERC20HTLC {
         swapStates[_swapID] = States.COMPLETED;
 
         address recipientAddr = swaps[_swapID].recipientAddr;
-        string  memory receiverAddr = swaps[_swapID].receiverAddr;
+        string memory receiverAddr = swaps[_swapID].receiverAddr;
         //uint256 receiverChainType = swaps[_swapID].receiverChainType;
         //uint256 senderChainType = swaps[_swapID].senderChainType;
         uint256 outAmount = swaps[_swapID].outAmount;
@@ -153,7 +154,7 @@ contract ERC20HTLC {
         delete swaps[_swapID];
 
         // Emit completion event
-        emit Claimed(msg.sender, recipientAddr, receiverAddr, _swapID, _randomNumber);
+        emit Claimed(msg.sender, recipientAddr, _swapID, _randomNumber, receiverAddr);
 
         return true;
     }
@@ -166,9 +167,10 @@ contract ERC20HTLC {
         swapStates[_swapID] = States.EXPIRED;
 
         address swapSender = swaps[_swapID].senderAddr;
-        string  memory receiverAddr = swaps[_swapID].receiverAddr;
+        string memory receiverAddr = swaps[_swapID].receiverAddr;
         uint256 outAmount = swaps[_swapID].outAmount;
         bytes32 randomNumberHash = swaps[_swapID].randomNumberHash;
+        address recipientAddr = swaps[_swapID].recipientAddr;
 
         // refund erc20 token to swap creator
         require(ERC20(PraContractAddr).transfer(swapSender, outAmount), "Failed to transfer locked asset back to swap creator");
@@ -177,7 +179,7 @@ contract ERC20HTLC {
         delete swaps[_swapID];
 
         // Emit expire event
-        emit Refunded(msg.sender, swapSender, receiverAddr, _swapID, randomNumberHash);
+        emit Refunded(msg.sender, recipientAddr, _swapID, randomNumberHash, receiverAddr);
 
         return true;
     }
@@ -221,8 +223,8 @@ contract ERC20HTLC {
     /// @notice Calculate the swapID from randomNumberHash and swapCreator
     ///
     /// @param _randomNumberHash The hash of random number and timestamp.
-    /// @param _swapSender The creator of swap.
-    function calSwapID(bytes32 _randomNumberHash, address _swapSender) public pure returns (bytes32) {
-        return sha256(abi.encodePacked(_randomNumberHash, _swapSender));
+    /// @param receiverAddr The PRA address (DID) to swap out
+    function calSwapID(bytes32 _randomNumberHash, string memory receiverAddr) public pure returns (bytes32) {
+        return sha256(abi.encodePacked(_randomNumberHash, receiverAddr));
     }
 }
