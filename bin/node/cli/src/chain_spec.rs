@@ -523,10 +523,11 @@ fn prochain_testnet_genesis() -> GenesisConfig {
 
 	/// prochain testnet config
 	pub fn prochain_testnet_config() -> ChainSpec {
-		let boot_nodes = vec![
-			"/ip4/39.106.220.238/tcp/30333/p2p/QmdcynTigKkriECrcE48DW5hdd45cmnQwiZfBGW6AoQ8EA".to_string(),
-			"/ip4/123.206.52.244/tcp/30333/p2p/QmVwKhj4XjcjTfBCUpN7QUHpWvniwPVQvoSGsgJn8Y5BAH".to_string(),
-		];
+		// let boot_nodes = vec![
+		// 	"/ip4/39.106.220.238/tcp/30333/p2p/QmdcynTigKkriECrcE48DW5hdd45cmnQwiZfBGW6AoQ8EA".to_string(),
+		// 	"/ip4/123.206.52.244/tcp/30333/p2p/QmVwKhj4XjcjTfBCUpN7QUHpWvniwPVQvoSGsgJn8Y5BAH".to_string(),
+		// ];
+		let boot_nodes = vec![];
 		let properties = serde_json::from_str(PRA_PROPERTIES).unwrap();
 		ChainSpec::from_genesis(
 			"Prochain Testnet",

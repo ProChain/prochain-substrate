@@ -109,6 +109,8 @@ fn new_test_ext() -> runtime_io::TestExternalities {
       (1, 10000),
       (2, 10000),
       (3, 10000),
+      (4, 10000),
+      (5, 10000),
     ],
     vesting: vec![],
   }.assimilate_storage(&mut t).unwrap();
@@ -185,7 +187,7 @@ fn should_pass_lock() {
       1u64,
       "1".as_bytes().to_vec(),
       H256::zero(),
-      Some("f".as_bytes().to_vec()),
+      Some("init".as_bytes().to_vec()),
       None
     ));
 
@@ -195,8 +197,8 @@ fn should_pass_lock() {
       2u64,
       "1".as_bytes().to_vec(),
       H256::zero(),
-      Some("s".as_bytes().to_vec()),
-      Some("f".as_bytes().to_vec())
+      Some("w1".as_bytes().to_vec()),
+      Some("init".as_bytes().to_vec())
     ));
 
     assert_noop!(DidModule::lock(Origin::signed(2), 10, 5), "you must lock at least 50 pra first time");
@@ -207,6 +209,34 @@ fn should_pass_lock() {
 
     assert_eq!(Balances::free_balance(&2), 9890);
     assert_eq!(Balances::free_balance(&1), 10025); // get 25 from locked funds
+
+    assert_ok!(DidModule::create(
+      Origin::signed(1),
+      b"0x8eaf04151687736326c9fea17e25fc5287613693c912909cb226aa4794f26a48".to_vec(),
+      3u64,
+      "1".as_bytes().to_vec(),
+      H256::zero(),
+      Some("w2".as_bytes().to_vec()),
+      Some("w1".as_bytes().to_vec())
+    ));
+
+    assert_ok!(DidModule::lock(Origin::signed(3), 100, 5));
+
+    assert_ok!(DidModule::create(
+      Origin::signed(1),
+      b"0x306721211d5404bd9da88e0204360a1a9ab8b87c66c1bc2fcdd37f3c2222cc20".to_vec(),
+      4u64,
+      "1".as_bytes().to_vec(),
+      H256::zero(),
+      Some("w3".as_bytes().to_vec()),
+      Some("w2".as_bytes().to_vec())
+    ));
+
+    assert_ok!(DidModule::lock(Origin::signed(4), 100, 5));
+
+    let did_hash = DidModule::identity(&4);
+    let metadata = DidModule::metadata(did_hash);
+    println!("metadata4 is{:?}", metadata);
 
   });
 }
