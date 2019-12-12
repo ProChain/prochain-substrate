@@ -17,7 +17,6 @@ use hex::FromHex;
 use core::convert::{TryInto};
 
 pub const KEY_TYPE: KeyTypeId = KeyTypeId(*b"orin");
-pub const BUFFER_LEN: usize = 4096;
 
 pub mod sr25519 {
 	mod app_sr25519 {
@@ -34,17 +33,11 @@ pub mod sr25519 {
 	pub type AuthorityId = app_sr25519::Public;
 }
 
-#[derive(Encode, Decode, Clone, PartialEq, Eq)]
-#[cfg_attr(feature = "std", derive(Debug))]
+#[derive(Encode, Decode, Clone, PartialEq, Eq, Debug)]
 pub struct EventLogSource {
 	event_name: Vec<u8>,
 	event_url: Vec<u8>,
 }
-
-// Config event type, source url, TODO: add contract address, start block, end block
-pub const FETCHE_EVENT_LOGS: [(&'static [u8], &'static [u8]); 1] = [
-	(b"ERC20", b"https://api-ropsten.etherscan.io/api?module=logs&action=getLogs&fromBlock=6941790&toBlock=latest&address=0xbd261550e087f19A842e375D0031a85525B9714F"),
-];
 
 // Config event json parse fields
 const KEY_STATUS: &'static str = "status";
@@ -76,7 +69,7 @@ where
 	htlc_block_number: BlockNumber,
 	event_block_number: BlockNumber,
 	expire_height: u32,
-	random_number_hash: Vec<u8>, //在event_type为Claimed时，该值为random_number
+	random_number_hash: Vec<u8>, //When event_type is Claimed，value is random_number instead of hash
 	swap_id: Hash,
 	event_timestamp: u64,
 	htlc_timestamp: u64,
@@ -153,16 +146,19 @@ decl_event!(
 		<T as system::Trait>::Hash,
 		<T as balances::Trait>::Balance,
 	{
-		///Setup pra_token_addr
-		INIT(AccountId),
+		///Setup pra_token_addr, event_name, event_url
+		Init(AccountId, Vec<u8>, Vec<u8>),
 
-		//receiver_addr, eth_contract_addr, htlc_block_number, expire_height, random_number_hash, swap_id, sender_addr, out_amount, htlc_timestamp
+		///kill scanned event_name and event_url, make sure run only once
+		Kill(Vec<u8>, Vec<u8>),
+
+		///receiver_addr, eth_contract_addr, htlc_block_number, expire_height, random_number_hash, swap_id, sender_addr, out_amount, htlc_timestamp
 		HTLC(AccountId, Vec<u8>, BlockNumber, u32, Vec<u8>, Hash, Vec<u8>, Balance, u64),
 
-		//receiver_addr, eth_contract_addr, swap_id, sender_addr, random_number
+		///receiver_addr, eth_contract_addr, swap_id, sender_addr, random_number
 		Claim(AccountId, Vec<u8>, Hash, Vec<u8>,Vec<u8>),
 
-		//receiver_addr, eth_contract_addr, sender_addr, random_number_hash
+		///receiver_addr, eth_contract_addr, sender_addr, random_number_hash
 		Refund(AccountId, Vec<u8>, Hash, Vec<u8>, Vec<u8>),
 	}
 );
@@ -173,26 +169,23 @@ decl_module! {
 
 		// Initializing event fetch jobs
 		#[weight = SimpleDispatchInfo::FixedNormal(500_000)]
-		pub fn kickoff_event_fetch(origin, pra_token_addr: T::AccountId) -> dispatch_result {
+		pub fn kickoff_event_fetch(origin, pra_token_addr: T::AccountId, event_name: Vec<u8>, event_url: Vec<u8>) -> dispatch_result {
 			ensure_root(origin)?;
 
 			runtime_io::misc::print_utf8(b"======== kickoff event fetch jobs");
-			<Self as Store>::OcRequests::kill();
-
-			for event_log_info in FETCHE_EVENT_LOGS.iter() {
-				let event_log = EventLogSource {
-					event_name: event_log_info.0.to_vec(),
-					event_url: event_log_info.1.to_vec(),
-				};
-
-				<Self as Store>::OcRequests::mutate(|v|
-					v.push(event_log)
-				);
-			}
-
 			<PraTokenAddr<T>>::put(pra_token_addr.clone());
-			Self::deposit_event(RawEvent::INIT(pra_token_addr));
 
+			<Self as Store>::OcRequests::kill();
+			let event_src = EventLogSource {
+				event_name: event_name.clone(),
+				event_url: event_url.clone(),
+			};
+
+			<Self as Store>::OcRequests::mutate(|v|
+				v.push(event_src)
+			);
+
+			Self::deposit_event(RawEvent::Init(pra_token_addr, event_name, event_url));
 			Ok(())
 		}
 
@@ -229,9 +222,6 @@ decl_module! {
 			// TODO: add auth control
 			ensure_none(origin)?;
 
-			runtime_io::misc::print_utf8(b"htlcs.len()");
-			runtime_io::misc::print_num(htlcs.len() as u64);
-
 			for htlc in htlcs {
 				match htlc.event_type {
 					HTLCType::HTLC => {
@@ -247,7 +237,6 @@ decl_module! {
 					},
 					HTLCType::Claimed => {
 						if <SwapData<T>>::exists(htlc.swap_id) && <SwapStates<T>>::exists(htlc.swap_id) {
-							//TODO: check states
 							let swap_id = htlc.swap_id;
 							<SwapData<T>>::remove(&swap_id);
 							<SwapStates<T>>::remove(&swap_id);
@@ -259,7 +248,6 @@ decl_module! {
 					},
 					HTLCType::Refunded => {
 						if <SwapData<T>>::exists(htlc.swap_id) && <SwapStates<T>>::exists(htlc.swap_id) {
-							//TODO: check states
 							let swap_id = htlc.swap_id;
 							<SwapData<T>>::remove(&swap_id);
 							<SwapStates<T>>::remove(&swap_id);
@@ -278,20 +266,27 @@ decl_module! {
 
 impl<T: Trait> Module<T> {
 	fn offchain_events(now: T::BlockNumber) {
+		let mut fetch_success = true;
 		for fetch_info in Self::oc_requests() {
-			Self::fetch_events(fetch_info.event_name, fetch_info.event_url);
+			let res = Self::fetch_events(fetch_info.event_name, fetch_info.event_url);
+			if res.is_ok() {
+				fetch_success = false;
+			}
+		}
+
+		if fetch_success {
+			//TODO make sure run once only
+			//Self::deposit_event(RawEvent::Kill(pra_token_addr, event_name, event_url));
+			<Self as Store>::OcRequests::kill();
 		}
 	}
 
 	fn fetch_events(src: Vec<u8>, remote_url: Vec<u8>) -> Result<(), &'static str> {
-		runtime_io::misc::print_utf8(&remote_url);
-
 		let pra_token_addr = Self::pra_token_addr();
 		ensure!(pra_token_addr.is_some(), "pra_token_addr can not be empty");
 
-		let remote_url_str: &str = core::str::from_utf8(&remote_url).unwrap();
-		let res = Self::http_request_get(remote_url_str, None);
-
+		let url = core::str::from_utf8(&remote_url).unwrap();
+		let res = Self::http_request_get(&url, None);
 		if let Ok(buf) = res {
 			let htlcs = Self::parse_data(buf);
 
@@ -308,15 +303,14 @@ impl<T: Trait> Module<T> {
 		Ok(())
 	}
 
-	fn parse_data(res: [u8; BUFFER_LEN]) -> Vec<EventHTLC<T::BlockNumber, T::Balance, T::Hash, T::AccountId>> {
-		runtime_io::misc::print_utf8(b"======== start parse_json");
+	fn parse_data(res: Vec<u8>) -> Vec<EventHTLC<T::BlockNumber, T::Balance, T::Hash, T::AccountId>> {
 		runtime_io::misc::print_utf8(&res);
 
 		let mut vec_results: Vec<EventHTLC<T::BlockNumber, T::Balance, T::Hash, T::AccountId>> = Vec::new();
 
 		let json_str = core::str::from_utf8(&res);
 		if json_str.is_err() {
-			runtime_io::misc::print_utf8(b"err parse json from utf8");
+			runtime_io::misc::print_utf8(b"error parse json from utf8");
 			return vec_results;
 		}
 
@@ -597,8 +591,7 @@ impl<T: Trait> Module<T> {
 		Ok(htlc)
 	}
 
-	fn http_request_get(uri: &str, header: Option<(&str, &str)>) -> Result<[u8; BUFFER_LEN], &'static str> {
-		runtime_io::misc::print_utf8(b"request http request ========");
+	fn http_request_get(uri: &str, header: Option<(&str, &str)>) -> Result<Vec<u8>, &'static str> {
 		let id: HttpRequestId = runtime_io::offchain::http_request_start("GET", uri, &[0]).unwrap();
 		let deadline = runtime_io::offchain::timestamp().add(Duration::from_millis(10_000));
 
@@ -614,18 +607,17 @@ impl<T: Trait> Module<T> {
 			_ => return Err("Request failed"),
 		}
 
-		let mut buf = Vec::with_capacity(BUFFER_LEN as usize);
-		buf.resize(BUFFER_LEN as usize, 0);
-
-		let res = runtime_io::offchain::http_response_read_body(id, &mut buf, Some(deadline));
-		match res {
-			Ok(_len) => {
-				let result = &buf[..BUFFER_LEN];
-				let mut res: [u8; BUFFER_LEN] = [0; BUFFER_LEN];
-				res.copy_from_slice(result);
-				return Ok(res);
-			}
-			Err(_) => return Err("Parse body failed"),
+		let mut result: Vec<u8> = vec![];
+		loop {
+		  let mut buffer = vec![0; 1024];
+		  let _read = runtime_io::offchain::http_response_read_body(id, &mut buffer, Some(deadline)).map_err(|_e| ());
+		  result = [&result[..], &buffer[..]].concat();
+		  if _read == Ok(0) { break }
+		}
+		if result.len() > 0 {
+			return Ok(result);
+		} else {
+			return Err("Parse body failed");
 		}
 	}
 
@@ -637,7 +629,6 @@ impl<T: Trait> Module<T> {
 	//if HTLC exists
 	fn is_swap_exist(swap_id: T::Hash) -> bool {
 		let state = Self::swap_states(swap_id);
-
 		state.is_some() && state.unwrap() != HTLCStates::INVALID
 	}
 
