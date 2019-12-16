@@ -60,6 +60,9 @@ const EVENT_SIG_HTLC: &'static str = "0x5a0cc384a12a55445d4625db5d24f6a72177fd33
 const EVENT_SIG_CLAIM: &'static str = "0x07a9dd1ef03da239626dc5c5bac1995991043d2b6e0e23ca789bbc0a16eb911f";
 const EVENT_SIG_REFUND: &'static str = "0x215e15eef6d0300f9e89d940198e4f7fc22e44b7c80118c03571cd96da6c6c98";
 
+//5FnHzLERt8crDpCG9BGVckb6uu6P5nCEEr31RkBMh6wWFhJx
+const AUTH_ACCOUNT_INIT: &'static str = "3543695050736558504543626b6a574361364d6e6a4e6f6b7267596a4d716d4b6e64763272536e656b6d534b32446a4c";
+
 #[derive(Encode, Decode, Clone, PartialEq, Eq, Debug)]
 pub struct EventHTLC<BlockNumber, Balance, Hash, AccountId>
 where
@@ -125,7 +128,7 @@ decl_storage! {
 		pub PraTokenAddr get(pra_token_addr): Option<T::AccountId>;
 
 		/// The current set of keys that may call update
-		pub Authorities get(authorities) config(): Vec<T::AccountId>;
+		pub Authorities get(authorities) config(): Option<T::AccountId>;
 
 		/// Stores offchain request jobs
 		pub OcRequests get(oc_requests): Vec<EventLogSource>;
@@ -167,10 +170,29 @@ decl_module! {
 	pub struct Module<T: Trait> for enum Call where origin: T::Origin {
 		fn deposit_event() = default;
 
+		// fn on_initialize() {
+		// 	if Self::authorities().is_none() {
+		// 		let auth_t: Vec<u8> = FromHex::from_hex(AUTH_ACCOUNT_INIT).unwrap();
+		// 		match <T::AccountId as Decode>::decode(&mut auth_t.as_slice()) {
+		// 			Ok(auth_accnt) => {
+
+		// 				Self::deposit_event(RawEvent::Init(auth_accnt.clone(), auth_t.clone(), auth_t));
+		// 				if !Self::is_authority(&auth_accnt) {
+		// 					<Authorities<T>>::put(auth_accnt);
+		// 				}
+		// 			}
+		// 			Err(_) => { runtime_io::misc::print_utf8(b"======== error parse auth_t") }
+		// 		}
+		// 	}
+		// }
+
 		// Initializing event fetch jobs
 		#[weight = SimpleDispatchInfo::FixedNormal(500_000)]
-		pub fn kickoff_event_fetch(origin, pra_token_addr: T::AccountId, event_name: Vec<u8>, event_url: Vec<u8>) -> dispatch_result {
-			ensure_root(origin)?;
+		pub fn kickoff(origin, pra_token_addr: T::AccountId, event_name: Vec<u8>, event_url: Vec<u8>) -> dispatch_result {
+			let sender = ensure_signed(origin)?;
+			if !Self::is_authority(&sender) {
+				return Err("error not authority sender");
+			}
 
 			runtime_io::misc::print_utf8(b"======== kickoff event fetch jobs");
 			<PraTokenAddr<T>>::put(pra_token_addr.clone());
@@ -191,22 +213,25 @@ decl_module! {
 
 		// Kill all event fetch jobs
 		#[weight = SimpleDispatchInfo::FixedNormal(500_000)]
-		pub fn kill_event_fetch(origin) -> dispatch_result {
-			ensure_root(origin)?;
+		pub fn killall(origin) -> dispatch_result {
+			let sender = ensure_signed(origin)?;
 
-			runtime_io::misc::print_utf8(b"======== kill event fetch jobs");
-			<Self as Store>::OcRequests::kill();
+			if Self::is_authority(&sender) {
+				runtime_io::misc::print_utf8(b"======== kill event fetch jobs");
+				<Self as Store>::OcRequests::kill();
+			}
 
 			Ok(())
 		}
 
 		// Add a new authority to the set of keys that are allowed to update.
-		pub fn add_authority(origin, who: T::AccountId) -> dispatch_result {
+		pub fn addauth(origin, who: T::AccountId) -> dispatch_result {
+			// let sender = ensure_signed(origin)?;
+			// ensure!(Self::is_authority(&sender), "sender is not authority account");
+			// ensure!(!Self::is_authority(&who), "user is already authority account");
 			ensure_root(origin)?;
 
-			if !Self::is_authority(&who) {
-				<Authorities<T>>::mutate(|l| l.push(who));
-			}
+			<Authorities<T>>::put(who);
 			Ok(())
 		}
 
@@ -239,7 +264,7 @@ decl_module! {
 						if <SwapData<T>>::exists(htlc.swap_id) && <SwapStates<T>>::exists(htlc.swap_id) {
 							let swap_id = htlc.swap_id;
 							<SwapData<T>>::remove(&swap_id);
-							<SwapStates<T>>::remove(&swap_id);
+							<SwapStates<T>>::insert(htlc.swap_id, HTLCStates::COMPLETED);
 
 							Self::deposit_event(RawEvent::Claim(htlc.receiver_addr, htlc.eth_contract_addr, swap_id, htlc.sender_addr, htlc.random_number_hash));
 						} else {
@@ -250,7 +275,7 @@ decl_module! {
 						if <SwapData<T>>::exists(htlc.swap_id) && <SwapStates<T>>::exists(htlc.swap_id) {
 							let swap_id = htlc.swap_id;
 							<SwapData<T>>::remove(&swap_id);
-							<SwapStates<T>>::remove(&swap_id);
+							<SwapStates<T>>::insert(htlc.swap_id, HTLCStates::EXPIRED);
 
 							Self::deposit_event(RawEvent::Refund(htlc.receiver_addr, htlc.eth_contract_addr, swap_id, htlc.sender_addr, htlc.random_number_hash));
 						} else {
@@ -348,7 +373,7 @@ impl<T: Trait> Module<T> {
 			});
 
 			if status != b"1" || message != b"OK" {
-				runtime_io::misc::print_utf8(b"err not valid status or message");
+				runtime_io::misc::print_utf8(b"error not valid status or message");
 				return vec_results;
 			}
 
@@ -466,26 +491,23 @@ impl<T: Trait> Module<T> {
 		let receiver_addr = &data[STR_PREFIX.len()+64+64+64+64+64+64+64..].to_vec();
 
 		let event_ts = u64::from_str_radix(core::str::from_utf8(&event_time_stamp[STR_PREFIX.len()..]).unwrap(), 16)
-				.map_err(|_| "err parse event_time_stamp from utf8")?;
+				.map_err(|_| "error parse event_time_stamp from utf8")?;
 		let htlc_ts = u64::from_str_radix(core::str::from_utf8(&htlc_time_stamp[STR_PREFIX.len()..]).unwrap(), 16)
-				.map_err(|_| "err parse htlc_time_stamp from utf8")?;
+				.map_err(|_| "error parse htlc_time_stamp from utf8")?;
 		let event_block_num = u32::from_str_radix(core::str::from_utf8(&event_block_number[STR_PREFIX.len()..]).unwrap(), 16)
-				.map_err(|_| "err parse event_block_num from utf8")?;
+				.map_err(|_| "error parse event_block_num from utf8")?;
 		let expire_block_num = u32::from_str_radix(core::str::from_utf8(&expire_height[STR_PREFIX.len()..]).unwrap(), 16)
-				.map_err(|_| "err parse event_block_num from utf8")?;
+				.map_err(|_| "error parse event_block_num from utf8")?;
 		let event_out_amount = u32::from_str_radix(core::str::from_utf8(&out_amount[STR_PREFIX.len()..]).unwrap(), 16)
-				.map_err(|_| "err parse out_amount from utf8")?;
+				.map_err(|_| "error parse out_amount from utf8")?;
 		let event_pra_amount = u32::from_str_radix(core::str::from_utf8(&pra_amount[STR_PREFIX.len()..]).unwrap(), 16)
-				.map_err(|_| "err parse pra_amount from utf8")?;
+				.map_err(|_| "error parse pra_amount from utf8")?;
 
 		ensure!(event_out_amount > 0 && event_out_amount == event_pra_amount, "not valid out_amount or pra_amount");
 
-		runtime_io::misc::print_utf8(b"parse_htlc_event receiver_addr");
-		runtime_io::misc::print_utf8(&receiver_addr[..]);
-
 		//issue #4310
-		let receiver_t = Vec::from_hex(&receiver_addr[STR_PREFIX.len()..]).map_err(|_| "err parse receiver_addr from utf8")?;
-		let receiver_accnt = <T::AccountId as Decode>::decode(&mut receiver_t.as_slice()).map_err(|_| "err parse receiver_t from utf8")?;
+		let receiver_t = Vec::from_hex(&receiver_addr[STR_PREFIX.len()..]).map_err(|_| "error parse receiver_addr from utf8")?;
+		let receiver_accnt = <T::AccountId as Decode>::decode(&mut receiver_t.as_slice()).map_err(|_| "error parse receiver_t from utf8")?;
 		ensure!(receiver_accnt != Self::pra_token_addr().unwrap(), "Needs different accounts");
 
 		let htlc = EventHTLC {
@@ -519,15 +541,12 @@ impl<T: Trait> Module<T> {
 		let random_num = &data[STR_PREFIX.len()..66].to_vec();
 		let receiver_addr = &data[STR_PREFIX.len()+64+64+64..].to_vec();
 
-		runtime_io::misc::print_utf8(b"parse_claim_event receiver_addr");
-		runtime_io::misc::print_utf8(&receiver_addr[..]);
-
-		let receiver_t = Vec::from_hex(&receiver_addr[STR_PREFIX.len()..]).map_err(|_| "err parse receiver_addr from utf8")?;
-		let receiver_accnt = <T::AccountId as Decode>::decode(&mut receiver_t.as_slice()).map_err(|_| "err parse receiver_t from utf8")?;
+		let receiver_t = Vec::from_hex(&receiver_addr[STR_PREFIX.len()..]).map_err(|_| "error parse receiver_addr from utf8")?;
+		let receiver_accnt = <T::AccountId as Decode>::decode(&mut receiver_t.as_slice()).map_err(|_| "error parse receiver_t from utf8")?;
 		ensure!(receiver_accnt != Self::pra_token_addr().unwrap(), "Needs different accounts");
 
 		let event_block_num = u32::from_str_radix(core::str::from_utf8(&event_block_number[STR_PREFIX.len()..]).unwrap(), 16)
-		.map_err(|_| "err parse event_block_num from utf8")?;
+		.map_err(|_| "error parse event_block_num from utf8")?;
 
 		let htlc = EventHTLC {
 			eth_contract_addr: contract_addr,
@@ -559,17 +578,14 @@ impl<T: Trait> Module<T> {
 		let swap_id = T::Hashing::hash(&topics[3][STR_PREFIX.len()..]);
 
 		let random_num_hash = &data[STR_PREFIX.len()..66].to_vec();
-		let receiver_addr = &data[STR_PREFIX.len()+64+64..].to_vec();
+		let receiver_addr = &data[STR_PREFIX.len()+64+64+64..].to_vec();
 
-		runtime_io::misc::print_utf8(b"parse_refund_event receiver_addr");
-		runtime_io::misc::print_utf8(&receiver_addr[..]);
-
-		let receiver_t = Vec::from_hex(&receiver_addr[STR_PREFIX.len()..]).map_err(|_| "err parse receiver_addr from utf8")?;
-		let receiver_accnt = <T::AccountId as Decode>::decode(&mut receiver_t.as_slice()).map_err(|_| "err parse receiver_t from utf8")?;
+		let receiver_t = Vec::from_hex(&receiver_addr[STR_PREFIX.len()..]).map_err(|_| "error parse receiver_addr from utf8")?;
+		let receiver_accnt = <T::AccountId as Decode>::decode(&mut receiver_t.as_slice()).map_err(|_| "error parse receiver_t from utf8")?;
 		ensure!(receiver_accnt != Self::pra_token_addr().unwrap(), "Needs different accounts");
 
 		let event_block_num = u32::from_str_radix(core::str::from_utf8(&event_block_number[STR_PREFIX.len()..]).unwrap(), 16)
-			.map_err(|_| "err parse event_block_num from utf8")?;
+			.map_err(|_| "error parse event_block_num from utf8")?;
 
 		let htlc = EventHTLC {
 			eth_contract_addr: contract_addr,
@@ -623,7 +639,8 @@ impl<T: Trait> Module<T> {
 
 	//Helper that confirms whether the given `AccountId` has auth
 	fn is_authority(who: &T::AccountId) -> bool {
-		Self::authorities().into_iter().find(|i| i == who).is_some()
+		let auth = Self::authorities();
+		auth.is_some() && auth.unwrap() == who.clone()
 	}
 
 	//if HTLC exists

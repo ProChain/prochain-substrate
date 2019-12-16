@@ -83,8 +83,8 @@ contract ERC20HTLC {
     /// @param _timestamp Counted by second
     /// @param _heightSpan The number of blocks to wait before the asset can be returned to sender
     /// @param _recipientAddr The ethereum address to lock swapped assets.
-    /// @param _outAmount PRA ERC20 asset to swap out.
-    /// @param _praAmount PRA asset to swap in.
+    /// @param _outAmount PRA ERC20 asset to swap out, precision is 18
+    /// @param _praAmount PRA asset to swap in, precision is 18
     /// @param _receiverAddr PRA DID to swap in.
     function htlc(
         bytes32 _randomNumberHash,
@@ -101,7 +101,7 @@ contract ERC20HTLC {
         // The heightSpan period should be more than 5 minutes and less than one week
         require(_heightSpan >= 100 && _heightSpan <= 60480, "_heightSpan should be in [60, 60480]");
         require(_recipientAddr != address(0), "_recipientAddr should not be zero");
-        require(_outAmount > 0, "_outAmount must be more than 0");
+        require(_outAmount >= 100000000000000000, "_outAmount must be more than 0.1");
         require(_timestamp > now - 1800 && _timestamp < now + 900, "Timestamp can neither be 15 minutes ahead of the current time, nor 30 minutes later");
         require(_outAmount == _praAmount, "_outAmount must be equal _praAmount");
         //TODO: check _receiverAddr is valid
