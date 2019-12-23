@@ -94,7 +94,7 @@ To start up the Prochain node, run:
     "htlc_timestamp": "u64",
     "sender_addr": "Vec<u8>",
     "sender_chain_type": "HTLCChain",
-    "receiver_addr": "AccountId",
+    "receiver_addr": "Hash",
     "receiver_chain_type": "HTLCChain",
     "recipient_addr": "Vec<u8>",
     "out_amount": "Balance",
