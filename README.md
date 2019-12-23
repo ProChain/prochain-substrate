@@ -38,7 +38,7 @@ To start up the Prochain node, run:
 
 # Settings
 
-1) Open [Polkadot UI](https://polkadot.js.org/apps/#/explorer) . 
+1) Open [Polkadot UI](https://polkadot.js.org/apps/#/explorer) , Settings -> custom endpoint: [wss://substrate.chain.pro/v2/ws](wss://substrate.chain.pro/v2/ws)
 
 2) Go to *Settings*, open *Developer* tab. Insert in textbox description of types (copy&paste from here) and Save it.
 
@@ -95,7 +95,7 @@ To start up the Prochain node, run:
     "htlc_timestamp": "u64",
     "sender_addr": "Vec<u8>",
     "sender_chain_type": "HTLCChain",
-    "receiver_addr": "AccountId",
+    "receiver_addr": "Hash",
     "receiver_chain_type": "HTLCChain",
     "recipient_addr": "Vec<u8>",
     "out_amount": "Balance",

@@ -24,3 +24,4 @@ package-lock.json
 yarn.lock
 keys
 creation.log
+nedb

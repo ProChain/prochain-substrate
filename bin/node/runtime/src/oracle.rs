@@ -3,18 +3,22 @@
 use sp_runtime::app_crypto::{KeyTypeId, RuntimeAppPublic};
 use codec::{Decode, Encode};
 use primitives::{offchain::Duration, offchain::HttpRequestId, offchain::HttpRequestStatus};
-use rstd::{prelude::*, result::Result, vec::Vec};
+use rstd::{prelude::*, result::Result, vec::Vec, convert::{Into, TryInto}};
 use sp_runtime::{
-	traits::Member, traits::Hash,
+	traits::{Member, Hash},
 	transaction_validity::{
 		TransactionValidity, TransactionPriority, ValidTransaction, UnknownTransaction, TransactionLongevity}
 };
 use support::{decl_event, decl_module, decl_storage, ensure, Parameter, StorageMap, StorageValue,
-	dispatch::Result as dispatch_result, weights::SimpleDispatchInfo};
+	dispatch::Result as dispatch_result, weights::SimpleDispatchInfo, traits::{Currency, ReservableCurrency, ExistenceRequirement}};
 use system::{offchain::SubmitUnsignedTransaction, ensure_none, ensure_signed, ensure_root};
 use simple_json::{self, json::JsonValue};
 use hex::FromHex;
-use core::convert::{TryInto};
+
+extern crate num_bigint_dig as num_bigint;
+//extern crate num_traits;
+use num_bigint::{BigUint, ToBigUint};
+use num_traits::{Zero, One};
 
 pub const KEY_TYPE: KeyTypeId = KeyTypeId(*b"orin");
 
@@ -53,6 +57,7 @@ const KEY_TX_INDEX: &'static str = "transactionIndex";
 
 const STATUS_OK: &'static str = "1";
 const MESSAGE_OK: &'static str = "OK";
+const MESSAGE_NOT_FOUND: &'static str = "No records found";
 const STR_PREFIX: &'static str = "0x";
 
 // TODO: auto generate EventSignature by contract abi
@@ -60,11 +65,10 @@ const EVENT_SIG_HTLC: &'static str = "0x5a0cc384a12a55445d4625db5d24f6a72177fd33
 const EVENT_SIG_CLAIM: &'static str = "0x07a9dd1ef03da239626dc5c5bac1995991043d2b6e0e23ca789bbc0a16eb911f";
 const EVENT_SIG_REFUND: &'static str = "0x215e15eef6d0300f9e89d940198e4f7fc22e44b7c80118c03571cd96da6c6c98";
 
-//5FnHzLERt8crDpCG9BGVckb6uu6P5nCEEr31RkBMh6wWFhJx
-const AUTH_ACCOUNT_INIT: &'static str = "3543695050736558504543626b6a574361364d6e6a4e6f6b7267596a4d716d4b6e64763272536e656b6d534b32446a4c";
+const B_ALPHA: &'static [u8; 58] = b"123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz";
 
 #[derive(Encode, Decode, Clone, PartialEq, Eq, Debug)]
-pub struct EventHTLC<BlockNumber, Balance, Hash, AccountId>
+pub struct EventHTLC<BlockNumber, Balance, Hash>
 where
 	BlockNumber: PartialEq + Eq + Decode + Encode,
 {
@@ -78,7 +82,7 @@ where
 	htlc_timestamp: u64,
 	sender_addr: Vec<u8>,
 	sender_chain_type: HTLCChain,
-	receiver_addr: AccountId,
+	receiver_addr: Hash,
 	receiver_chain_type: HTLCChain,
 	recipient_addr: Vec<u8>,
 	out_amount: Balance,
@@ -111,7 +115,7 @@ pub enum HTLCType {
 //  automates offchain fetching every certain blocks
 pub const BLOCK_DURATION: u64 = 5;
 
-pub trait Trait: balances::Trait + timestamp::Trait {
+pub trait Trait: balances::Trait + timestamp::Trait + did::Trait{
 	/// The identifier type for an authority.
 	type AuthorityId: Member + Parameter + RuntimeAppPublic + Default + Ord;
 	/// The overarching event type.
@@ -122,8 +126,10 @@ pub trait Trait: balances::Trait + timestamp::Trait {
 	type SubmitTransaction: SubmitUnsignedTransaction<Self, <Self as Trait>::Call>;
 }
 
+//type BalanceOf<T> = <<T as Trait>::Currency as Currency<<T as system::Trait>::AccountId>>::Balance;
+
 decl_storage! {
-	trait Store for Module<T: Trait> as Oracle {
+	trait Store for Module<T: Trait> as OracleSwap {
 		/// Stores the locked pra tokens
 		pub PraTokenAddr get(pra_token_addr): Option<T::AccountId>;
 
@@ -131,13 +137,16 @@ decl_storage! {
 		pub Authorities get(authorities) config(): Option<T::AccountId>;
 
 		/// Stores offchain request jobs
-		pub OcRequests get(oc_requests): Vec<EventLogSource>;
+		pub OcRequests get(oc_requests): Option<EventLogSource>;
 
-		/// Key is swap_id, value is EventHTLC
-		pub SwapData get(swap_data): map T::Hash => Option<EventHTLC<T::BlockNumber, T::Balance, T::Hash, T::AccountId>>;
+		/// Key is swap_id, value is EventHTLC, should be removed after completed
+		pub SwapData get(swap_data): map T::Hash => Option<EventHTLC<T::BlockNumber, T::Balance, T::Hash>>;
 
-		/// Key is swap_id, Value is HTLCStates
+		/// Key is swap_id, Value is HTLCStates, Note: should never be removed
 		pub SwapStates get(swap_states): map T::Hash => Option<HTLCStates>;
+
+		/// Total count in SwapStates, Note: should always be larger
+		pub SwapStatesCount get(swap_states_count): u64;
 	}
 }
 
@@ -149,20 +158,23 @@ decl_event!(
 		<T as system::Trait>::Hash,
 		<T as balances::Trait>::Balance,
 	{
-		///Setup pra_token_addr, event_name, event_url
-		Init(AccountId, Vec<u8>, Vec<u8>),
+		///Setup event_name, event_url
+		Init(Vec<u8>, Vec<u8>),
 
 		///kill scanned event_name and event_url, make sure run only once
 		Kill(Vec<u8>, Vec<u8>),
 
 		///receiver_addr, eth_contract_addr, htlc_block_number, expire_height, random_number_hash, swap_id, sender_addr, out_amount, htlc_timestamp
-		HTLC(AccountId, Vec<u8>, BlockNumber, u32, Vec<u8>, Hash, Vec<u8>, Balance, u64),
+		HTLC(Hash, Vec<u8>, BlockNumber, u32, Vec<u8>, Hash, Vec<u8>, Balance, u64),
 
 		///receiver_addr, eth_contract_addr, swap_id, sender_addr, random_number
-		Claim(AccountId, Vec<u8>, Hash, Vec<u8>,Vec<u8>),
+		Claim(Hash, Vec<u8>, Hash, Vec<u8>,Vec<u8>),
 
 		///receiver_addr, eth_contract_addr, sender_addr, random_number_hash
-		Refund(AccountId, Vec<u8>, Hash, Vec<u8>, Vec<u8>),
+		Refund(Hash, Vec<u8>, Hash, Vec<u8>, Vec<u8>),
+
+		///sender_account, receiver_account, receiver_did, out_amount
+		TransferToDid(AccountId, AccountId, Hash, Balance),
 	}
 );
 
@@ -170,82 +182,67 @@ decl_module! {
 	pub struct Module<T: Trait> for enum Call where origin: T::Origin {
 		fn deposit_event() = default;
 
-		// fn on_initialize() {
-		// 	if Self::authorities().is_none() {
-		// 		let auth_t: Vec<u8> = FromHex::from_hex(AUTH_ACCOUNT_INIT).unwrap();
-		// 		match <T::AccountId as Decode>::decode(&mut auth_t.as_slice()) {
-		// 			Ok(auth_accnt) => {
-
-		// 				Self::deposit_event(RawEvent::Init(auth_accnt.clone(), auth_t.clone(), auth_t));
-		// 				if !Self::is_authority(&auth_accnt) {
-		// 					<Authorities<T>>::put(auth_accnt);
-		// 				}
-		// 			}
-		// 			Err(_) => { runtime_io::misc::print_utf8(b"======== error parse auth_t") }
-		// 		}
-		// 	}
-		// }
+		fn on_initialize(_now: T::BlockNumber) {
+			<Self as Store>::OcRequests::take();
+		}
 
 		// Initializing event fetch jobs
-		#[weight = SimpleDispatchInfo::FixedNormal(500_000)]
-		pub fn kickoff(origin, pra_token_addr: T::AccountId, event_name: Vec<u8>, event_url: Vec<u8>) -> dispatch_result {
+		fn kickoff(origin, event_name: Vec<u8>, event_url: Vec<u8>) -> dispatch_result {
 			let sender = ensure_signed(origin)?;
-			if !Self::is_authority(&sender) {
-				return Err("error not authority sender");
-			}
+			ensure!(Self::is_authority(&sender), "error not authority sender");
 
 			runtime_io::misc::print_utf8(b"======== kickoff event fetch jobs");
-			<PraTokenAddr<T>>::put(pra_token_addr.clone());
 
-			<Self as Store>::OcRequests::kill();
 			let event_src = EventLogSource {
 				event_name: event_name.clone(),
 				event_url: event_url.clone(),
 			};
-
-			<Self as Store>::OcRequests::mutate(|v|
-				v.push(event_src)
-			);
-
-			Self::deposit_event(RawEvent::Init(pra_token_addr, event_name, event_url));
+			<Self as Store>::OcRequests::put(event_src);
+			Self::deposit_event(RawEvent::Init(event_name, event_url));
 			Ok(())
 		}
 
 		// Kill all event fetch jobs
-		#[weight = SimpleDispatchInfo::FixedNormal(500_000)]
-		pub fn killall(origin) -> dispatch_result {
+		fn killall(origin) -> dispatch_result {
 			let sender = ensure_signed(origin)?;
 
 			if Self::is_authority(&sender) {
 				runtime_io::misc::print_utf8(b"======== kill event fetch jobs");
-				<Self as Store>::OcRequests::kill();
+				<Self as Store>::OcRequests::take();
 			}
 
 			Ok(())
 		}
 
 		// Add a new authority to the set of keys that are allowed to update.
-		pub fn addauth(origin, who: T::AccountId) -> dispatch_result {
+		fn init(origin, auth: T::AccountId, pra_token_addr: T::AccountId) -> dispatch_result {
+			ensure_root(origin)?;
+
+			// TODO: add auth control
 			// let sender = ensure_signed(origin)?;
 			// ensure!(Self::is_authority(&sender), "sender is not authority account");
 			// ensure!(!Self::is_authority(&who), "user is already authority account");
-			ensure_root(origin)?;
 
-			<Authorities<T>>::put(who);
+			<Authorities<T>>::put(auth);
+			<PraTokenAddr<T>>::put(pra_token_addr.clone());
+			<SwapStatesCount>::put(0);
 			Ok(())
 		}
 
 		// Runs after every block.
 		fn offchain_worker(now: T::BlockNumber) {
-			if BLOCK_DURATION > 0 && (TryInto::<u64>::try_into(now).ok().unwrap()) % BLOCK_DURATION == 0 {
-				Self::offchain_events(now);
-			}
+			//if BLOCK_DURATION > 0 && (TryInto::<u64>::try_into(now).ok().unwrap()) % BLOCK_DURATION == 0 {
+			Self::offchain_events(now);
+			//}
 		}
 
 		// Stores valid swap data and states
-		fn update_enevt_htlc(origin, htlcs: Vec<EventHTLC<T::BlockNumber, T::Balance, T::Hash, T::AccountId>>) {
+		fn update_enevt_htlc(origin, htlcs: Vec<EventHTLC<T::BlockNumber, T::Balance, T::Hash>>) -> dispatch_result {
 			// TODO: add auth control
 			ensure_none(origin)?;
+
+			ensure!(Self::pra_token_addr().is_some(), "error not valid pra_token_addr");
+			let pra_token_addr = Self::pra_token_addr().unwrap();
 
 			for htlc in htlcs {
 				match htlc.event_type {
@@ -254,21 +251,25 @@ decl_module! {
 							<SwapData<T>>::insert(htlc.swap_id, &htlc);
 							<SwapStates<T>>::insert(htlc.swap_id, HTLCStates::OPEN);
 
+							let swap_states_count = Self::swap_states_count();
+							let new_count = swap_states_count.checked_add(1).ok_or("Overflow adding swap_states_count")?;
+							<SwapStatesCount>::put(new_count);
+
 							Self::deposit_event(RawEvent::HTLC(htlc.receiver_addr, htlc.eth_contract_addr, htlc.htlc_block_number, htlc.expire_height,
 								htlc.random_number_hash, htlc.swap_id, htlc.sender_addr, htlc.out_amount, htlc.htlc_timestamp));
-						} else {
-							runtime_io::misc::print_utf8(b"error HTLC data already exist");
 						}
 					},
 					HTLCType::Claimed => {
 						if <SwapData<T>>::exists(htlc.swap_id) && <SwapStates<T>>::exists(htlc.swap_id) {
 							let swap_id = htlc.swap_id;
+							let htlc = <SwapData<T>>::get(&swap_id).unwrap();
+
+							//transfer
+							Self::transfer_to_did_hash(pra_token_addr.clone(), htlc.receiver_addr.clone(), htlc.out_amount)?;
+
 							<SwapData<T>>::remove(&swap_id);
 							<SwapStates<T>>::insert(htlc.swap_id, HTLCStates::COMPLETED);
-
 							Self::deposit_event(RawEvent::Claim(htlc.receiver_addr, htlc.eth_contract_addr, swap_id, htlc.sender_addr, htlc.random_number_hash));
-						} else {
-							runtime_io::misc::print_utf8(b"error Claimed swap_id not exist");
 						}
 					},
 					HTLCType::Refunded => {
@@ -278,32 +279,29 @@ decl_module! {
 							<SwapStates<T>>::insert(htlc.swap_id, HTLCStates::EXPIRED);
 
 							Self::deposit_event(RawEvent::Refund(htlc.receiver_addr, htlc.eth_contract_addr, swap_id, htlc.sender_addr, htlc.random_number_hash));
-						} else {
-							runtime_io::misc::print_utf8(b"error Refunded swap_id not exist");
 						}
 					},
 					_ => return Err("error not valid htlc event_type")
 				}
 			}
+			Ok(())
 		}
 	}
 }
 
 impl<T: Trait> Module<T> {
 	fn offchain_events(now: T::BlockNumber) {
-		let mut fetch_success = true;
-		for fetch_info in Self::oc_requests() {
-			let res = Self::fetch_events(fetch_info.event_name, fetch_info.event_url);
-			if res.is_ok() {
-				fetch_success = false;
-			}
-		}
+		let fetch_info = <Self as Store>::OcRequests::get().clone();
+		if fetch_info.is_some() {
+			let fetch_info = fetch_info.unwrap();
 
-		if fetch_success {
-			//TODO make sure run once only
-			//Self::deposit_event(RawEvent::Kill(pra_token_addr, event_name, event_url));
-			<Self as Store>::OcRequests::kill();
+			<Self as Store>::OcRequests::take();
+			Self::fetch_events(fetch_info.event_name, fetch_info.event_url);
 		}
+	}
+
+	fn to_balance(val: u128) -> Result<T::Balance, &'static str> {
+		val.try_into().map_err(|_| "Convert to Balance type overflow")
 	}
 
 	fn fetch_events(src: Vec<u8>, remote_url: Vec<u8>) -> Result<(), &'static str> {
@@ -328,14 +326,13 @@ impl<T: Trait> Module<T> {
 		Ok(())
 	}
 
-	fn parse_data(res: Vec<u8>) -> Vec<EventHTLC<T::BlockNumber, T::Balance, T::Hash, T::AccountId>> {
+	fn parse_data(res: Vec<u8>) -> Vec<EventHTLC<T::BlockNumber, T::Balance, T::Hash>> {
 		runtime_io::misc::print_utf8(&res);
 
-		let mut vec_results: Vec<EventHTLC<T::BlockNumber, T::Balance, T::Hash, T::AccountId>> = Vec::new();
+		let mut vec_results: Vec<EventHTLC<T::BlockNumber, T::Balance, T::Hash>> = Vec::new();
 
 		let json_str = core::str::from_utf8(&res);
 		if json_str.is_err() {
-			runtime_io::misc::print_utf8(b"error parse json from utf8");
 			return vec_results;
 		}
 
@@ -373,7 +370,6 @@ impl<T: Trait> Module<T> {
 			});
 
 			if status != b"1" || message != b"OK" {
-				runtime_io::misc::print_utf8(b"error not valid status or message");
 				return vec_results;
 			}
 
@@ -439,32 +435,28 @@ impl<T: Trait> Module<T> {
 				});
 
 				if topics.len() == 0 {
-					runtime_io::misc::print_utf8(b"not valid htlc topics length");
 					continue;
 				}
 
 				match core::str::from_utf8(&topics[0]).unwrap() {
 					EVENT_SIG_HTLC => {
-							if let Ok(htlc) = Self::parse_htlc_event(contract_addr, topics, data, event_block_number, event_time_stamp, tx_hash, tx_index) {
-								runtime_io::misc::print_utf8(b"========= push EVENT_SIG_HTLC ");
-								vec_results.push(htlc);
-							} else {
-								runtime_io::misc::print_utf8(b"not valid parse_htlc_event result");
-							}},
+							match Self::parse_htlc_event(contract_addr, topics, data, event_block_number, event_time_stamp, tx_hash, tx_index) {
+								Ok(htlc) => vec_results.push(htlc),
+								Err(e) => { runtime_io::misc::print_utf8(e.as_bytes()); }
+							}
+						},
 					EVENT_SIG_REFUND => {
-							if let Ok(htlc) = Self::parse_refund_event(contract_addr, topics, data, event_block_number, event_time_stamp, tx_hash, tx_index) {
-								runtime_io::misc::print_utf8(b"========= push EVENT_SIG_REFUND ");
-								vec_results.push(htlc);
-							} else {
-								runtime_io::misc::print_utf8(b"not valid parse_refund_event result");
-							}},
+							match Self::parse_refund_event(contract_addr, topics, data, event_block_number, event_time_stamp, tx_hash, tx_index) {
+								Ok(htlc) => vec_results.push(htlc),
+								Err(e) => { runtime_io::misc::print_utf8(e.as_bytes()); }
+							}
+						},
 					EVENT_SIG_CLAIM => {
-							if let Ok(htlc) = Self::parse_claim_event(contract_addr, topics, data, event_block_number, event_time_stamp, tx_hash, tx_index) {
-								runtime_io::misc::print_utf8(b"========= push EVENT_SIG_CLAIM ");
-								vec_results.push(htlc);
-							} else {
-								runtime_io::misc::print_utf8(b"not valid parse_claim_event result");
-							}},
+							match Self::parse_claim_event(contract_addr, topics, data, event_block_number, event_time_stamp, tx_hash, tx_index) {
+								Ok(htlc) => vec_results.push(htlc),
+								Err(e) => { runtime_io::misc::print_utf8(e.as_bytes()); }
+							}
+						},
 					_ => runtime_io::misc::print_utf8(b"not valid event signature")
 				}
 			}
@@ -475,7 +467,7 @@ impl<T: Trait> Module<T> {
 
 	fn parse_htlc_event(contract_addr: Vec<u8>, topics: Vec<Vec<u8>>, data: Vec<u8>,
 						event_block_number: Vec<u8>, event_time_stamp: Vec<u8>, tx_hash: Vec<u8>, tx_index: Vec<u8>)
-						-> Result<EventHTLC<T::BlockNumber, T::Balance, T::Hash, T::AccountId>, &'static str> {
+						-> Result<EventHTLC<T::BlockNumber, T::Balance, T::Hash>, &'static str> {
 
 		//indexed topics: _msgSender(Address); _recipientAddr(FixedBytes(32));_swapID(FixedBytes(32))
 		//topics[0] is EventSignature
@@ -488,7 +480,11 @@ impl<T: Trait> Module<T> {
 		let expire_height = &data[STR_PREFIX.len()+64+64..66+64+64].to_vec();
 		let out_amount = &data[STR_PREFIX.len()+64+64+64..66+64+64+64].to_vec();
 		let pra_amount = &data[STR_PREFIX.len()+64+64+64+64..66+64+64+64+64].to_vec();
+		let receiver_addr_len = &data[STR_PREFIX.len()+64+64+64+64+64+64..64+64+64+64+64+64+66].to_vec();
 		let receiver_addr = &data[STR_PREFIX.len()+64+64+64+64+64+64+64..].to_vec();
+
+		let d = core::str::from_utf8(&receiver_addr_len[..]).unwrap();
+		let mut length = usize::from_str_radix(d, 16).map_err(|_| "error parse length from utf8")?;
 
 		let event_ts = u64::from_str_radix(core::str::from_utf8(&event_time_stamp[STR_PREFIX.len()..]).unwrap(), 16)
 				.map_err(|_| "error parse event_time_stamp from utf8")?;
@@ -498,23 +494,32 @@ impl<T: Trait> Module<T> {
 				.map_err(|_| "error parse event_block_num from utf8")?;
 		let expire_block_num = u32::from_str_radix(core::str::from_utf8(&expire_height[STR_PREFIX.len()..]).unwrap(), 16)
 				.map_err(|_| "error parse event_block_num from utf8")?;
-		let event_out_amount = u32::from_str_radix(core::str::from_utf8(&out_amount[STR_PREFIX.len()..]).unwrap(), 16)
-				.map_err(|_| "error parse out_amount from utf8")?;
-		let event_pra_amount = u32::from_str_radix(core::str::from_utf8(&pra_amount[STR_PREFIX.len()..]).unwrap(), 16)
-				.map_err(|_| "error parse pra_amount from utf8")?;
 
+		let event_out_amount = u128::from_str_radix(core::str::from_utf8(&out_amount[STR_PREFIX.len()..]).unwrap(), 16)
+				.map_err(|_| "error parse out_amount from utf8")?;
+		let event_pra_amount = u128::from_str_radix(core::str::from_utf8(&pra_amount[STR_PREFIX.len()..]).unwrap(), 16)
+				.map_err(|_| "error parse pra_amount from utf8")?;
 		ensure!(event_out_amount > 0 && event_out_amount == event_pra_amount, "not valid out_amount or pra_amount");
 
-		//issue #4310
-		let receiver_t = Vec::from_hex(&receiver_addr[STR_PREFIX.len()..]).map_err(|_| "error parse receiver_addr from utf8")?;
-		let receiver_accnt = <T::AccountId as Decode>::decode(&mut receiver_t.as_slice()).map_err(|_| "error parse receiver_t from utf8")?;
-		ensure!(receiver_accnt != Self::pra_token_addr().unwrap(), "Needs different accounts");
+		//Important: precision from eth contract is 8, substrate precision is 15
+		let out_balance = Self::to_balance(event_out_amount * 10000000).map_err(|_| "error parse event_out_amount to balance")?;;
+
+		length = length * 2usize;
+		let did_hex = Vec::from_hex(&receiver_addr[..length]).map_err(|_| "error parse receiver_addr from utf8")?;
+		let data_str = core::str::from_utf8(&did_hex[..]).map_err(|_| "error not valid utf8 did")?;
+
+		let vecs: Vec<&str> = data_str.split(":").collect();
+		ensure!(vecs.len() == 3 && vecs[2].len() > 0, "error not found valid did");
+
+		let did_ele_hex = Self::from_base58(vecs[2].clone()).map_err(|_| "error Bad Base58")?;
+		let receiver_did_hash = T::Hashing::hash(&did_ele_hex);
+
 
 		let htlc = EventHTLC {
 			eth_contract_addr: contract_addr,
 			event_block_number: T::BlockNumber::from(event_block_num),
 			htlc_block_number: <system::Module<T>>::block_number(),
-			out_amount: T::Balance::from(event_out_amount),
+			out_amount: out_balance,
 			expire_height: expire_block_num - event_block_num,
 			random_number_hash: random_num_hash.clone(),
 			swap_id: T::Hashing::hash(&swap_id[..]),
@@ -522,7 +527,7 @@ impl<T: Trait> Module<T> {
 			htlc_timestamp: htlc_ts,
 			sender_addr: msg_sender.clone(),
 			sender_chain_type: HTLCChain::ETHMain,
-			receiver_addr: receiver_accnt,
+			receiver_addr: receiver_did_hash,
 			receiver_chain_type: HTLCChain::PRA,
 			recipient_addr: recipient_addr.clone(),
 			event_type: HTLCType::HTLC,
@@ -532,21 +537,31 @@ impl<T: Trait> Module<T> {
 
 	fn parse_claim_event(contract_addr: Vec<u8>, topics: Vec<Vec<u8>>, data: Vec<u8>,
 						event_block_number: Vec<u8>, event_time_stamp: Vec<u8>, tx_hash: Vec<u8>, tx_index: Vec<u8>)
-						-> Result<EventHTLC<T::BlockNumber, T::Balance, T::Hash, T::AccountId>, &'static str> {
+						-> Result<EventHTLC<T::BlockNumber, T::Balance, T::Hash>, &'static str> {
 		//indexed topics: _msgSender(Address); _recipientAddr(FixedBytes(32));_swapID(FixedBytes(32))
 		let msg_sender = &topics[1][STR_PREFIX.len()..].to_vec();
 		let recipient_addr = &topics[2][STR_PREFIX.len()..].to_vec();
 		let swap_id = T::Hashing::hash(&topics[3][STR_PREFIX.len()..]);
 
 		let random_num = &data[STR_PREFIX.len()..66].to_vec();
+		let receiver_addr_len = &data[STR_PREFIX.len()+64+64..64+64+66].to_vec();
 		let receiver_addr = &data[STR_PREFIX.len()+64+64+64..].to_vec();
 
-		let receiver_t = Vec::from_hex(&receiver_addr[STR_PREFIX.len()..]).map_err(|_| "error parse receiver_addr from utf8")?;
-		let receiver_accnt = <T::AccountId as Decode>::decode(&mut receiver_t.as_slice()).map_err(|_| "error parse receiver_t from utf8")?;
-		ensure!(receiver_accnt != Self::pra_token_addr().unwrap(), "Needs different accounts");
+		let d = core::str::from_utf8(&receiver_addr_len[..]).unwrap();
+		let mut length = usize::from_str_radix(d, 16).map_err(|_| "error parse length from utf8")?;
+		length = length * 2usize;
+
+		let did_hex = Vec::from_hex(&receiver_addr[..length]).map_err(|_| "error parse receiver_addr from utf8")?;
+		let data_str = core::str::from_utf8(&did_hex[..]).map_err(|_| "error not valid utf8 did")?;
+
+		let vecs: Vec<&str> = data_str.split(":").collect();
+		ensure!(vecs.len() == 3 && vecs[2].len() > 0, "error not found valid did");
+
+		let did_ele_hex = Self::from_base58(vecs[2].clone()).map_err(|_| "error Bad Base58")?;
+		let receiver_did_hash = T::Hashing::hash(&did_ele_hex);
 
 		let event_block_num = u32::from_str_radix(core::str::from_utf8(&event_block_number[STR_PREFIX.len()..]).unwrap(), 16)
-		.map_err(|_| "error parse event_block_num from utf8")?;
+				.map_err(|_| "error parse event_block_num from utf8")?;
 
 		let htlc = EventHTLC {
 			eth_contract_addr: contract_addr,
@@ -560,7 +575,7 @@ impl<T: Trait> Module<T> {
 			htlc_timestamp: 0u64,
 			sender_addr: msg_sender.clone(),
 			sender_chain_type: HTLCChain::ETHMain,
-			receiver_addr: receiver_accnt,
+			receiver_addr: receiver_did_hash,
 			recipient_addr: recipient_addr.clone(),
 			receiver_chain_type: HTLCChain::PRA,
 			event_type: HTLCType::Claimed,
@@ -570,7 +585,7 @@ impl<T: Trait> Module<T> {
 
 	fn parse_refund_event(contract_addr: Vec<u8>, topics: Vec<Vec<u8>>, data: Vec<u8>,
 						event_block_number: Vec<u8>, event_time_stamp: Vec<u8>, tx_hash: Vec<u8>, tx_index: Vec<u8>)
-						-> Result<EventHTLC<T::BlockNumber, T::Balance, T::Hash, T::AccountId>, &'static str> {
+						-> Result<EventHTLC<T::BlockNumber, T::Balance, T::Hash>, &'static str> {
 
 		//indexed topics: _msgSender(Address); _recipientAddr(FixedBytes(32));_swapID(FixedBytes(32))
 		let msg_sender = &topics[1][STR_PREFIX.len()..].to_vec();
@@ -578,11 +593,21 @@ impl<T: Trait> Module<T> {
 		let swap_id = T::Hashing::hash(&topics[3][STR_PREFIX.len()..]);
 
 		let random_num_hash = &data[STR_PREFIX.len()..66].to_vec();
+		let receiver_addr_len = &data[STR_PREFIX.len()+64+64+64..64+64+64+66].to_vec();
 		let receiver_addr = &data[STR_PREFIX.len()+64+64+64..].to_vec();
 
-		let receiver_t = Vec::from_hex(&receiver_addr[STR_PREFIX.len()..]).map_err(|_| "error parse receiver_addr from utf8")?;
-		let receiver_accnt = <T::AccountId as Decode>::decode(&mut receiver_t.as_slice()).map_err(|_| "error parse receiver_t from utf8")?;
-		ensure!(receiver_accnt != Self::pra_token_addr().unwrap(), "Needs different accounts");
+		let d = core::str::from_utf8(&receiver_addr_len[..]).unwrap();
+		let mut length = usize::from_str_radix(d, 16).map_err(|_| "error parse length from utf8")?;
+		length = length * 2usize;
+
+		let did_hex = Vec::from_hex(&receiver_addr[..length]).map_err(|_| "error parse receiver_addr from utf8")?;
+		let data_str = core::str::from_utf8(&did_hex[..]).map_err(|_| "error not valid utf8 did")?;
+
+		let vecs: Vec<&str> = data_str.split(":").collect();
+		ensure!(vecs.len() == 3 && vecs[2].len() > 0, "error not found valid did");
+
+		let did_ele_hex = Self::from_base58(vecs[2].clone()).map_err(|_| "error Bad Base58")?;
+		let receiver_did_hash = T::Hashing::hash(&did_ele_hex);
 
 		let event_block_num = u32::from_str_radix(core::str::from_utf8(&event_block_number[STR_PREFIX.len()..]).unwrap(), 16)
 			.map_err(|_| "error parse event_block_num from utf8")?;
@@ -599,7 +624,7 @@ impl<T: Trait> Module<T> {
 			htlc_timestamp: 0u64,
 			sender_addr: msg_sender.clone(),
 			sender_chain_type: HTLCChain::ETHMain,
-			receiver_addr: receiver_accnt,
+			receiver_addr: receiver_did_hash,
 			recipient_addr: recipient_addr.clone(),
 			receiver_chain_type: HTLCChain::PRA,
 			event_type: HTLCType::Refunded,
@@ -663,6 +688,77 @@ impl<T: Trait> Module<T> {
 			}
 		}
 		false
+	}
+
+	//transfer to receiver by did
+	fn transfer_to_did(sender: T::AccountId, receiver_did: Vec<u8>, amount: T::Balance, memo: Vec<u8>) -> dispatch_result {
+		ensure!(receiver_did.len() > 0, "error receiver_did is empty");
+
+		let receiver_hash = <T::Hash as Decode>::decode(&mut receiver_did.as_slice()).map_err(|_| "error parse receiver_did from utf8")?;
+		let receiver = <did::Module<T>>::identity_of(receiver_hash.clone());
+		ensure!(receiver.is_some(), "error not valid receiver did");
+
+		let receiver = receiver.unwrap();
+		<balances::Module<T> as Currency<_>>::transfer(&sender, &receiver, amount, ExistenceRequirement::KeepAlive)?;
+		Self::deposit_event(RawEvent::TransferToDid(sender, receiver, receiver_hash, amount));
+		Ok(())
+	}
+
+	fn transfer_to_did_hash(sender: T::AccountId, receiver_did: T::Hash, amount: T::Balance) -> dispatch_result {
+		let receiver = <did::Module<T>>::identity_of(receiver_did.clone());
+		ensure!(receiver.is_some(), "error not valid receiver did");
+
+		let receiver = receiver.unwrap();
+		<balances::Module<T> as Currency<_>>::transfer(&sender, &receiver, amount, ExistenceRequirement::KeepAlive)?;
+		Self::deposit_event(RawEvent::TransferToDid(sender, receiver, receiver_did, amount));
+		Ok(())
+	}
+
+	//input: "did:pra:ZGScNKWcD6megMYn2MZoNrwX9a3vYMDhh" to hex_str
+	fn parse_did(did: Vec<u8>) -> Result<T::AccountId, &'static str> {
+		let data = core::str::from_utf8(&did).map_err(|_| "error not valid utf8 did")?;
+		let vecs: Vec<&str> = data.split(":").collect();
+		ensure!(vecs.len() == 3 && vecs[2].len() > 0, "error not found valid did");
+
+		let did_ele_hex = Self::from_base58(vecs[2].clone()).map_err(|_| "error Bad Base58")?;
+
+		let receiver_did_hash = T::Hashing::hash(&did_ele_hex);
+		let receiver = <did::Module<T>>::identity_of(receiver_did_hash);
+		if receiver.is_some() {
+			return Ok(receiver.unwrap());
+		}
+
+		Err("error parse did failed")
+	}
+
+	// Convert the base58 str to Vec<u8>
+	fn from_base58(data: &str) -> Result<Vec<u8>, &'static str> {
+		let radix = 58u32.to_biguint().unwrap();
+		let mut x: BigUint = Zero::zero();
+		let mut rad_mult: BigUint = One::one();
+
+		for (idx, &byte) in data.as_bytes().iter().enumerate().rev() {
+			let first_idx = B_ALPHA.iter()
+									 .enumerate()
+									 .find(|x| *x.1 == byte)
+									 .map(|x| x.0);
+			match first_idx {
+				Some(i) => { x = x + i.to_biguint().unwrap() * &rad_mult; },
+				None => return Err("InvalidBase58Byte")
+			}
+
+			rad_mult = &rad_mult * &radix;
+		}
+
+		let mut r = Vec::new();
+		for _ in data.as_bytes().iter().take_while(|&x| *x == B_ALPHA[0]) {
+			r.push(0);
+		}
+		if x > Zero::zero() {
+			// TODO: use append when it becomes stable
+			r.extend(x.to_bytes_be());
+		}
+		Ok(r)
 	}
 }
 
