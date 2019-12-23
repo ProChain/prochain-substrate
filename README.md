@@ -45,6 +45,7 @@ To start up the Prochain node, run:
 
 ```json
 {
+  "Did": "Vec<u8>",
   "ExternalAddress": {
     "btc": "Vec<u8>",
     "eth": "Vec<u8>",
@@ -57,17 +58,17 @@ To start up the Prochain node, run:
     "rewards_ratio": "u64",
     "max_quota": "u64"
   },
-  "UnlockRecords": {
-    "unlock_time": "Moment",
-    "unlock_funds": "Balance"
+  "UnlockedRecords": {
+    "unlocked_time": "Moment",
+    "unlocked_funds": "Balance"
   },
   "MetadataRecord": {
     "address": "AccountId",
     "superior": "Hash",
     "creator": "AccountId",
-    "did_ele": "Vec<u8>",
+    "did": "Did",
     "locked_records": "Option<LockedRecords<Balance, Moment>>",
-    "unlock_records": "Option<UnlockRecords<Balance, Moment>>",
+    "unlocked_records": "Option<UnlockedRecords<Balance, Moment>>",
     "social_account": "Option<Hash>",
     "subordinate_count": "u64",
     "group_name": "Option<Vec<u8>>",

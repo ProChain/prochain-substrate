@@ -183,8 +183,8 @@ fn should_pass_publish() {
     assert_eq!(Balances::free_balance(&3), 9000);
     assert_eq!(Balances::free_balance(&2), 10000);
 
-    let did = DidModule::identity(3);
-    assert_eq!(AdsModule::ads_records(did), AdsMetadata {
+    let (user_key, _) = DidModule::identity(3).unwrap();
+    assert_eq!(AdsModule::ads_records(user_key), AdsMetadata {
       advertiser: b"huawei".to_vec(),
       topic: b"p20 pro".to_vec(),
       total_amount: 1000,
@@ -288,8 +288,8 @@ fn should_pass_distribute() {
       30
     ));
 
-    let publisher = DidModule::identity(3);
-    let user = DidModule::identity(1);
+    let (publisher, _) = DidModule::identity(3).unwrap();
+    let (user, _) = DidModule::identity(1).unwrap();
     assert_ok!(AdsModule::distribute(
       Origin::signed(2),
       publisher,
@@ -319,8 +319,8 @@ fn with_no_permission_should_not_pass_distribute() {
       30
     ));
 
-    let publisher = DidModule::identity(3);
-    let user = DidModule::identity(1);
+    let (publisher, _) = DidModule::identity(3).unwrap();
+    let (user, _) = DidModule::identity(1).unwrap();
     assert_noop!(AdsModule::distribute(
       Origin::signed(3),
       publisher,

@@ -18,16 +18,16 @@ pub trait Trait: balances::Trait + timestamp::Trait {
 	type Event: From<Event<Self>> + Into<<Self as system::Trait>::Event>;
 }
 
-#[cfg_attr(feature = "std", derive(Debug))]
-#[derive(Encode, Decode, Default, Clone, PartialEq)]
+pub type Did = Vec<u8>;
+
+#[derive(Encode, Decode, Default, Clone, PartialEq, Debug)]
 pub struct ExternalAddress {
 	btc: Vec<u8>,
 	eth: Vec<u8>,
 	eos: Vec<u8>,
 }
 
-#[cfg_attr(feature = "std", derive(Debug))]
-#[derive(Encode, Decode, Default, Clone, PartialEq)]
+#[derive(Encode, Decode, Default, Clone, PartialEq, Debug)]
 pub struct LockedRecords<Balance, Moment> {
 	locked_time: Moment,
 	locked_period: Moment,
@@ -36,22 +36,20 @@ pub struct LockedRecords<Balance, Moment> {
 	max_quota: u64,
 }
 
-#[cfg_attr(feature = "std", derive(Debug))]
-#[derive(Encode, Decode, Default, Clone, PartialEq)]
-pub struct UnlockRecords<Balance, Moment> {
-	unlock_time: Moment,
-	unlock_funds: Balance,
+#[derive(Encode, Decode, Default, Clone, PartialEq, Debug)]
+pub struct UnlockedRecords<Balance, Moment> {
+	unlocked_time: Moment,
+	unlocked_funds: Balance,
 }
 
-#[cfg_attr(feature = "std", derive(Debug))]
-#[derive(Encode, Decode, Default, Clone, PartialEq)]
+#[derive(Encode, Decode, Default, Clone, PartialEq, Debug)]
 pub struct MetadataRecord<AccountId, Hash, Balance, Moment> {
 	address: AccountId,
 	superior: Hash,
 	creator: AccountId,
-	did_ele: Vec<u8>,
+	did: Did,
 	locked_records: Option<LockedRecords<Balance, Moment>>,
-	unlock_records: Option<UnlockRecords<Balance, Moment>>,
+	unlocked_records: Option<UnlockedRecords<Balance, Moment>>,
 	social_account: Option<Hash>,
 	subordinate_count: u64,
 	group_name: Option<Vec<u8>>,
@@ -65,14 +63,14 @@ decl_storage! {
 		pub MinDeposit get(min_deposit) config(): T::Balance;
 		pub FeeToPrevious get(fee_to_previous) config(): T::Balance;
 
-		pub Identity get(identity): map T::AccountId => T::Hash;
+		pub Identity get(identity): map T::AccountId => Option<(T::Hash, Did)>;
 		pub IdentityOf get(identity_of): map T::Hash => Option<T::AccountId>;
 		pub SocialAccount get(social_account): map T::Hash => T::Hash;
 		pub Metadata get(metadata): map T::Hash => MetadataRecord<T::AccountId, T::Hash, T::Balance, T::Moment>;
 
 		pub AllDidCount get(all_did_count): u64;
-		pub AllDidsArray get(did_by_index): map T::Hash => T::Hash;
-		pub AllDidsIndex: map T::Hash => Vec<u8>;
+		pub UserKeys get(key_by_index): map T::Hash => T::Hash;
+		pub DidIndices get(index_by_key) : map T::Hash => Vec<u8>;
 	}
 }
 
@@ -80,17 +78,16 @@ decl_event! {
   pub enum Event<T>
   where
     <T as system::Trait>::AccountId,
-    <T as system::Trait>::Hash,
     <T as balances::Trait>::Balance,
     <T as timestamp::Trait>::Moment,
     {
-        Created(AccountId, Hash),
-        Updated(AccountId, Hash, Balance),
-        Locked(AccountId, Balance, Moment),
-        Unlock(AccountId, Balance),
-				Transfered(Hash, Hash, Balance, Vec<u8>),
-				AddressAdded(AccountId, Vec<u8>, Vec<u8>),
-				GroupNameSet(AccountId, Vec<u8>),
+        Created(Did, Vec<u8>, Did),
+        Updated(Did, AccountId, Balance),
+        Locked(Did, Balance, Moment, Moment, u64, u64),
+        Unlocked(Did, Balance, Moment),
+		Transfered(Did, Did, Balance, Vec<u8>),
+		AddressAdded(Did, Vec<u8>, Vec<u8>),
+		GroupNameSet(Did, Vec<u8>),
     }
 }
 
@@ -101,15 +98,14 @@ decl_module! {
 		pub fn create(origin, pubkey: Vec<u8>, address: T::AccountId, did_type: Vec<u8>, superior: T::Hash, social_account: Option<Vec<u8>>, social_superior: Option<Vec<u8>>) {
 			let sender = ensure_signed(origin)?;
 
-			let did_ele = Self::generate_did(&pubkey, &did_type);
-
-			let did_hash = T::Hashing::hash(&did_ele);
+			let did = Self::generate_did(&pubkey, &did_type);
+			let user_key = T::Hashing::hash(&did);
 
 			// make sure the did is new
-			ensure!(!<Metadata<T>>::exists(&did_hash), "did alread existed");
+			ensure!(!<Metadata<T>>::exists(&user_key), "did alread existed");
 			ensure!(!<Identity<T>>::exists(&address), "you already have did");
 
-			let mut superior_did = superior;
+			let mut superior_key = superior;
 			let mut social_account_hash = None;
 
 			if let Some(mut value) = social_account {
@@ -127,54 +123,58 @@ decl_module! {
 
 					let superior_hash = T::Hashing::hash(&value);
 					ensure!(<SocialAccount<T>>::exists(&superior_hash), "the superior does not exsit");
-					superior_did = Self::social_account(superior_hash);
+					superior_key = Self::social_account(superior_hash);
 				};
 			}
 
-			let mut superior_metadata = Self::metadata(superior_did);
-			if superior_metadata.address != Self::genesis_account() && <Metadata<T>>::exists(&superior_did){
-				let subordinate_count = superior_metadata.subordinate_count.checked_add(1).ok_or("overflow")?;
+			let mut superior_did = Vec::new();
+			if <Metadata<T>>::exists(&superior_key) {
+				let mut superior_metadata = Self::metadata(superior_key);
+				if superior_metadata.address != Self::genesis_account() {
+					let subordinate_count = superior_metadata.subordinate_count.checked_add(1).ok_or("overflow")?;
 
-				ensure!(superior_metadata.locked_records.is_some(), "the superior does not locked funds");
+					ensure!(superior_metadata.locked_records.is_some(), "the superior does not locked funds");
 
-				let locked_records = superior_metadata.locked_records.unwrap();
-				let LockedRecords { max_quota, .. } = locked_records;
-				ensure!(subordinate_count <= max_quota, "the superior's subordinate exceeds max quota");
+					let locked_records = superior_metadata.locked_records.unwrap();
+					let LockedRecords { max_quota, .. } = locked_records;
+					ensure!(subordinate_count <= max_quota, "the superior's subordinate exceeds max quota");
 
-				superior_metadata.subordinate_count = subordinate_count;
-				superior_metadata.locked_records = Some(locked_records);
-				<Metadata<T>>::insert(&superior_did, superior_metadata);
+					superior_metadata.subordinate_count = subordinate_count;
+					superior_metadata.locked_records = Some(locked_records);
+					superior_did = superior_metadata.did.clone();
+					<Metadata<T>>::insert(&superior_key, superior_metadata);
+				}
 			}
-			
+
 			if social_account_hash.is_some() {
 				let social_hash = social_account_hash.unwrap();
-				<SocialAccount<T>>::insert(social_hash, &did_hash);
+				<SocialAccount<T>>::insert(social_hash, &user_key);
 			}
 
 			// update metadata
 			let metadata = MetadataRecord {
-					address: address.clone(),
-					superior: superior_did,
-					creator: sender.clone(),
-					did_ele,
-					locked_records: None,
-					social_account: social_account_hash,
-					unlock_records: None,
-					subordinate_count: 0,
-					group_name: None,
-					external_address: ExternalAddress {
-						btc: Vec::new(),
-						eth: Vec::new(),
-						eos: Vec::new(),
-					},
+				address: address.clone(),
+				superior: superior_key,
+				creator: sender.clone(),
+				did: did.clone(),
+				locked_records: None,
+				social_account: social_account_hash,
+				unlocked_records: None,
+				subordinate_count: 0,
+				group_name: None,
+				external_address: ExternalAddress {
+					btc: Vec::new(),
+					eth: Vec::new(),
+					eos: Vec::new(),
+				},
 			};
-			<Metadata<T>>::insert(&did_hash, metadata);
+			<Metadata<T>>::insert(&user_key, metadata);
 
-			// update identity record
-			<Identity<T>>::insert(&address, &did_hash);
+			// update address => did
+			<Identity<T>>::insert(&address, (&user_key, &did));
 
-			// update identity to address map
-			<IdentityOf<T>>::insert(&did_hash, &address);
+			// update user_key => address
+			<IdentityOf<T>>::insert(&user_key, &address);
 
 			// update did count
 			let all_did_count = Self::all_did_count();
@@ -186,51 +186,48 @@ decl_module! {
 			let idx = harsher.encode(&[all_did_count]).unwrap();
 			let idx_hash = T::Hashing::hash(&idx);
 
-			<AllDidsArray<T>>::insert(&idx_hash, &did_hash);
-			<AllDidsIndex<T>>::insert(&did_hash, idx);
+			<UserKeys<T>>::insert(&idx_hash, &user_key);
+			<DidIndices<T>>::insert(&user_key, idx);
 
 			// broadcast event
-			Self::deposit_event(RawEvent::Created(sender, did_hash));
+			Self::deposit_event(RawEvent::Created(did, pubkey, superior_did));
 		}
 
 		pub fn update(origin, to: T::AccountId) {
 			let sender = ensure_signed(origin)?;
 
-			ensure!(<Identity<T>>::exists(sender.clone()), "this account has no did yet");
+			// make sure did exists and new pubkey has not been bound
+			let (user_key, did) = Self::identity(&sender).ok_or("did does not exist")?;
+			ensure!(Self::identity(&to).is_none(), "the public key has been taken");
 
-			// get current did
-			let did = Self::identity(&sender);
-			ensure!(<Metadata<T>>::exists(did), "did does not exsit");
-			ensure!(!<Identity<T>>::exists(&to), "the public key has been taken");
-
-			let money = <balances::Module<T>>::free_balance(sender.clone())
+			let money = <balances::Module<T>>::free_balance(&sender)
 					- T::TransferFee::get()
 					- T::CreationFee::get();
 			<balances::Module<T> as Currency<_>>::transfer(&sender, &to, money, ExistenceRequirement::AllowDeath,)?;
-			
-			// 更新account映射
-			<Identity<T>>::remove(sender.clone());
-			<Identity<T>>::insert(to.clone(), &did);
 
-			// 更新did对应的accountid
-			<IdentityOf<T>>::insert(did.clone(), to.clone());
+			// update address => did map
+			<Identity<T>>::remove(&sender);
+			<Identity<T>>::insert(&to, (&user_key, &did));
 
-			let mut metadata = Self::metadata(did);
+			// update user_key => address
+			<IdentityOf<T>>::insert(user_key, &to);
+
+			let mut metadata = Self::metadata(&user_key);
 			metadata.address = to.clone();
 
-			<Metadata<T>>::insert(did, metadata);
+			<Metadata<T>>::insert(user_key, metadata);
 
-			Self::deposit_event(RawEvent::Updated(to, did, money));
+			Self::deposit_event(RawEvent::Updated(did, to, money));
 		}
 
 		// transfer fund by did
-		pub fn transfer(origin, to_did: T::Hash, value: T::Balance, memo: Vec<u8>) {
+		pub fn transfer(origin, to_user: T::Hash, value: T::Balance, memo: Vec<u8>) {
 			let sender = ensure_signed(origin)?;
 
-			ensure!(<Identity<T>>::exists(sender.clone()), "you have no did yet");
+			ensure!(<Identity<T>>::exists(&sender), "you have no did yet");
 
-			let from_did = Self::identity(sender);
-			Self::transfer_by_did(from_did, to_did, value, memo)?;
+			let (from_user, _) = Self::identity(sender).ok_or("did does not exist")?;
+			Self::transfer_by_did(from_user, to_user, value, memo)?;
 		}
 
 		// lock fund
@@ -238,15 +235,14 @@ decl_module! {
 			let sender = ensure_signed(origin)?;
 
 			let sender_balance = <balances::Module<T>>::free_balance(sender.clone());
-			ensure!(sender_balance >= value + Self::u128_to_balance(1), "you dont have enough free balance");
-			ensure!(<Identity<T>>::exists(&sender), "this account has no did yet");
+			ensure!(sender_balance >= value + T::TransferFee::get(), "you dont have enough free balance");
 
-			let did = Self::identity(&sender);
-			let mut metadata = Self::metadata(&did);
+			let (user_key, did) = Self::identity(&sender).ok_or("this account has no did yet")?;
+			let mut metadata = Self::metadata(&user_key);
 
 			// make sure the superior exists
 			ensure!(<Metadata<T>>::exists(metadata.superior), "superior does not exsit");
-			
+
 			let locked_funds;
 			let mut rewards_ratio = 20;// basis rewards_ratio is 20%
 
@@ -256,10 +252,10 @@ decl_module! {
 				let fee = Self::fee_to_previous();
 
 				locked_funds = value - fee;
-				
+
 				let memo = "新群主抵押分成".as_bytes().to_vec();
 
-				Self::transfer_by_did(did.clone(), metadata.superior, fee, memo)?;
+				Self::transfer_by_did(user_key, metadata.superior, fee, memo)?;
 
 				<balances::Module<T>>::reserve(&sender, locked_funds)?;
 			} else {
@@ -277,43 +273,42 @@ decl_module! {
 				rewards_ratio = 20;
 			};
 
+			let locked_time = <timestamp::Module<T>>::get();
 			metadata.locked_records = Some(LockedRecords {
 				locked_funds,
 				rewards_ratio,
 				max_quota,
-				locked_time: <timestamp::Module<T>>::get(),
-				locked_period: period.clone(),
+				locked_time,
+				locked_period: period,
 			});
 
-			<Metadata<T>>::insert(did, metadata);
+			<Metadata<T>>::insert(user_key, metadata);
 
-			Self::deposit_event(RawEvent::Locked(sender, locked_funds, period));
+			Self::deposit_event(RawEvent::Locked(did, locked_funds, locked_time, period, rewards_ratio, max_quota));
 		}
 
 		// unlock fund
 		fn unlock(origin, value: T::Balance) {
 			let sender = ensure_signed(origin)?;
 
-			let reserved_balance = <balances::Module<T>>::reserved_balance(sender.clone());
-
+			let reserved_balance = <balances::Module<T>>::reserved_balance(&sender);
 			ensure!(reserved_balance >= value, "unreserved funds should equal or less than reserved funds");
 
-			ensure!(<Identity<T>>::exists(&sender), "this account has no did yet");
-
-			let did = Self::identity(&sender);
-			let mut metadata = Self::metadata(&did);
+			let (user_key, did) = Self::identity(&sender).ok_or("this account has no did yet")?;
+			let mut metadata = Self::metadata(&user_key);
 			ensure!(metadata.locked_records.is_some(), "you didn't lock funds before");
-			
+
 			let mut locked_records = metadata.locked_records.unwrap();
 			let LockedRecords { locked_time, locked_period, locked_funds, .. } = locked_records;
 			let now = <timestamp::Module<T>>::get();
-			let unlock_time = locked_time.checked_add(&locked_period).ok_or("Overflow.")?;
+			let unlock_till_time = locked_time.checked_add(&locked_period).ok_or("Overflow.")?;
 
-			ensure!(now >= unlock_time, "unlock time has not reached");
+			ensure!(now >= unlock_till_time, "unlock time has not reached");
 
-			let unlock_records = UnlockRecords {
-				unlock_time,
-				unlock_funds: value,
+			let unlocked_time = <timestamp::Module<T>>::get();
+			let unlocked_records = UnlockedRecords {
+				unlocked_time,
+				unlocked_funds: value,
 			};
 
 			let new_locked_funds = locked_funds - value;
@@ -327,68 +322,64 @@ decl_module! {
 				.. locked_records
 			};
 
-			metadata.unlock_records = Some(unlock_records);
+			metadata.unlocked_records = Some(unlocked_records);
 			metadata.locked_records = Some(locked_records);
 
-			<Metadata<T>>::insert(did, metadata);
+			<Metadata<T>>::insert(user_key, metadata);
 
 			<balances::Module<T>>::unreserve(&sender, value);
 
-			Self::deposit_event(RawEvent::Unlock(sender, value));
+			Self::deposit_event(RawEvent::Unlocked(did, value, unlocked_time));
 		}
 
 		// add external address
 		fn add_external_address(origin, add_type: Vec<u8>, address: Vec<u8>) {
 			let sender = ensure_signed(origin)?;
 
-			ensure!(<Identity<T>>::exists(&sender), "this account has no did yet");
-
-			let did = Self::identity(&sender);
-			let mut metadata = Self::metadata(&did);
+			let (user_key, did) = Self::identity(&sender).ok_or("this account has no did yet")?;
+			let mut metadata = Self::metadata(&user_key);
 			let mut external_address = metadata.external_address;
 
-						match &add_type[..] {
-								b"btc" => {
-										check::from(address.clone()).map_err(|_| "invlid bitcoin address")?;
-										external_address.btc = address.clone();
-										print("add btc address sucessfully");
-								},
-								b"eth" => {
-										ensure!(check::is_valid_eth_address(address.clone()), "invlid eth account");
-										external_address.eth = address.clone();
-										print("add eth address sucessfully");
-								},
-								b"eos" => {
-										ensure!(check::is_valid_eos_address(address.clone()), "invlid eos account");
-										external_address.eos = address.clone();
-										print("add eos address sucessfully");
-								},
-								_ => ensure!(false, "invlid type"),
-						};
+			match &add_type[..] {
+				b"btc" => {
+					check::from(address.clone()).map_err(|_| "invlid bitcoin address")?;
+					external_address.btc = address.clone();
+					print("add btc address sucessfully");
+				},
+				b"eth" => {
+					ensure!(check::is_valid_eth_address(address.clone()), "invlid eth account");
+					external_address.eth = address.clone();
+					print("add eth address sucessfully");
+				},
+				b"eos" => {
+					ensure!(check::is_valid_eos_address(address.clone()), "invlid eos account");
+					external_address.eos = address.clone();
+					print("add eos address sucessfully");
+				},
+				_ => return Err("invlid type"),
+			};
 
 			metadata.external_address = external_address;
 
-			<Metadata<T>>::insert(did, metadata);
+			<Metadata<T>>::insert(user_key, metadata);
 
-			Self::deposit_event(RawEvent::AddressAdded(sender, add_type, address));
+			Self::deposit_event(RawEvent::AddressAdded(did, add_type, address));
 		}
 
 		fn set_group_name(origin, name: Vec<u8>) {
 			let sender = ensure_signed(origin)?;
 
-			ensure!(<Identity<T>>::exists(&sender), "this account has no did yet");
-
-			let did = Self::identity(&sender);
-			let mut metadata = Self::metadata(&did);
+			let (user_key, did) = Self::identity(&sender).ok_or("this account has no did yet")?;
+			let mut metadata = Self::metadata(&user_key);
 
 			ensure!(name.len() < 50, "group name is too long");
 			ensure!(metadata.locked_records.is_some(), "you are not eligible to set group name");
 
 			metadata.group_name = Some(name.clone());
 
-			<Metadata<T>>::insert(did, metadata);
+			<Metadata<T>>::insert(user_key, metadata);
 
-			Self::deposit_event(RawEvent::GroupNameSet(sender, name));
+			Self::deposit_event(RawEvent::GroupNameSet(did, name));
 		}
 	}
 }
@@ -416,47 +407,51 @@ impl<T: Trait> Module<T> {
 		let mut hash = blake2_256(pubkey);
 
 		// did的类型
-		let did_ele = did_type;
-		let mut did_ele = did_ele.to_vec();
+		let did = did_type;
+		let mut did = did.to_vec();
 
 		// 	截取第一步生成的hash的前20位，将did类型附加在最前面
-		did_ele.append(&mut hash[..20].to_vec());
+		did.append(&mut hash[..20].to_vec());
 
 		// 将第二步生成的hash再次hash
-		let mut ext_hash = blake2_256(&did_ele[..]);
+		let mut ext_hash = blake2_256(&did[..]);
 
 		// 截取第三步生成的hash的前4位，并附加到第二步生成的hash后面
-		did_ele.append(&mut ext_hash[..4].to_vec());
+		did.append(&mut ext_hash[..4].to_vec());
 
-		did_ele
+		did
 	}
 }
 
 impl<T: Trait> Module<T> {
-	pub fn transfer_by_did(from_did: T::Hash, to_did: T::Hash, value: T::Balance, memo: Vec<u8>) -> Result {
-		let from_address = Self::identity_of(&from_did).ok_or("corresponding AccountId does not find")?;
-		let sender_balance = <balances::Module<T>>::free_balance(from_address.clone());
-		ensure!(sender_balance >= value, "you dont have enough free balance");
+	pub fn transfer_by_did(from_user: T::Hash, to_user: T::Hash, value: T::Balance, memo: Vec<u8>) -> Result {
+		ensure!(<Metadata<T>>::exists(&from_user), "from did does not exist");
+		ensure!(<Metadata<T>>::exists(&to_user), "dest did does not exist");
+		ensure!(from_user != to_user, "you can not send money to yourself");
 
-		let to_address = Self::identity_of(to_did).ok_or("corresponding AccountId does not exsit")?;
-		ensure!(from_address != to_address, "you can not send money to yourself");
-		
+		// get sender balance and check
+		let MetadataRecord { address: from_address, did: from_did, .. } = Self::metadata(&from_user);
+		let sender_balance = <balances::Module<T>>::free_balance(&from_address);
+		ensure!(sender_balance > value, "you dont have enough free balance");
+
+		// get receiver balance
+		let MetadataRecord { address: to_address, did: to_did, superior, .. } = Self::metadata(&to_user);
+		let receiver_balance = <balances::Module<T>>::free_balance(&to_address);
+
 		// check overflow
-		let receiver_balance = <balances::Module<T>>::free_balance(to_address.clone());
 		sender_balance.checked_sub(&value).ok_or("overflow in calculating balance")?;
 		receiver_balance.checked_add(&value).ok_or("overflow in calculating balance")?;
 
 		// proceeds split
 		let fee_type = b"ads";
 		if Self::is_sub(&memo, fee_type) {
-			let MetadataRecord { superior, .. } = Self::metadata(&to_did);
-			let superior_address = Self::identity_of(superior).ok_or("superior AccountId does not find")?;
+			let superior_address = Self::identity_of(superior).ok_or("superior does not find")?;
 			
-			let MetadataRecord { locked_records, ..} = Self::metadata(&superior);
+			let MetadataRecord { locked_records, ..} = Self::metadata(superior);
 			let rewards_ratio = if locked_records.is_some() { locked_records.unwrap().rewards_ratio } else { 0 };
 			
-			let fee_to_superior = value * Self::u128_to_balance(rewards_ratio.into()) / Self::u128_to_balance(100);
-			let fee_to_user = value * Self::u128_to_balance((100 - rewards_ratio).into()) / Self::u128_to_balance(100);
+			let fee_to_superior = value.clone() * Self::u128_to_balance(rewards_ratio.into()) / Self::u128_to_balance(100);
+			let fee_to_user = value.clone() * Self::u128_to_balance((100 - rewards_ratio).into()) / Self::u128_to_balance(100);
 
 			<balances::Module<T> as Currency<_>>::transfer(&from_address, &superior_address, fee_to_superior, ExistenceRequirement::AllowDeath)?;
 			<balances::Module<T> as Currency<_>>::transfer(&from_address, &to_address, fee_to_user, ExistenceRequirement::AllowDeath)?;

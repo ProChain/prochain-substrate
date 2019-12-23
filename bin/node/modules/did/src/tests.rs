@@ -125,6 +125,44 @@ fn new_test_ext() -> runtime_io::TestExternalities {
   t.into()
 }
 
+fn prepare_dids_for_test() {
+  // genesis account
+  assert_ok!(DidModule::create(
+    Origin::signed(1),
+    b"0x22df4b685df33f070ae6e5ee27f745de078adff099d3a803ec67afe1168acd4f".to_vec(),
+    1u64,
+    "1".as_bytes().to_vec(),
+    H256::zero(),
+    Some("first".as_bytes().to_vec()),
+    None
+  ));
+
+  // second account
+  assert_ok!(DidModule::create(
+    Origin::signed(1),
+    b"0xd43593c715fdd31c61141abd04a99fd6822c8558854ccde39a5684e7a56da27d".to_vec(),
+    2u64,
+    "1".as_bytes().to_vec(),
+    H256::zero(),
+    Some("second".as_bytes().to_vec()),
+    Some("first".as_bytes().to_vec())
+  ));
+
+  // lock funds
+  assert_ok!(DidModule::lock(Origin::signed(2), 1000, 5));
+
+  // third account
+  assert_ok!(DidModule::create(
+    Origin::signed(1),
+    b"0x5e9c79234b5e55348fc60f38b28c2cc60d8bb4bd2862eae2179a05ec39e62658".to_vec(),
+    3u64,
+    "1".as_bytes().to_vec(),
+    H256::zero(),
+    Some("third".as_bytes().to_vec()),
+    Some("second".as_bytes().to_vec())
+  ));
+}
+
 #[test]
 fn should_pass_create() {
   new_test_ext().execute_with(|| {
@@ -132,25 +170,98 @@ fn should_pass_create() {
 
     // genesis account
     assert_ok!(DidModule::create(
+    Origin::signed(1),
+    b"0x22df4b685df33f070ae6e5ee27f745de078adff099d3a803ec67afe1168acd4f".to_vec(),
+    1u64,
+    "1".as_bytes().to_vec(),
+    H256::zero(),
+    Some("first".as_bytes().to_vec()),
+    None
+  ));
+
+  });
+}
+
+#[test]
+fn same_pubkey_should_not_pass_create() {
+  new_test_ext().execute_with(|| {
+    System::set_block_number(0);
+
+    assert_ok!(DidModule::create(
       Origin::signed(1),
       b"0x22df4b685df33f070ae6e5ee27f745de078adff099d3a803ec67afe1168acd4f".to_vec(),
       1u64,
       "1".as_bytes().to_vec(),
       H256::zero(),
-      Some("f".as_bytes().to_vec()),
+      Some("first".as_bytes().to_vec()),
       None
     ));
 
-    // second account
+    assert_noop!(DidModule::create(
+      Origin::signed(1),
+      b"0x22df4b685df33f070ae6e5ee27f745de078adff099d3a803ec67afe1168acd4f".to_vec(),
+      2u64,
+      "1".as_bytes().to_vec(),
+      H256::zero(),
+      Some("second".as_bytes().to_vec()),
+      Some("first".as_bytes().to_vec())
+    ), "did alread existed");
+
+  });
+}
+
+#[test]
+fn same_social_account_should_not_pass_create() {
+  new_test_ext().execute_with(|| {
+    System::set_block_number(0);
+
     assert_ok!(DidModule::create(
+      Origin::signed(1),
+      b"0x22df4b685df33f070ae6e5ee27f745de078adff099d3a803ec67afe1168acd4f".to_vec(),
+      1u64,
+      "1".as_bytes().to_vec(),
+      H256::zero(),
+      Some("first".as_bytes().to_vec()),
+      None
+    ));
+
+    assert_noop!(DidModule::create(
       Origin::signed(1),
       b"0xd43593c715fdd31c61141abd04a99fd6822c8558854ccde39a5684e7a56da27d".to_vec(),
       2u64,
       "1".as_bytes().to_vec(),
       H256::zero(),
-      Some("s".as_bytes().to_vec()),
-      Some("f".as_bytes().to_vec())
+      Some("first".as_bytes().to_vec()),
+      None
+    ), "this social account has been bound");
+
+  });
+}
+
+#[test]
+fn superior_not_exists_should_not_pass_create() {
+  new_test_ext().execute_with(|| {
+    System::set_block_number(0);
+
+    assert_ok!(DidModule::create(
+      Origin::signed(1),
+      b"0x22df4b685df33f070ae6e5ee27f745de078adff099d3a803ec67afe1168acd4f".to_vec(),
+      1u64,
+      "1".as_bytes().to_vec(),
+      H256::zero(),
+      Some("first".as_bytes().to_vec()),
+      None
     ));
+
+    assert_noop!(DidModule::create(
+      Origin::signed(1),
+      b"0xd43593c715fdd31c61141abd04a99fd6822c8558854ccde39a5684e7a56da27d".to_vec(),
+      2u64,
+      "1".as_bytes().to_vec(),
+      H256::zero(),
+      Some("second".as_bytes().to_vec()),
+      Some("firsts".as_bytes().to_vec())
+    ), "the superior does not exsit");
 
   });
 }
@@ -160,19 +271,33 @@ fn should_pass_update() {
   new_test_ext().execute_with(|| {
     System::set_block_number(0);
 
-    assert_ok!(DidModule::create(
-      Origin::signed(1),
-      b"0x22df4b685df33f070ae6e5ee27f745de078adff099d3a803ec67afe1168acd4f".to_vec(),
-      1u64,
-      "1".as_bytes().to_vec(),
-      H256::zero(),
-      Some("f".as_bytes().to_vec()),
-      None
-    ));
+    prepare_dids_for_test();
 
-    assert_ok!(DidModule::update(Origin::signed(1), 2u64));
-    assert_eq!(Balances::free_balance(&1), 0);
-    assert_eq!(Balances::free_balance(&2), 20000);
+    assert_ok!(DidModule::update(Origin::signed(3), 4u64));
+    assert_eq!(Balances::free_balance(&3), 0);
+    assert_eq!(Balances::free_balance(&4), 20000);
+  });
+}
+
+#[test]
+fn without_did_should_not_pass_update() {
+  new_test_ext().execute_with(|| {
+    System::set_block_number(0);
+
+    prepare_dids_for_test();
+
+    assert_noop!(DidModule::update(Origin::signed(4), 5u64), "did does not exist");
+  });
+}
+
+#[test]
+fn new_pubkey_already_has_did_should_not_pass_update() {
+  new_test_ext().execute_with(|| {
+    System::set_block_number(0);
+
+    prepare_dids_for_test();
+
+    assert_noop!(DidModule::update(Origin::signed(2), 3u64), "the public key has been taken");
   });
 }
 
@@ -181,44 +306,13 @@ fn should_pass_lock() {
   new_test_ext().execute_with(|| {
     System::set_block_number(0);
 
-    assert_ok!(DidModule::create(
-      Origin::signed(1),
-      b"0x22df4b685df33f070ae6e5ee27f745de078adff099d3a803ec67afe1168acd4f".to_vec(),
-      1u64,
-      "1".as_bytes().to_vec(),
-      H256::zero(),
-      Some("init".as_bytes().to_vec()),
-      None
-    ));
-
-    assert_ok!(DidModule::create(
-      Origin::signed(1),
-      b"0xd43593c715fdd31c61141abd04a99fd6822c8558854ccde39a5684e7a56da27d".to_vec(),
-      2u64,
-      "1".as_bytes().to_vec(),
-      H256::zero(),
-      Some("w1".as_bytes().to_vec()),
-      Some("init".as_bytes().to_vec())
-    ));
-
-    assert_noop!(DidModule::lock(Origin::signed(2), 10, 5), "you must lock at least 50 pra first time");
-
-    assert_ok!(DidModule::lock(Origin::signed(2), 100, 5));
+    prepare_dids_for_test();
 
     assert_ok!(DidModule::lock(Origin::signed(2), 10, 5));
 
-    assert_eq!(Balances::free_balance(&2), 9890);
+    assert_eq!(Balances::free_balance(&2), 8990);
     assert_eq!(Balances::free_balance(&1), 10025); // get 25 from locked funds
 
-    assert_ok!(DidModule::create(
-      Origin::signed(1),
-      b"0x8eaf04151687736326c9fea17e25fc5287613693c912909cb226aa4794f26a48".to_vec(),
-      3u64,
-      "1".as_bytes().to_vec(),
-      H256::zero(),
-      Some("w2".as_bytes().to_vec()),
-      Some("w1".as_bytes().to_vec())
-    ));
 
     assert_ok!(DidModule::lock(Origin::signed(3), 100, 5));
 
@@ -228,15 +322,21 @@ fn should_pass_lock() {
       4u64,
       "1".as_bytes().to_vec(),
       H256::zero(),
-      Some("w3".as_bytes().to_vec()),
-      Some("w2".as_bytes().to_vec())
+      Some("four".as_bytes().to_vec()),
+      Some("third".as_bytes().to_vec())
     ));
 
     assert_ok!(DidModule::lock(Origin::signed(4), 100, 5));
 
-    let did_hash = DidModule::identity(&4);
-    let metadata = DidModule::metadata(did_hash);
-    println!("metadata4 is{:?}", metadata);
+  });
+}
+
+#[test]
+fn should_not_pass_lock() {
+  new_test_ext().execute_with(|| {
+    System::set_block_number(0);
+
+    prepare_dids_for_test();
 
   });
 }
@@ -245,33 +345,16 @@ fn should_pass_lock() {
 fn should_pass_unlock() {
   new_test_ext().execute_with(|| {
 
-    assert_ok!(DidModule::create(
-      Origin::signed(1),
-      b"0x22df4b685df33f070ae6e5ee27f745de078adff099d3a803ec67afe1168acd4f".to_vec(),
-      1u64,
-      "1".as_bytes().to_vec(),
-      H256::zero(),
-      Some("f".as_bytes().to_vec()),
-      None
-    ));
-
-    assert_ok!(DidModule::create(
-      Origin::signed(1),
-      b"0xd43593c715fdd31c61141abd04a99fd6822c8558854ccde39a5684e7a56da27d".to_vec(),
-      2u64,
-      "1".as_bytes().to_vec(),
-      H256::zero(),
-      Some("s".as_bytes().to_vec()),
-      Some("f".as_bytes().to_vec())
-    ));
+    prepare_dids_for_test();
 
     Timestamp::set_timestamp(42);
+
     assert_ok!(DidModule::lock(Origin::signed(2), 100, 5));
 
     Timestamp::set_timestamp(50);
     assert_ok!(DidModule::unlock(Origin::signed(2), 10));
 
-    assert_eq!(Balances::free_balance(&2), 9910);
+    assert_eq!(Balances::free_balance(&2), 8910);
   });
 }
 
@@ -280,70 +363,46 @@ fn should_pass_transfer() {
   new_test_ext().execute_with(|| {
     System::set_block_number(1);
 
-    assert_ok!(DidModule::create(
-      Origin::signed(1),
-      b"0x22df4b685df33f070ae6e5ee27f745de078adff099d3a803ec67afe1168acd4f".to_vec(),
-      1u64,
-      "1".as_bytes().to_vec(),
-      H256::zero(),
-      Some("f".as_bytes().to_vec()),
-      None
-    ));
-
-    assert_ok!(DidModule::create(
-      Origin::signed(1),
-      b"0xd43593c715fdd31c61141abd04a99fd6822c8558854ccde39a5684e7a56da27d".to_vec(),
-      2u64,
-      "1".as_bytes().to_vec(),
-      H256::zero(),
-      Some("s".as_bytes().to_vec()),
-      Some("f".as_bytes().to_vec())
-    ));
+    prepare_dids_for_test();
 
     let memo =b"transfer test";
+    let (user_key, _) = DidModule::identity(&1).unwrap();
     assert_ok!(DidModule::transfer(
       Origin::signed(2), 
-      DidModule::identity(&1), 
+      user_key,
       100, 
       memo.to_vec()
     ));
 
     let events = System::events();
-    let from_did = DidModule::identity(&2);
+    let (_, from_did) = DidModule::identity(&2).unwrap();
+    let (_, to_did) = DidModule::identity(&1).unwrap();
+
     assert_eq!(
       events[events.len() - 1],
       EventRecord {
           phase: Phase::ApplyExtrinsic(0),
-          event: Event::did(RawEvent::Transfered(from_did, DidModule::identity(&1), 100, memo.to_vec())),
+          event: Event::did(RawEvent::Transfered(from_did, to_did, 100, memo.to_vec())),
           topics: vec![],
       }
     );
 
-    assert_eq!(Balances::free_balance(&2), 9900);
-    assert_eq!(Balances::free_balance(&1), 10100);
+    assert_eq!(Balances::free_balance(&2), 8900);
+    assert_eq!(Balances::free_balance(&1), 10125);
 
     assert_ok!(DidModule::lock(Origin::signed(2), 100, 5));
     assert_eq!(Balances::free_balance(&1), 10125);
 
-    assert_ok!(DidModule::create(
-      Origin::signed(1),
-      b"0x5e9c79234b5e55348fc60f38b28c2cc60d8bb4bd2862eae2179a05ec39e62658".to_vec(),
-      3u64,
-      "1".as_bytes().to_vec(),
-      H256::zero(),
-      Some("n".as_bytes().to_vec()),
-      Some("s".as_bytes().to_vec())
-    ));
-
     // test ads fee split
+    let (user_key, _) = DidModule::identity(&3).unwrap();
     assert_ok!(DidModule::transfer(
       Origin::signed(1), 
-      DidModule::identity(&3), 
+      user_key,
       1000, 
       b"ads fee".to_vec()
     ));
     assert_eq!(Balances::free_balance(&3), 10800);
-    assert_eq!(Balances::free_balance(&2), 10000);
+    assert_eq!(Balances::free_balance(&2), 9000);
   });
 }
 
@@ -352,15 +411,7 @@ fn should_pass_add_external_address() {
   new_test_ext().execute_with(|| {
     System::set_block_number(0);
 
-    assert_ok!(DidModule::create(
-      Origin::signed(1),
-      b"0x22df4b685df33f070ae6e5ee27f745de078adff099d3a803ec67afe1168acd4f".to_vec(),
-      1u64,
-      "1".as_bytes().to_vec(),
-      H256::zero(),
-      Some("f".as_bytes().to_vec()),
-      None
-    ));
+    prepare_dids_for_test();
 
     assert_ok!(DidModule::add_external_address(Origin::signed(1), b"eos".to_vec(), EOS_ADDRESS.to_vec()));
     assert_ok!(DidModule::add_external_address(Origin::signed(1), b"eth".to_vec(), ETH_ADDRESS.to_vec()));
@@ -373,25 +424,7 @@ fn should_pass_set_group_name() {
   new_test_ext().execute_with(|| {
     System::set_block_number(0);
 
-    assert_ok!(DidModule::create(
-      Origin::signed(1),
-      b"0x22df4b685df33f070ae6e5ee27f745de078adff099d3a803ec67afe1168acd4f".to_vec(),
-      1u64,
-      "1".as_bytes().to_vec(),
-      H256::zero(),
-      Some("f".as_bytes().to_vec()),
-      None
-    ));
-
-    assert_ok!(DidModule::create(
-      Origin::signed(1),
-      b"0xd43593c715fdd31c61141abd04a99fd6822c8558854ccde39a5684e7a56da27d".to_vec(),
-      2u64,
-      "1".as_bytes().to_vec(),
-      H256::zero(),
-      Some("s".as_bytes().to_vec()),
-      Some("f".as_bytes().to_vec())
-    ));
+    prepare_dids_for_test();
 
     assert_ok!(DidModule::lock(Origin::signed(2), 100, 5));
     assert_ok!(DidModule::set_group_name(Origin::signed(2), b"btc group".to_vec()));
