@@ -280,24 +280,16 @@ fn should_pass_update() {
 }
 
 #[test]
-fn without_did_should_not_pass_update() {
+fn should_not_pass_update() {
   new_test_ext().execute_with(|| {
     System::set_block_number(0);
 
     prepare_dids_for_test();
 
     assert_noop!(DidModule::update(Origin::signed(4), 5u64), "did does not exist");
-  });
-}
-
-#[test]
-fn new_pubkey_already_has_did_should_not_pass_update() {
-  new_test_ext().execute_with(|| {
-    System::set_block_number(0);
-
-    prepare_dids_for_test();
 
     assert_noop!(DidModule::update(Origin::signed(2), 3u64), "the public key has been taken");
+
   });
 }
 
@@ -311,10 +303,10 @@ fn should_pass_lock() {
     assert_ok!(DidModule::lock(Origin::signed(2), 10, 5));
 
     assert_eq!(Balances::free_balance(&2), 8990);
-    assert_eq!(Balances::free_balance(&1), 10025); // get 25 from locked funds
+    assert_eq!(Balances::free_balance(&1), 10025);
 
 
-    assert_ok!(DidModule::lock(Origin::signed(3), 100, 5));
+    assert_ok!(DidModule::lock(Origin::signed(3), 1000, 5));
 
     assert_ok!(DidModule::create(
       Origin::signed(1),
@@ -326,17 +318,34 @@ fn should_pass_lock() {
       Some("third".as_bytes().to_vec())
     ));
 
-    assert_ok!(DidModule::lock(Origin::signed(4), 100, 5));
+    assert_ok!(DidModule::lock(Origin::signed(4), 1000, 5));
+
+    assert_eq!(Balances::free_balance(&3), 9025);
+    assert_eq!(Balances::free_balance(&4), 9000);
 
   });
 }
 
 #[test]
-fn should_not_pass_lock() {
+fn without_did_should_not_pass_lock() {
   new_test_ext().execute_with(|| {
     System::set_block_number(0);
 
+    assert_noop!(DidModule::lock(Origin::signed(1), 100, 5), "this account has no did yet");
+
     prepare_dids_for_test();
+
+    assert_ok!(DidModule::create(
+      Origin::signed(1),
+      b"0x306721211d5404bd9da88e0204360a1a9ab8b87c66c1bc2fcdd37f3c2222cc20".to_vec(),
+      4u64,
+      "1".as_bytes().to_vec(),
+      H256::zero(),
+      Some("four".as_bytes().to_vec()),
+      None
+    ));
+
+    assert_noop!(DidModule::lock(Origin::signed(4), 100, 5), "superior does not exsit");
 
   });
 }
@@ -344,17 +353,39 @@ fn should_not_pass_lock() {
 #[test]
 fn should_pass_unlock() {
   new_test_ext().execute_with(|| {
+    Timestamp::set_timestamp(42);
 
     prepare_dids_for_test();
 
+    Timestamp::set_timestamp(50);
+
+    assert_ok!(DidModule::unlock(Origin::signed(2), 100));
+
+    assert_eq!(Balances::free_balance(&2), 9100);
+  });
+}
+
+#[test]
+fn should_not_pass_unlock() {
+  new_test_ext().execute_with(|| {
     Timestamp::set_timestamp(42);
 
-    assert_ok!(DidModule::lock(Origin::signed(2), 100, 5));
+    prepare_dids_for_test();
 
-    Timestamp::set_timestamp(50);
-    assert_ok!(DidModule::unlock(Origin::signed(2), 10));
+    assert_noop!(DidModule::unlock(Origin::signed(2), 2000), "unreserved funds should equal or less than reserved funds");
 
-    assert_eq!(Balances::free_balance(&2), 8910);
+    assert_ok!(Balances::reserve(&3, 100));
+
+    assert_noop!(DidModule::unlock(Origin::signed(3), 10), "you didn't lock funds before");
+
+    assert_ok!(Balances::reserve(&4, 100));
+
+    assert_noop!(DidModule::unlock(Origin::signed(4), 10), "this account has no did yet");
+
+    Timestamp::set_timestamp(45);
+
+    assert_noop!(DidModule::unlock(Origin::signed(2), 10), "unlock time has not reached");
+
   });
 }
 
@@ -390,10 +421,7 @@ fn should_pass_transfer() {
     assert_eq!(Balances::free_balance(&2), 8900);
     assert_eq!(Balances::free_balance(&1), 10125);
 
-    assert_ok!(DidModule::lock(Origin::signed(2), 100, 5));
-    assert_eq!(Balances::free_balance(&1), 10125);
-
-    // test ads fee split
+    // ads fee split
     let (user_key, _) = DidModule::identity(&3).unwrap();
     assert_ok!(DidModule::transfer(
       Origin::signed(1), 
@@ -402,7 +430,43 @@ fn should_pass_transfer() {
       b"ads fee".to_vec()
     ));
     assert_eq!(Balances::free_balance(&3), 10800);
-    assert_eq!(Balances::free_balance(&2), 9000);
+    assert_eq!(Balances::free_balance(&2), 9100);
+    assert_eq!(Balances::free_balance(&1), 9125);
+  });
+}
+
+#[test]
+fn should_not_pass_transfer() {
+  new_test_ext().execute_with(|| {
+    prepare_dids_for_test();
+
+    let memo =b"normal transfer";
+
+    let (user_key_1, _) = DidModule::identity(&1).unwrap();
+
+    assert_noop!(DidModule::transfer(Origin::signed(4), user_key_1, 100, memo.to_vec()), "did does not exist");
+
+    assert_noop!(DidModule::transfer(Origin::signed(2), H256::zero(), 100, memo.to_vec()), "dest did does not exist");
+
+    assert_noop!(DidModule::transfer(Origin::signed(1), user_key_1, 100, memo.to_vec()), "you can not send money to yourself");
+
+    assert_noop!(DidModule::transfer(Origin::signed(3), user_key_1, 10001, memo.to_vec()), "you dont have enough free balance");
+
+    assert_ok!(DidModule::create(
+      Origin::signed(1),
+      b"0x306721211d5404bd9da88e0204360a1a9ab8b87c66c1bc2fcdd37f3c2222cc20".to_vec(),
+      4u64,
+      "1".as_bytes().to_vec(),
+      H256::zero(),
+      Some("four".as_bytes().to_vec()),
+      None
+    ));
+
+    let memo =b"ads fee";
+    let (user_key_4, _) = DidModule::identity(&4).unwrap();
+
+    assert_noop!(DidModule::transfer(Origin::signed(1), user_key_4, 1000, memo.to_vec()), "superior does not find");
+
   });
 }
 

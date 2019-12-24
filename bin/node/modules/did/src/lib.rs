@@ -7,7 +7,7 @@ mod tests;
 use codec::{Decode, Encode};
 use rstd::vec::Vec;
 use support::{
-	decl_event, decl_module, decl_storage, ensure, traits::{Currency, ReservableCurrency, ExistenceRequirement, Get}, dispatch::Result, print,
+	decl_event, decl_module, decl_storage, ensure, traits::{Currency, ReservableCurrency, ExistenceRequirement, Get}, dispatch::Result,
 };
 use sp_runtime::traits::{CheckedSub, CheckedAdd, Hash, SaturatedConversion};
 use system::ensure_signed;
@@ -224,8 +224,6 @@ decl_module! {
 		pub fn transfer(origin, to_user: T::Hash, value: T::Balance, memo: Vec<u8>) {
 			let sender = ensure_signed(origin)?;
 
-			ensure!(<Identity<T>>::exists(&sender), "you have no did yet");
-
 			let (from_user, _) = Self::identity(sender).ok_or("did does not exist")?;
 			Self::transfer_by_did(from_user, to_user, value, memo)?;
 		}
@@ -344,17 +342,14 @@ decl_module! {
 				b"btc" => {
 					check::from(address.clone()).map_err(|_| "invlid bitcoin address")?;
 					external_address.btc = address.clone();
-					print("add btc address sucessfully");
 				},
 				b"eth" => {
 					ensure!(check::is_valid_eth_address(address.clone()), "invlid eth account");
 					external_address.eth = address.clone();
-					print("add eth address sucessfully");
 				},
 				b"eos" => {
 					ensure!(check::is_valid_eos_address(address.clone()), "invlid eos account");
 					external_address.eos = address.clone();
-					print("add eos address sucessfully");
 				},
 				_ => return Err("invlid type"),
 			};
@@ -425,7 +420,6 @@ impl<T: Trait> Module<T> {
 
 impl<T: Trait> Module<T> {
 	pub fn transfer_by_did(from_user: T::Hash, to_user: T::Hash, value: T::Balance, memo: Vec<u8>) -> Result {
-		ensure!(<Metadata<T>>::exists(&from_user), "from did does not exist");
 		ensure!(<Metadata<T>>::exists(&to_user), "dest did does not exist");
 		ensure!(from_user != to_user, "you can not send money to yourself");
 
