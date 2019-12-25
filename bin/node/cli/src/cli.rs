@@ -21,26 +21,28 @@ use sc_cli::{IntoExit, NoCustom, SharedParams, ImportParams, error};
 use sc_service::{AbstractService, Roles as ServiceRoles, Configuration};
 use log::info;
 use structopt::{StructOpt, clap::App};
-use sc_cli::{display_role, parse_and_prepare, AugmentClap, GetLogFilter, ParseAndPrepare};
+use sc_cli::{display_role, parse_and_prepare, AugmentClap, GetSharedParams, ParseAndPrepare};
 use crate::{service, ChainSpec, load_spec};
 use crate::factory_impl::FactoryState;
-use transaction_factory::RuntimeAdapter;
+use node_transaction_factory::RuntimeAdapter;
 
 /// Custom subcommands.
 #[derive(Clone, Debug, StructOpt)]
 pub enum CustomSubcommands {
 	/// The custom factory subcommmand for manufacturing transactions.
 	#[structopt(
-		name = "factory",
-		about = "Manufactures num transactions from Alice to random accounts. \
+	name = "factory",
+	about = "Manufactures num transactions from Alice to random accounts. \
 		Only supported for development or local testnet."
 	)]
 	Factory(FactoryCmd),
 }
 
-impl GetLogFilter for CustomSubcommands {
-	fn get_log_filter(&self) -> Option<String> {
-		None
+impl GetSharedParams for CustomSubcommands {
+	fn shared_params(&self) -> Option<&SharedParams> {
+		match self {
+			CustomSubcommands::Factory(cmd) => Some(&cmd.shared_params),
+		}
 	}
 }
 
@@ -70,7 +72,7 @@ pub struct FactoryCmd {
 	///
 	/// These three modes control manufacturing.
 	#[structopt(long="mode", default_value = "MasterToN")]
-	pub mode: transaction_factory::Mode,
+	pub mode: node_transaction_factory::Mode,
 
 	/// Number of transactions to generate. In mode `MasterNToNToM` this is
 	/// the number of transactions per round.
@@ -102,45 +104,45 @@ pub fn run<I, T, E>(args: I, exit: E, version: sc_cli::VersionInfo) -> error::Re
 
 	match parse_and_prepare::<CustomSubcommands, NoCustom, _>(&version, "substrate-node", args) {
 		ParseAndPrepare::Run(cmd) => cmd.run(load_spec, exit,
-		|exit, _cli_args, _custom_args, config: Config<_, _>| {
-			info!("{}", version.name);
-			info!("  version {}", config.full_version());
-			info!("  by Parity Technologies, 2017-2019");
-			info!("Chain specification: {}", config.chain_spec.name());
-			info!("Node name: {}", config.name);
-			info!("Roles: {}", display_role(&config));
-			let runtime = RuntimeBuilder::new().name_prefix("main-tokio-").build()
-				.map_err(|e| format!("{:?}", e))?;
-			match config.roles {
-				ServiceRoles::LIGHT => run_until_exit(
-					runtime,
-					service::new_light(config)?,
-					exit
-				),
-				_ => run_until_exit(
-					runtime,
-					service::new_full(config)?,
-					exit
-				),
-			}
-		}),
+											 |exit, _cli_args, _custom_args, config: Config<_, _>| {
+												 info!("{}", version.name);
+												 info!("  version {}", config.full_version());
+												 info!("  by Parity Technologies, 2017-2019");
+												 info!("Chain specification: {}", config.chain_spec.name());
+												 info!("Node name: {}", config.name);
+												 info!("Roles: {}", display_role(&config));
+												 let runtime = RuntimeBuilder::new().name_prefix("main-tokio-").build()
+													 .map_err(|e| format!("{:?}", e))?;
+												 match config.roles {
+													 ServiceRoles::LIGHT => run_until_exit(
+														 runtime,
+														 service::new_light(config)?,
+														 exit
+													 ),
+													 _ => run_until_exit(
+														 runtime,
+														 service::new_full(config)?,
+														 exit
+													 ),
+												 }
+											 }),
 		ParseAndPrepare::BuildSpec(cmd) => cmd.run::<NoCustom, _, _, _>(load_spec),
 		ParseAndPrepare::ExportBlocks(cmd) => cmd.run_with_builder(|config: Config<_, _>|
-			Ok(new_full_start!(config).0), load_spec, exit),
+																	   Ok(new_full_start!(config).0), load_spec, exit),
 		ParseAndPrepare::ImportBlocks(cmd) => cmd.run_with_builder(|config: Config<_, _>|
-			Ok(new_full_start!(config).0), load_spec, exit),
+																	   Ok(new_full_start!(config).0), load_spec, exit),
 		ParseAndPrepare::CheckBlock(cmd) => cmd.run_with_builder(|config: Config<_, _>|
-			Ok(new_full_start!(config).0), load_spec, exit),
+																	 Ok(new_full_start!(config).0), load_spec, exit),
 		ParseAndPrepare::PurgeChain(cmd) => cmd.run(load_spec),
 		ParseAndPrepare::RevertChain(cmd) => cmd.run_with_builder(|config: Config<_, _>|
-			Ok(new_full_start!(config).0), load_spec),
+																	  Ok(new_full_start!(config).0), load_spec),
 		ParseAndPrepare::CustomCommand(CustomSubcommands::Factory(cli_args)) => {
 			let mut config: Config<_, _> = sc_cli::create_config_with_db_path(
 				load_spec,
 				&cli_args.shared_params,
 				&version,
 			)?;
-			
+
 			sc_cli::fill_import_params(&mut config, &cli_args.import_params, ServiceRoles::FULL)?;
 
 			match ChainSpec::from(config.chain_spec.id()) {
@@ -155,7 +157,7 @@ pub fn run<I, T, E>(args: I, exit: E, version: sc_cli::VersionInfo) -> error::Re
 			);
 
 			let service_builder = new_full_start!(config).0;
-			transaction_factory::factory::<FactoryState<_>, _, _, _, _, _>(
+			node_transaction_factory::factory::<FactoryState<_>, _, _, _, _, _>(
 				factory_state,
 				service_builder.client(),
 				service_builder.select_chain()
@@ -172,9 +174,9 @@ fn run_until_exit<T, E>(
 	service: T,
 	e: E,
 ) -> error::Result<()>
-where
-	T: AbstractService,
-	E: IntoExit,
+	where
+		T: AbstractService,
+		E: IntoExit,
 {
 	use futures::{FutureExt, TryFutureExt, channel::oneshot, future::select, compat::Future01CompatExt};
 

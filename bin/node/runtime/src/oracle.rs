@@ -2,16 +2,19 @@
 
 use sp_runtime::app_crypto::{KeyTypeId, RuntimeAppPublic};
 use codec::{Decode, Encode};
-use primitives::{offchain::Duration, offchain::HttpRequestId, offchain::HttpRequestStatus};
-use rstd::{prelude::*, result::Result, vec::Vec, convert::{Into, TryInto}};
+use sp_core::{offchain::Duration, offchain::HttpRequestId, offchain::HttpRequestStatus};
+use sp_std::{prelude::*, result::Result, vec::Vec, convert::{Into, TryInto}};
 use sp_runtime::{
+	DispatchResult as dispatch_result,
 	traits::{Member, Hash},
 	transaction_validity::{
 		TransactionValidity, TransactionPriority, ValidTransaction, UnknownTransaction, TransactionLongevity}
 };
-use support::{decl_event, decl_module, decl_storage, ensure, Parameter, StorageMap, StorageValue,
-	dispatch::Result as dispatch_result, weights::SimpleDispatchInfo, traits::{Currency, ReservableCurrency, ExistenceRequirement}};
-use system::{offchain::SubmitUnsignedTransaction, ensure_none, ensure_signed, ensure_root};
+use frame_support::{
+	decl_event, decl_module, decl_error, decl_storage, ensure, Parameter, StorageMap, StorageValue,
+	traits::{Currency, ExistenceRequirement}
+};
+use frame_system::{self as system, offchain::SubmitUnsignedTransaction, ensure_none, ensure_signed, ensure_root};
 use simple_json::{self, json::JsonValue};
 use hex::FromHex;
 
@@ -115,11 +118,11 @@ pub enum HTLCType {
 //  automates offchain fetching every certain blocks
 pub const BLOCK_DURATION: u64 = 5;
 
-pub trait Trait: balances::Trait + timestamp::Trait + did::Trait{
+pub trait Trait: pallet_balances::Trait + pallet_timestamp::Trait + did::Trait {
 	/// The identifier type for an authority.
 	type AuthorityId: Member + Parameter + RuntimeAppPublic + Default + Ord;
 	/// The overarching event type.
-	type Event: From<Event<Self>> + Into<<Self as system::Trait>::Event>;
+	type Event: From<Event<Self>> + Into<<Self as frame_system::Trait>::Event>;
 	/// A dispatchable call type.
 	type Call: From<Call<Self>>;
 	/// A transaction submitter.
@@ -127,6 +130,13 @@ pub trait Trait: balances::Trait + timestamp::Trait + did::Trait{
 }
 
 //type BalanceOf<T> = <<T as Trait>::Currency as Currency<<T as system::Trait>::AccountId>>::Balance;
+
+decl_error! {
+	pub enum Error for Module<T: Trait> {
+		/// invlid event type
+		InvalidEventType,
+	}
+}
 
 decl_storage! {
 	trait Store for Module<T: Trait> as OracleSwap {
@@ -156,7 +166,7 @@ decl_event!(
 		<T as system::Trait>::BlockNumber,
 		<T as system::Trait>::AccountId,
 		<T as system::Trait>::Hash,
-		<T as balances::Trait>::Balance,
+		<T as pallet_balances::Trait>::Balance,
 	{
 		///Setup event_name, event_url
 		Init(Vec<u8>, Vec<u8>),
@@ -180,6 +190,8 @@ decl_event!(
 
 decl_module! {
 	pub struct Module<T: Trait> for enum Call where origin: T::Origin {
+		type Error = Error<T>;
+
 		fn deposit_event() = default;
 
 		fn on_initialize(_now: T::BlockNumber) {
@@ -191,7 +203,7 @@ decl_module! {
 			let sender = ensure_signed(origin)?;
 			ensure!(Self::is_authority(&sender), "error not authority sender");
 
-			runtime_io::misc::print_utf8(b"======== kickoff event fetch jobs");
+			sp_io::misc::print_utf8(b"======== kickoff event fetch jobs");
 
 			let event_src = EventLogSource {
 				event_name: event_name.clone(),
@@ -207,7 +219,7 @@ decl_module! {
 			let sender = ensure_signed(origin)?;
 
 			if Self::is_authority(&sender) {
-				runtime_io::misc::print_utf8(b"======== kill event fetch jobs");
+				sp_io::misc::print_utf8(b"======== kill event fetch jobs");
 				<Self as Store>::OcRequests::take();
 			}
 
@@ -281,7 +293,7 @@ decl_module! {
 							Self::deposit_event(RawEvent::Refund(htlc.receiver_addr, htlc.eth_contract_addr, swap_id, htlc.sender_addr, htlc.random_number_hash));
 						}
 					},
-					_ => return Err("error not valid htlc event_type")
+					_ =>  Err(Error::<T>::InvalidEventType)?
 				}
 			}
 			Ok(())
@@ -316,9 +328,9 @@ impl<T: Trait> Module<T> {
 			let call = Call::update_enevt_htlc(htlcs);
 			let result = T::SubmitTransaction::submit_unsigned(call);
 			match result {
-				Ok(_) => runtime_io::misc::print_utf8(b"execute off-chain worker success"),
+				Ok(_) => sp_io::misc::print_utf8(b"execute off-chain worker success"),
 				Err(_) => {
-					runtime_io::misc::print_utf8(b"execute off-chain worker failed!");
+					sp_io::misc::print_utf8(b"execute off-chain worker failed!");
 					return Err("error happens when submit unsigned transaction")
 				},
 			}
@@ -327,7 +339,7 @@ impl<T: Trait> Module<T> {
 	}
 
 	fn parse_data(res: Vec<u8>) -> Vec<EventHTLC<T::BlockNumber, T::Balance, T::Hash>> {
-		runtime_io::misc::print_utf8(&res);
+		sp_io::misc::print_utf8(&res);
 
 		let mut vec_results: Vec<EventHTLC<T::BlockNumber, T::Balance, T::Hash>> = Vec::new();
 
@@ -442,22 +454,22 @@ impl<T: Trait> Module<T> {
 					EVENT_SIG_HTLC => {
 							match Self::parse_htlc_event(contract_addr, topics, data, event_block_number, event_time_stamp, tx_hash, tx_index) {
 								Ok(htlc) => vec_results.push(htlc),
-								Err(e) => { runtime_io::misc::print_utf8(e.as_bytes()); }
+								Err(e) => { sp_io::misc::print_utf8(e.as_bytes()); }
 							}
 						},
 					EVENT_SIG_REFUND => {
 							match Self::parse_refund_event(contract_addr, topics, data, event_block_number, event_time_stamp, tx_hash, tx_index) {
 								Ok(htlc) => vec_results.push(htlc),
-								Err(e) => { runtime_io::misc::print_utf8(e.as_bytes()); }
+								Err(e) => { sp_io::misc::print_utf8(e.as_bytes()); }
 							}
 						},
 					EVENT_SIG_CLAIM => {
 							match Self::parse_claim_event(contract_addr, topics, data, event_block_number, event_time_stamp, tx_hash, tx_index) {
 								Ok(htlc) => vec_results.push(htlc),
-								Err(e) => { runtime_io::misc::print_utf8(e.as_bytes()); }
+								Err(e) => { sp_io::misc::print_utf8(e.as_bytes()); }
 							}
 						},
-					_ => runtime_io::misc::print_utf8(b"not valid event signature")
+					_ => sp_io::misc::print_utf8(b"not valid event signature")
 				}
 			}
 		}
@@ -502,7 +514,7 @@ impl<T: Trait> Module<T> {
 		ensure!(event_out_amount > 0 && event_out_amount == event_pra_amount, "not valid out_amount or pra_amount");
 
 		//Important: precision from eth contract is 8, substrate precision is 15
-		let out_balance = Self::to_balance(event_out_amount * 10000000).map_err(|_| "error parse event_out_amount to balance")?;;
+		let out_balance = Self::to_balance(event_out_amount * 10000000).map_err(|_| "error parse event_out_amount to balance")?;
 
 		length = length * 2usize;
 		let did_hex = Vec::from_hex(&receiver_addr[..length]).map_err(|_| "error parse receiver_addr from utf8")?;
@@ -633,17 +645,17 @@ impl<T: Trait> Module<T> {
 	}
 
 	fn http_request_get(uri: &str, header: Option<(&str, &str)>) -> Result<Vec<u8>, &'static str> {
-		let id: HttpRequestId = runtime_io::offchain::http_request_start("GET", uri, &[0]).unwrap();
-		let deadline = runtime_io::offchain::timestamp().add(Duration::from_millis(10_000));
+		let id: HttpRequestId = sp_io::offchain::http_request_start("GET", uri, &[0]).unwrap();
+		let deadline = sp_io::offchain::timestamp().add(Duration::from_millis(10_000));
 
 		if let Some((name, value)) = header {
-			match runtime_io::offchain::http_request_add_header(id, name, value) {
+			match sp_io::offchain::http_request_add_header(id, name, value) {
 				Ok(_) => (),
 				Err(_) => return Err("Add request header failed"),
 			};
 		}
 
-		match runtime_io::offchain::http_response_wait(&[id], Some(deadline))[0] {
+		match sp_io::offchain::http_response_wait(&[id], Some(deadline))[0] {
 			HttpRequestStatus::Finished(200) => (),
 			_ => return Err("Request failed"),
 		}
@@ -651,7 +663,7 @@ impl<T: Trait> Module<T> {
 		let mut result: Vec<u8> = vec![];
 		loop {
 		  let mut buffer = vec![0; 1024];
-		  let _read = runtime_io::offchain::http_response_read_body(id, &mut buffer, Some(deadline)).map_err(|_e| ());
+		  let _read = sp_io::offchain::http_response_read_body(id, &mut buffer, Some(deadline)).map_err(|_e| ());
 		  result = [&result[..], &buffer[..]].concat();
 		  if _read == Ok(0) { break }
 		}
@@ -699,7 +711,7 @@ impl<T: Trait> Module<T> {
 		ensure!(receiver.is_some(), "error not valid receiver did");
 
 		let receiver = receiver.unwrap();
-		<balances::Module<T> as Currency<_>>::transfer(&sender, &receiver, amount, ExistenceRequirement::KeepAlive)?;
+		<pallet_balances::Module<T> as Currency<_>>::transfer(&sender, &receiver, amount, ExistenceRequirement::KeepAlive)?;
 		Self::deposit_event(RawEvent::TransferToDid(sender, receiver, receiver_hash, amount));
 		Ok(())
 	}
@@ -709,7 +721,7 @@ impl<T: Trait> Module<T> {
 		ensure!(receiver.is_some(), "error not valid receiver did");
 
 		let receiver = receiver.unwrap();
-		<balances::Module<T> as Currency<_>>::transfer(&sender, &receiver, amount, ExistenceRequirement::KeepAlive)?;
+		<pallet_balances::Module<T> as Currency<_>>::transfer(&sender, &receiver, amount, ExistenceRequirement::KeepAlive)?;
 		Self::deposit_event(RawEvent::TransferToDid(sender, receiver, receiver_did, amount));
 		Ok(())
 	}
@@ -762,7 +774,7 @@ impl<T: Trait> Module<T> {
 	}
 }
 
-impl<T: Trait> support::unsigned::ValidateUnsigned for Module<T> {
+impl<T: Trait> frame_support::unsigned::ValidateUnsigned for Module<T> {
 	type Call = Call<T>;
 
 	fn validate_unsigned(call: &Self::Call) -> TransactionValidity {

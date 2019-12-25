@@ -1,0 +1,19 @@
+[package]
+name = "node-transaction-factory"
+version = "2.0.0"
+authors = ["Parity Technologies <admin@parity.io>"]
+edition = "2018"
+
+[dependencies]
+sp-block-builder = { version = "2.0.0", git = "https://github.com/ProChain/substrate.git" }
+sc-cli = { version = "2.0.0", git = "https://github.com/ProChain/substrate.git" }
+sc-client-api = { version = "2.0.0", git = "https://github.com/ProChain/substrate.git" }
+sc-client = { version = "2.0.0", git = "https://github.com/ProChain/substrate.git" }
+codec = { package = "parity-scale-codec", version = "1.0.0", features = ["derive"] }
+sp-consensus = { version = "0.8", git = "https://github.com/ProChain/substrate.git" }
+log = "0.4.8"
+sp-core = { version = "2.0.0", git = "https://github.com/ProChain/substrate.git" }
+sp-api = { version = "2.0.0", git = "https://github.com/ProChain/substrate.git" }
+sp-runtime = { version = "2.0.0", git = "https://github.com/ProChain/substrate.git" }
+sc-service = { version = "2.0.0", git = "https://github.com/ProChain/substrate.git" }
+sp-blockchain = { version = "2.0.0", git = "https://github.com/ProChain/substrate.git" }

@@ -9,7 +9,7 @@ use primitives::H256;
 use sp_runtime::{
   Perbill, testing::Header, traits::{BlakeTwo256, IdentityLookup},
 };
-use system::{EventRecord, Phase};
+use frame_system::{EventRecord, Phase};
 
 impl_outer_origin! {
   pub enum Origin for Test {}
@@ -21,7 +21,7 @@ mod did {
 
 impl_outer_event! {
   pub enum Event for Test {
-    did<T>, balances<T>,
+    did<T>, pallet_balances<T>,
   }
 }
 // For testing the module, we construct most of a mock runtime. This means
@@ -35,7 +35,7 @@ parameter_types! {
   pub const MaximumBlockLength: u32 = 2 * 1024;
   pub const AvailableBlockRatio: Perbill = Perbill::one();
 }
-impl system::Trait for Test {
+impl frame_system::Trait for Test {
   type Origin = Origin;
   type Index = u64;
   type BlockNumber = u64;
@@ -57,7 +57,7 @@ parameter_types! {
   pub const TransferFee: u64 = 0;
   pub const CreationFee: u64 = 0;
 }
-impl balances::Trait for Test {
+impl pallet_balances::Trait for Test {
   type Balance = u64;
   type OnFreeBalanceZero = ();
   type OnNewAccount = ();
@@ -73,7 +73,7 @@ parameter_types! {
   pub const MinimumPeriod: u64 = 1;
 }
 
-impl timestamp::Trait for Test {
+impl pallet_timestamp::Trait for Test {
   type Moment = u64;
   type OnTimestampSet = ();
   type MinimumPeriod = MinimumPeriod;
@@ -95,16 +95,16 @@ const BTC_ADDRESS: &[u8; 34] = b"1N75dvASxn1CCjaeguyqvwXLXJun9e54mM";
 const ETH_ADDRESS: &[u8; 40] = b"cb222a32df146ef7e3ac63725dad0fd978d33ce2";
 
 type DidModule = Module<Test>;
-type System = system::Module<Test>;
-type Balances = balances::Module<Test>;
-type Timestamp = timestamp::Module<Test>;
+type System = frame_system::Module<Test>;
+type Balances = pallet_balances::Module<Test>;
+type Timestamp = pallet_timestamp::Module<Test>;
 
 // This function basically just builds a genesis storage key/value store according to
 // our desired mockup.
-fn new_test_ext() -> runtime_io::TestExternalities {
-  let mut t = system::GenesisConfig::default().build_storage::<Test>().unwrap();
+fn new_test_ext() -> sp_io::TestExternalities {
+  let mut t = frame_system::GenesisConfig::default().build_storage::<Test>().unwrap();
   // We use default for brevity, but you can configure as desired if needed.
-  balances::GenesisConfig::<Test> {
+  pallet_balances::GenesisConfig::<Test> {
     balances: vec![
       (1, 10000),
       (2, 10000),

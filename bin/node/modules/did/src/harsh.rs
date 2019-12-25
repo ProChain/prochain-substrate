@@ -1,5 +1,5 @@
-use rstd::vec::Vec;
-use rstd::prelude::{Box};
+use sp_std::vec::Vec;
+use sp_std::prelude::{Box};
 
 const DEFAULT_ALPHABET: &[u8] = b"abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890";
 const DEFAULT_SEPARATORS: &[u8] = b"cfhistuCFHISTU";

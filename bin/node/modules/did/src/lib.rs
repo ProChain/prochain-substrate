@@ -5,29 +5,33 @@ mod check;
 mod tests;
 
 use codec::{Decode, Encode};
-use rstd::vec::Vec;
-use support::{
-	decl_event, decl_module, decl_storage, ensure, traits::{Currency, ReservableCurrency, ExistenceRequirement, Get}, dispatch::Result,
+use sp_std::vec::Vec;
+use frame_support::{
+	decl_event, decl_module, decl_storage, decl_error, ensure,
+	traits::{Currency, ReservableCurrency, ExistenceRequirement, Get},
 };
-use sp_runtime::traits::{CheckedSub, CheckedAdd, Hash, SaturatedConversion};
-use system::ensure_signed;
-use runtime_io::hashing::blake2_256;
+use sp_runtime::{
+	RuntimeDebug, DispatchResult,
+	traits::{CheckedSub, CheckedAdd, Hash, SaturatedConversion,}
+};
+use frame_system::{self as system, ensure_signed};
+use sp_io::hashing::blake2_256;
 use harsh::{HarshBuilder};
 
-pub trait Trait: balances::Trait + timestamp::Trait {
-	type Event: From<Event<Self>> + Into<<Self as system::Trait>::Event>;
+pub trait Trait: pallet_balances::Trait + pallet_timestamp::Trait {
+	type Event: From<Event<Self>> + Into<<Self as frame_system::Trait>::Event>;
 }
 
 pub type Did = Vec<u8>;
 
-#[derive(Encode, Decode, Default, Clone, PartialEq, Debug)]
+#[derive(Encode, Decode, Default, Clone, PartialEq, RuntimeDebug)]
 pub struct ExternalAddress {
 	btc: Vec<u8>,
 	eth: Vec<u8>,
 	eos: Vec<u8>,
 }
 
-#[derive(Encode, Decode, Default, Clone, PartialEq, Debug)]
+#[derive(Encode, Decode, Default, Clone, PartialEq, RuntimeDebug)]
 pub struct LockedRecords<Balance, Moment> {
 	locked_time: Moment,
 	locked_period: Moment,
@@ -36,13 +40,13 @@ pub struct LockedRecords<Balance, Moment> {
 	max_quota: u64,
 }
 
-#[derive(Encode, Decode, Default, Clone, PartialEq, Debug)]
+#[derive(Encode, Decode, Default, Clone, PartialEq, RuntimeDebug)]
 pub struct UnlockedRecords<Balance, Moment> {
 	unlocked_time: Moment,
 	unlocked_funds: Balance,
 }
 
-#[derive(Encode, Decode, Default, Clone, PartialEq, Debug)]
+#[derive(Encode, Decode, Default, Clone, PartialEq, RuntimeDebug)]
 pub struct MetadataRecord<AccountId, Hash, Balance, Moment> {
 	address: AccountId,
 	superior: Hash,
@@ -54,6 +58,13 @@ pub struct MetadataRecord<AccountId, Hash, Balance, Moment> {
 	subordinate_count: u64,
 	group_name: Option<Vec<u8>>,
 	external_address: ExternalAddress
+}
+
+decl_error! {
+	pub enum Error for Module<T: Trait> {
+		/// invlid type
+		InvalidType,
+	}
 }
 
 decl_storage! {
@@ -77,9 +88,9 @@ decl_storage! {
 decl_event! {
   pub enum Event<T>
   where
-    <T as system::Trait>::AccountId,
-    <T as balances::Trait>::Balance,
-    <T as timestamp::Trait>::Moment,
+    <T as frame_system::Trait>::AccountId,
+    <T as pallet_balances::Trait>::Balance,
+    <T as pallet_timestamp::Trait>::Moment,
     {
         Created(Did, Vec<u8>, Did),
         Updated(Did, AccountId, Balance),
@@ -93,6 +104,8 @@ decl_event! {
 
 decl_module! {
 	pub struct Module<T: Trait> for enum Call where origin: T::Origin {
+		type Error = Error<T>;
+
 		fn deposit_event() = default;
 
 		pub fn create(origin, pubkey: Vec<u8>, address: T::AccountId, did_type: Vec<u8>, superior: T::Hash, social_account: Option<Vec<u8>>, social_superior: Option<Vec<u8>>) {
@@ -200,10 +213,10 @@ decl_module! {
 			let (user_key, did) = Self::identity(&sender).ok_or("did does not exist")?;
 			ensure!(Self::identity(&to).is_none(), "the public key has been taken");
 
-			let money = <balances::Module<T>>::free_balance(&sender)
+			let money = <pallet_balances::Module<T>>::free_balance(&sender)
 					- T::TransferFee::get()
 					- T::CreationFee::get();
-			<balances::Module<T> as Currency<_>>::transfer(&sender, &to, money, ExistenceRequirement::AllowDeath,)?;
+			<pallet_balances::Module<T> as Currency<_>>::transfer(&sender, &to, money, ExistenceRequirement::AllowDeath,)?;
 
 			// update address => did map
 			<Identity<T>>::remove(&sender);
@@ -232,7 +245,7 @@ decl_module! {
 		pub fn lock(origin, value: T::Balance, period: T::Moment) {
 			let sender = ensure_signed(origin)?;
 
-			let sender_balance = <balances::Module<T>>::free_balance(sender.clone());
+			let sender_balance = <pallet_balances::Module<T>>::free_balance(sender.clone());
 			ensure!(sender_balance >= value + T::TransferFee::get(), "you dont have enough free balance");
 
 			let (user_key, did) = Self::identity(&sender).ok_or("this account has no did yet")?;
@@ -255,14 +268,14 @@ decl_module! {
 
 				Self::transfer_by_did(user_key, metadata.superior, fee, memo)?;
 
-				<balances::Module<T>>::reserve(&sender, locked_funds)?;
+				<pallet_balances::Module<T>>::reserve(&sender, locked_funds)?;
 			} else {
 				let locked_records = metadata.locked_records.unwrap();
 
 				let old_locked_funds = locked_records.locked_funds;
 				locked_funds = old_locked_funds + value;
 
-				<balances::Module<T>>::reserve(&sender, value)?;
+				<pallet_balances::Module<T>>::reserve(&sender, value)?;
 			}
 
 			let max_quota = Self::balance_to_u64(locked_funds) * 10;
@@ -271,7 +284,7 @@ decl_module! {
 				rewards_ratio = 20;
 			};
 
-			let locked_time = <timestamp::Module<T>>::get();
+			let locked_time = <pallet_timestamp::Module<T>>::get();
 			metadata.locked_records = Some(LockedRecords {
 				locked_funds,
 				rewards_ratio,
@@ -289,7 +302,7 @@ decl_module! {
 		fn unlock(origin, value: T::Balance) {
 			let sender = ensure_signed(origin)?;
 
-			let reserved_balance = <balances::Module<T>>::reserved_balance(&sender);
+			let reserved_balance = <pallet_balances::Module<T>>::reserved_balance(&sender);
 			ensure!(reserved_balance >= value, "unreserved funds should equal or less than reserved funds");
 
 			let (user_key, did) = Self::identity(&sender).ok_or("this account has no did yet")?;
@@ -298,12 +311,12 @@ decl_module! {
 
 			let mut locked_records = metadata.locked_records.unwrap();
 			let LockedRecords { locked_time, locked_period, locked_funds, .. } = locked_records;
-			let now = <timestamp::Module<T>>::get();
+			let now = <pallet_timestamp::Module<T>>::get();
 			let unlock_till_time = locked_time.checked_add(&locked_period).ok_or("Overflow.")?;
 
 			ensure!(now >= unlock_till_time, "unlock time has not reached");
 
-			let unlocked_time = <timestamp::Module<T>>::get();
+			let unlocked_time = <pallet_timestamp::Module<T>>::get();
 			let unlocked_records = UnlockedRecords {
 				unlocked_time,
 				unlocked_funds: value,
@@ -325,7 +338,7 @@ decl_module! {
 
 			<Metadata<T>>::insert(user_key, metadata);
 
-			<balances::Module<T>>::unreserve(&sender, value);
+			<pallet_balances::Module<T>>::unreserve(&sender, value);
 
 			Self::deposit_event(RawEvent::Unlocked(did, value, unlocked_time));
 		}
@@ -351,7 +364,7 @@ decl_module! {
 					ensure!(check::is_valid_eos_address(address.clone()), "invlid eos account");
 					external_address.eos = address.clone();
 				},
-				_ => return Err("invlid type"),
+				_ => Err(Error::<T>::InvalidType)?,
 			};
 
 			metadata.external_address = external_address;
@@ -419,18 +432,18 @@ impl<T: Trait> Module<T> {
 }
 
 impl<T: Trait> Module<T> {
-	pub fn transfer_by_did(from_user: T::Hash, to_user: T::Hash, value: T::Balance, memo: Vec<u8>) -> Result {
+	pub fn transfer_by_did(from_user: T::Hash, to_user: T::Hash, value: T::Balance, memo: Vec<u8>) -> DispatchResult {
 		ensure!(<Metadata<T>>::exists(&to_user), "dest did does not exist");
 		ensure!(from_user != to_user, "you can not send money to yourself");
 
 		// get sender balance and check
 		let MetadataRecord { address: from_address, did: from_did, .. } = Self::metadata(&from_user);
-		let sender_balance = <balances::Module<T>>::free_balance(&from_address);
+		let sender_balance = <pallet_balances::Module<T>>::free_balance(&from_address);
 		ensure!(sender_balance > value, "you dont have enough free balance");
 
 		// get receiver balance
 		let MetadataRecord { address: to_address, did: to_did, superior, .. } = Self::metadata(&to_user);
-		let receiver_balance = <balances::Module<T>>::free_balance(&to_address);
+		let receiver_balance = <pallet_balances::Module<T>>::free_balance(&to_address);
 
 		// check overflow
 		sender_balance.checked_sub(&value).ok_or("overflow in calculating balance")?;
@@ -447,10 +460,10 @@ impl<T: Trait> Module<T> {
 			let fee_to_superior = value.clone() * Self::u128_to_balance(rewards_ratio.into()) / Self::u128_to_balance(100);
 			let fee_to_user = value.clone() * Self::u128_to_balance((100 - rewards_ratio).into()) / Self::u128_to_balance(100);
 
-			<balances::Module<T> as Currency<_>>::transfer(&from_address, &superior_address, fee_to_superior, ExistenceRequirement::AllowDeath)?;
-			<balances::Module<T> as Currency<_>>::transfer(&from_address, &to_address, fee_to_user, ExistenceRequirement::AllowDeath)?;
+			<pallet_balances::Module<T> as Currency<_>>::transfer(&from_address, &superior_address, fee_to_superior, ExistenceRequirement::AllowDeath)?;
+			<pallet_balances::Module<T> as Currency<_>>::transfer(&from_address, &to_address, fee_to_user, ExistenceRequirement::AllowDeath)?;
 		} else {
-			<balances::Module<T> as Currency<_>>::transfer(&from_address, &to_address, value, ExistenceRequirement::AllowDeath)?;
+			<pallet_balances::Module<T> as Currency<_>>::transfer(&from_address, &to_address, value, ExistenceRequirement::AllowDeath)?;
 		}
 
 		Self::deposit_event(RawEvent::Transfered(from_did, to_did, value, memo));

@@ -1,4 +1,4 @@
-use rstd::prelude::Vec;
+use sp_std::prelude::Vec;
 
 static BASE58_CHARS: &'static [u8] = b"123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz";
 static ETH_CHARS: &'static [u8] = b"0123456789abcdef";

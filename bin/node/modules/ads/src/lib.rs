@@ -3,15 +3,15 @@
 mod tests;
 
 use codec::{Decode, Encode};
-use rstd::vec::Vec;
-use support::{
+use sp_std::vec::Vec;
+use frame_support::{
 	decl_event, decl_module, decl_storage, ensure,
 };
 use sp_runtime::traits::{Zero, CheckedSub, CheckedAdd};
-use system::ensure_signed;
+use frame_system::{self as system, ensure_signed};
 
-pub trait Trait: balances::Trait + timestamp::Trait + did::Trait {
-	type Event: From<Event<Self>> + Into<<Self as system::Trait>::Event>;
+pub trait Trait: pallet_balances::Trait + pallet_timestamp::Trait + did::Trait {
+	type Event: From<Event<Self>> + Into<<Self as frame_system::Trait>::Event>;
 }
 
 #[cfg_attr(feature = "std", derive(Debug))]
@@ -40,9 +40,9 @@ decl_storage! {
 decl_event! {
   pub enum Event<T>
   where
-    <T as system::Trait>::Hash,
-    <T as balances::Trait>::Balance,
-		<T as timestamp::Trait>::Moment,
+    <T as frame_system::Trait>::Hash,
+    <T as pallet_balances::Trait>::Balance,
+		<T as pallet_timestamp::Trait>::Moment,
     {
         Published(Hash, Hash, Balance),
         Deposited(Hash, Hash, Balance),
@@ -62,7 +62,7 @@ decl_module! {
             ensure!(total_amount >= Self::min_deposit(), "min deposit 500 pra");
 
             let (from_key, _) = <did::Module<T>>::identity(sender).ok_or("did does not exists")?;
-            let create_time = <timestamp::Module<T>>::get();
+            let create_time = <pallet_timestamp::Module<T>>::get();
 
             let (contract, _) = <did::Module<T>>::identity(Self::contract()).ok_or("cant find did")?;
             <did::Module<T>>::transfer_by_did(from_key, contract, total_amount, "开户广告费".as_bytes().to_vec())?;

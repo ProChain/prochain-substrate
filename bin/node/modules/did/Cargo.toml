@@ -15,17 +15,17 @@ rustc-hex = { version = "2.0", optional = true }
 serde = { version = "1.0.102", optional = true }
 
 # primitives
-node-primitives = { path = "../../primitives", default-features = false }
-primitives = { package = "sp-core",  git = "https://github.com/ProChain/substrate.git", default-features = false }
-rstd = { package = "sp-std", git = "https://github.com/ProChain/substrate.git", default-features = false }
-sp-runtime = { git = "https://github.com/ProChain/substrate.git", default-features = false }
+node-primitives = { version = "2.0.0", path = "../../primitives", default-features = false }
+sp-core = { version = "2.0.0", git = "https://github.com/ProChain/substrate.git", default-features = false }
+sp-std = { version = "2.0.0", git = "https://github.com/ProChain/substrate.git", default-features = false }
+sp-runtime = { version = "2.0.0", git = "https://github.com/ProChain/substrate.git",default-features = false }
+sp-io = { version = "2.0.0", git = "https://github.com/ProChain/substrate.git", default-features = false }
 
 # frame dependencies
-balances = { package = "pallet-balances", git = "https://github.com/ProChain/substrate.git", default-features = false }
-support = { package = "frame-support", git = "https://github.com/ProChain/substrate.git", default-features = false }
-system = { package = "frame-system", git = "https://github.com/ProChain/substrate.git", default-features = false }
-timestamp = { package = "pallet-timestamp", git = "https://github.com/ProChain/substrate.git", default-features = false }
-runtime-io = { package = "sp-io", git = "https://github.com/ProChain/substrate.git", default-features = false }
+pallet-balances = { version = "2.0.0", git = "https://github.com/ProChain/substrate.git", default-features = false }
+frame-support = { version = "2.0.0", git = "https://github.com/ProChain/substrate.git", default-features = false }
+frame-system = { version = "2.0.0", git = "https://github.com/ProChain/substrate.git", default-features = false }
+pallet-timestamp = { version = "2.0.0", git = "https://github.com/ProChain/substrate.git", default-features = false }
 
 [dev-dependencies]
 
@@ -33,15 +33,15 @@ runtime-io = { package = "sp-io", git = "https://github.com/ProChain/substrate.g
 [features]
 default = ["std"]
 std = [
-	"balances/std",
+	"pallet-balances/std",
 	"codec/std",
-	"primitives/std",
-	"rstd/std",
+	"sp-core/std",
+	"sp-std/std",
 	"rustc-hex",
 	"serde",
 	"sp-runtime/std",
-	"support/std",
-	"system/std",
-	"timestamp/std",
+	"frame-support/std",
+	"frame-system/std",
+	"pallet-timestamp/std",
 ]
 

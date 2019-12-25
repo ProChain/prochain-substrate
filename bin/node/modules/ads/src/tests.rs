@@ -20,7 +20,7 @@ mod ads {
 
 impl_outer_event! {
   pub enum Event for Test {
-    did<T>, ads<T>, balances<T>,
+    did<T>, ads<T>, pallet_balances<T>,
   }
 }
 // For testing the module, we construct most of a mock runtime. This means
@@ -35,7 +35,7 @@ parameter_types! {
   pub const MaximumBlockLength: u32 = 2 * 1024;
   pub const AvailableBlockRatio: Perbill = Perbill::one();
 }
-impl system::Trait for Test {
+impl frame_system::Trait for Test {
   type Origin = Origin;
   type Index = u64;
   type BlockNumber = u64;
@@ -57,7 +57,7 @@ parameter_types! {
   pub const TransferFee: u64 = 0;
   pub const CreationFee: u64 = 0;
 }
-impl balances::Trait for Test {
+impl pallet_balances::Trait for Test {
   type Balance = u64;
   type OnFreeBalanceZero = ();
   type OnNewAccount = ();
@@ -73,9 +73,9 @@ parameter_types! {
   pub const MinimumPeriod: u64 = 1;
 }
 
-impl timestamp::Trait for Test {
+impl pallet_timestamp::Trait for Test {
   type Moment = u64;
-  type OnTimestampSet = ();
+  type Onpallet_timestampSet = ();
   type MinimumPeriod = MinimumPeriod;
 }
 
@@ -95,16 +95,16 @@ impl Trait for Test {
 }
 
 type AdsModule = Module<Test>;
-type Balances = balances::Module<Test>;
+type Balances = pallet_balances::Module<Test>;
 type DidModule = did::Module<Test>;
 
 // This function basically just builds a genesis storage key/value store according to
 // our desired mockup.
-fn new_test_ext() -> runtime_io::TestExternalities {
-  let mut t = system::GenesisConfig::default().build_storage::<Test>().unwrap();
+fn new_test_ext() -> sp::TestExternalities {
+  let mut t = frame_system::GenesisConfig::default().build_storage::<Test>().unwrap();
   // We use default for brevity, but you can configure as desired if needed.
-  balances::GenesisConfig::<Test> {
-    balances: vec![
+  pallet_balances::GenesisConfig::<Test> {
+    pallet_balances: vec![
       (1, 10000),
       (2, 10000),
       (3, 10000),
