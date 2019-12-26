@@ -72,7 +72,7 @@ did = { path = "../modules/did", default-features = false }
 ads = { path = "../modules/ads", default-features = false }
 
 [build-dependencies]
-wasm-builder-runner = { version = "1.0.4", package = "substrate-wasm-builder-runner", git = "https://github.com/ProChain/substrate.git" }
+wasm-builder-runner = { version = "1.0.4", package = "substrate-wasm-builder-runner", path = "../../../utils/wasm-builder-runner" }
 
 [dev-dependencies]
 sp-io = { version = "2.0.0", git = "https://github.com/ProChain/substrate.git" }

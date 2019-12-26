@@ -39,11 +39,11 @@ trie-db = { version = "0.16.0", default-features = false }
 
 [dev-dependencies]
 sc-executor = { version = "2.0.0", git = "https://github.com/ProChain/substrate.git" }
-#substrate-test-runtime-client = { version = "2.0.0", path = "./client" }
+substrate-test-runtime-client = { version = "2.0.0", path = "./client" }
 sp-state-machine = { version = "2.0.0", git = "https://github.com/ProChain/substrate.git" }
 
 [build-dependencies]
-wasm-builder-runner = { version = "1.0.4", package = "substrate-wasm-builder-runner", git = "https://github.com/ProChain/substrate.git" }
+wasm-builder-runner = { version = "1.0.4", package = "substrate-wasm-builder-runner", path = "../../utils/wasm-builder-runner" }
 
 [features]
 default = [
