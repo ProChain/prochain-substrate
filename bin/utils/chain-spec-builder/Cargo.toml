@@ -8,7 +8,7 @@ build = "build.rs"
 [dependencies]
 ansi_term = "0.12.1"
 sc-keystore = { version = "2.0.0", git = "https://github.com/ProChain/substrate.git" }
-node-cli = { version = "2.0.0", git = "https://github.com/ProChain/substrate.git" }
+node-cli = { path = "../../node/cli" }
 sp-core = { version = "2.0.0", git = "https://github.com/ProChain/substrate.git" }
 rand = "0.7.2"
 structopt = "0.3.3"

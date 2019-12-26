@@ -382,7 +382,7 @@ mod tests {
             .expect("failed to initialize harsh");
 
         let result = harsh.encode(&[1226198605112]).expect("failed to encode");
-        let strs = rstd::str::from_utf8(&result).unwrap();
+        let strs = sp_std::str::from_utf8(&result).unwrap();
         println!("result is {}", strs);
         assert_eq!(
             b"4o6Z7KqxE",
@@ -419,7 +419,7 @@ mod tests {
             .expect("failed to initialize harsh");
 
         let encode = harsh.encode(&[1, 2, 3]).expect("failed to encode");
-        println!("encode---- is {}", rstd::str::from_utf8(&encode).unwrap());
+        println!("encode---- is {}", sp_std::str::from_utf8(&encode).unwrap());
 
         // 9LGlaHquq06D 
         assert_eq!(
