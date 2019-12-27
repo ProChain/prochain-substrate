@@ -281,8 +281,6 @@ contract ERC20HTLC {
 		return true;
 	}
 
-	function delCandy(uint32 _candyId) public onlyAdmin {}
-
 	/// @notice query an atomic swap by randomNumberHash
 	///
 	/// @param _swapID The hash of randomNumberHash, swap creator and swap recipient
