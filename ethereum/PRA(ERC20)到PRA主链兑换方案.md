@@ -1,7 +1,7 @@
 ### PRA(ERC20) 到 PRA主链兑换方案（单向原子交换）
 ---
 
-#### 1. Eth合约 (代码见 https://github.com/ProChain/prochain-substrate/tree/v2.0/eth-contracts )
+#### 1. Eth合约 (代码见 https://github.com/ProChain/prochain-substrate/tree/v2.0/ethereum/erc20-htlc-swap/contracts )
 
 - 部署HTLC合约
 - 函数：htlc(), claim(), refund()
@@ -10,23 +10,14 @@
 
 #### 2. PRA主链
 
-- 部署Deputy逻辑
 - 通过off-chain worker监听eth event，聚合
 - 函数：htlc(), claim(), refund()
 - 事件：HTLC, Claimed, Refunded
 - HTLC状态：INVALID, OPEN, COMPLETED, EXPIRED
 
-#### 3. Event数据聚合
+#### 3. deputy监控
 
-- 中心化服务器
-- 访问N个主链数据源，取n/2+1个正确结果，存数据库
-- 向off-chain worker提供服务
-- 若时间段内新数据数过低，告警
-- 若时间段内查询数过低，告警
-
-#### 4. admin监控
-
-- 中心化服务器
+- 中心化服务
 - 监控合约状态，锁仓地址余额
 - 清算对账，不一致则告警
 - 查询失败的swap，告警
@@ -35,26 +26,25 @@
 #### HTLC流程
 
 ##### 初始化
-- 准备HTLC合约地址acc1
-- erc20资产锁仓地址acc2，公开
-- 准备PRA主链收款地址acc3
-- 主链资产锁仓地址acc4，要求有足够余额，公开作为peg资产
+- 部署HTLC合约
+- 准备eth地址acc1，作为兑换发起人
+- erc20资产锁仓地址acc2，初始余额为0，公开作为peg资产
+- 准备PRA主链收款DID: acc3，作为兑换收款人
+- 主链资产锁仓DID: acc4，要求有足够余额，公开作为peg资产
 
 ##### 流程
-- eth用户向合约地址acc1转账ERC20
-- eth用户调用函数htlc()，参数randomNumberHash, timestamp, heightSpan, praReceiverAddr, erc20Amount, praAmount等, 发起HTLC
-- Deputy通过off-chain worker监听eth，接收新的HTLC Event
-- Deputy在PRA主链创建新的HTLC，两边的swapID对应相同
-- 主链用户acc3，调用Deputy合约的claim()，参数swapID和randomNumber等，声明swap所属权
-- 任何eth用户可以调用函数claim()，参数swapID和randomNumber，确认完成swap，资产由acc1转向锁仓地址acc2
-- 超时后，任何eth用户可以调用refund()结束交易，参数swapID，资产由acc2转回用户acc1
-- Deputy通过off-chain worker监听eth，接收Claimed Event，资产由acc4转向主链用户acc3
-- 失败处理：交易超时，主链用户未在指定heightSpan出块范围内claim
+- eth用户acc1，向Pro-ERC20合约调用approve()，授权合约可扣款金额
+- eth用户acc1，调用HTLC合约函数htlc()，参数randomNumberHash, timestamp, heightSpan, praReceiverAddr, erc20Amount, praAmount等, 发起HTLC
+- HTLC合约向用户acc1账号扣款erc20Amount，存在合约账号内
+- PRA主链通过off-chain worker监听eth，接收新的HTLC Event
+- PRA主链创建新的HTLC，两边的SwapID对应相同
+- eth用户acc1，调用函数claim()，参数swapID和randomNumber，声明swap，资产由合约账号转向锁仓地址acc2
+- PRA主链通过off-chain worker监听eth，接收Claimed Event，从acc4账号向收款人acc3付款主链币
+- 若HTLC超时，任何eth用户可以调用refund()结束交易，参数swapID，资产由合约账号退回用户acc1
 
 ##### 配置项
 - erc20 PRA和主链PRA汇率为 1:1
 - heightSpan高度跨度
-- 过期时间跨度
 
 ##### 优点
 - 合约跨链，无中心化信任节点
@@ -65,8 +55,7 @@
 - 两边对账不一致
 
 #### 用户入口
-- 钱包DAPP（需要同时支持erc20和PRA主链）
-- PRA主链SDK
+- 钱包DAPP（需要支持erc20）
 
 #### 测试物料和样例
 
