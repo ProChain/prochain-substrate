@@ -1,27 +1,37 @@
 #![cfg_attr(not(feature = "std"), no_std)]
 
-use sp_runtime::app_crypto::{KeyTypeId, RuntimeAppPublic};
 use codec::{Decode, Encode};
-use sp_core::{offchain::Duration, offchain::HttpRequestId, offchain::HttpRequestStatus};
-use sp_std::{prelude::*, result::Result, vec::Vec, convert::{Into, TryInto}};
-use sp_runtime::{
-	DispatchResult as dispatch_result,
-	traits::{Member, Hash},
-	transaction_validity::{
-		TransactionValidity, TransactionPriority, ValidTransaction, UnknownTransaction, TransactionLongevity}
-};
 use frame_support::{
-	decl_event, decl_module, decl_error, decl_storage, ensure, Parameter, StorageMap, StorageValue,
-	traits::{Currency, ExistenceRequirement}
+	decl_error, decl_event, decl_module, decl_storage, ensure,
+	traits::{Currency, ExistenceRequirement},
+	Parameter, StorageMap, StorageValue,
 };
-use frame_system::{self as system, offchain::SubmitUnsignedTransaction, ensure_none, ensure_signed, ensure_root};
-use simple_json::{self, json::JsonValue};
+use frame_system::{
+	self as system, ensure_none, ensure_root, ensure_signed, offchain::SubmitUnsignedTransaction,
+};
 use hex::FromHex;
+use simple_json::{self, json::JsonValue};
+use sp_core::{offchain::Duration, offchain::HttpRequestId, offchain::HttpRequestStatus};
+use sp_runtime::app_crypto::{KeyTypeId, RuntimeAppPublic};
+use sp_runtime::{
+	traits::{Hash, Member},
+	transaction_validity::{
+		TransactionLongevity, TransactionPriority, TransactionValidity, UnknownTransaction,
+		ValidTransaction,
+	},
+	DispatchResult as dispatch_result,
+};
+use sp_std::{
+	convert::{Into, TryInto},
+	prelude::*,
+	result::Result,
+	vec::Vec,
+};
 
 extern crate num_bigint_dig as num_bigint;
 //extern crate num_traits;
 use num_bigint::{BigUint, ToBigUint};
-use num_traits::{Zero, One};
+use num_traits::{One, Zero};
 
 pub const KEY_TYPE: KeyTypeId = KeyTypeId(*b"orin");
 
@@ -64,9 +74,12 @@ const MESSAGE_NOT_FOUND: &'static str = "No records found";
 const STR_PREFIX: &'static str = "0x";
 
 // TODO: auto generate EventSignature by contract abi
-const EVENT_SIG_HTLC: &'static str = "0x5a0cc384a12a55445d4625db5d24f6a72177fd330644e2d4b3ea0ebd6f78c54d";
-const EVENT_SIG_CLAIM: &'static str = "0x07a9dd1ef03da239626dc5c5bac1995991043d2b6e0e23ca789bbc0a16eb911f";
-const EVENT_SIG_REFUND: &'static str = "0x215e15eef6d0300f9e89d940198e4f7fc22e44b7c80118c03571cd96da6c6c98";
+const EVENT_SIG_HTLC: &'static str =
+	"0x5a0cc384a12a55445d4625db5d24f6a72177fd330644e2d4b3ea0ebd6f78c54d";
+const EVENT_SIG_CLAIM: &'static str =
+	"0x07a9dd1ef03da239626dc5c5bac1995991043d2b6e0e23ca789bbc0a16eb911f";
+const EVENT_SIG_REFUND: &'static str =
+	"0x215e15eef6d0300f9e89d940198e4f7fc22e44b7c80118c03571cd96da6c6c98";
 
 const B_ALPHA: &'static [u8; 58] = b"123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz";
 
@@ -128,8 +141,6 @@ pub trait Trait: pallet_balances::Trait + pallet_timestamp::Trait + did::Trait {
 	/// A transaction submitter.
 	type SubmitTransaction: SubmitUnsignedTransaction<Self, <Self as Trait>::Call>;
 }
-
-//type BalanceOf<T> = <<T as Trait>::Currency as Currency<<T as system::Trait>::AccountId>>::Balance;
 
 decl_error! {
 	pub enum Error for Module<T: Trait> {
@@ -313,7 +324,8 @@ impl<T: Trait> Module<T> {
 	}
 
 	fn to_balance(val: u128) -> Result<T::Balance, &'static str> {
-		val.try_into().map_err(|_| "Convert to Balance type overflow")
+		val.try_into()
+			.map_err(|_| "Convert to Balance type overflow")
 	}
 
 	fn fetch_events(src: Vec<u8>, remote_url: Vec<u8>) -> Result<(), &'static str> {
@@ -331,8 +343,8 @@ impl<T: Trait> Module<T> {
 				Ok(_) => sp_io::misc::print_utf8(b"execute off-chain worker success"),
 				Err(_) => {
 					sp_io::misc::print_utf8(b"execute off-chain worker failed!");
-					return Err("error happens when submit unsigned transaction")
-				},
+					return Err("error happens when submit unsigned transaction");
+				}
 			}
 		}
 		Ok(())
@@ -354,32 +366,32 @@ impl<T: Trait> Module<T> {
 			let mut results = Vec::new();
 
 			json_val
-			.get_object()
-			.iter()
-			.filter(|(k, _)| {
-				let key: Vec<u8> = k.iter().map(|c| *c as u8).collect();
-				KEY_MESSAGE.as_bytes().to_vec() == key
-				|| KEY_STATUS.as_bytes().to_vec() == key
-				|| KEY_RESULT.as_bytes().to_vec() == key
-			})
-			.for_each(|(k, v)| {
-				let vec_of_u8s: Vec<u8> = k.iter().map(|c| *c as u8).collect();
-				let key = core::str::from_utf8(&vec_of_u8s).unwrap();
+				.get_object()
+				.iter()
+				.filter(|(k, _)| {
+					let key: Vec<u8> = k.iter().map(|c| *c as u8).collect();
+					KEY_MESSAGE.as_bytes().to_vec() == key
+						|| KEY_STATUS.as_bytes().to_vec() == key
+						|| KEY_RESULT.as_bytes().to_vec() == key
+				})
+				.for_each(|(k, v)| {
+					let vec_of_u8s: Vec<u8> = k.iter().map(|c| *c as u8).collect();
+					let key = core::str::from_utf8(&vec_of_u8s).unwrap();
 
-				if key == KEY_MESSAGE {
-					if let JsonValue::String(obj) = v {
-						message = obj.iter().map(|c| *c as u8).collect::<Vec<u8>>();
+					if key == KEY_MESSAGE {
+						if let JsonValue::String(obj) = v {
+							message = obj.iter().map(|c| *c as u8).collect::<Vec<u8>>();
+						}
+					} else if key == KEY_STATUS {
+						if let JsonValue::String(obj) = v {
+							status = obj.iter().map(|c| *c as u8).collect::<Vec<u8>>();
+						}
+					} else if key == KEY_RESULT {
+						if let JsonValue::Array(array) = v {
+							results = array.to_vec();
+						}
 					}
-				} else if key == KEY_STATUS {
-					if let JsonValue::String(obj) = v {
-						status = obj.iter().map(|c| *c as u8).collect::<Vec<u8>>();
-					}
-				} else if key == KEY_RESULT {
-					if let JsonValue::Array(array) = v {
-						results = array.to_vec();
-					}
-				}
-			});
+				});
 
 			if status != b"1" || message != b"OK" {
 				return vec_results;
@@ -395,56 +407,60 @@ impl<T: Trait> Module<T> {
 				let mut tx_index = Vec::new();
 
 				result
-				.get_object()
-				.iter()
-				.filter(|(k, _)| {
-					let key: Vec<u8> = k.iter().map(|c| *c as u8).collect();
-					KEY_ADDRESS.as_bytes().to_vec() == key
-						|| KEY_TOPICS.as_bytes().to_vec() == key
-						|| KEY_DATA.as_bytes().to_vec() == key
-						|| KEY_BLOCK_NUMBER.as_bytes().to_vec() == key
-						|| KEY_TIME_STAMP.as_bytes().to_vec() == key
-						|| KEY_TX_HASH.as_bytes().to_vec() == key
-						|| KEY_TX_INDEX.as_bytes().to_vec() == key
-				})
-				.for_each(|(k, v)| {
-					let vec_of_u8s: Vec<u8> = k.iter().map(|c| *c as u8).collect();
-					let key = core::str::from_utf8(&vec_of_u8s).unwrap();
+					.get_object()
+					.iter()
+					.filter(|(k, _)| {
+						let key: Vec<u8> = k.iter().map(|c| *c as u8).collect();
+						KEY_ADDRESS.as_bytes().to_vec() == key
+							|| KEY_TOPICS.as_bytes().to_vec() == key
+							|| KEY_DATA.as_bytes().to_vec() == key
+							|| KEY_BLOCK_NUMBER.as_bytes().to_vec() == key
+							|| KEY_TIME_STAMP.as_bytes().to_vec() == key
+							|| KEY_TX_HASH.as_bytes().to_vec() == key
+							|| KEY_TX_INDEX.as_bytes().to_vec() == key
+					})
+					.for_each(|(k, v)| {
+						let vec_of_u8s: Vec<u8> = k.iter().map(|c| *c as u8).collect();
+						let key = core::str::from_utf8(&vec_of_u8s).unwrap();
 
-					if key == KEY_ADDRESS {
-						if let JsonValue::String(obj) = v {
-							contract_addr = obj.iter().map(|c| *c as u8).collect::<Vec<u8>>();
-						}
-					} else if key == KEY_TOPICS {
-						if let JsonValue::Array(array) = v {
-							for i in array.iter() {
-								if let JsonValue::String(obj) = i {
-									topics.push(obj.iter().map(|c| *c as u8).collect::<Vec<u8>>());
+						if key == KEY_ADDRESS {
+							if let JsonValue::String(obj) = v {
+								contract_addr = obj.iter().map(|c| *c as u8).collect::<Vec<u8>>();
+							}
+						} else if key == KEY_TOPICS {
+							if let JsonValue::Array(array) = v {
+								for i in array.iter() {
+									if let JsonValue::String(obj) = i {
+										topics.push(
+											obj.iter().map(|c| *c as u8).collect::<Vec<u8>>(),
+										);
+									}
 								}
 							}
+						} else if key == KEY_DATA {
+							if let JsonValue::String(obj) = v {
+								data = obj.iter().map(|c| *c as u8).collect::<Vec<u8>>();
+							}
+						} else if key == KEY_BLOCK_NUMBER {
+							if let JsonValue::String(obj) = v {
+								event_block_number =
+									obj.iter().map(|c| *c as u8).collect::<Vec<u8>>();
+							}
+						} else if key == KEY_TIME_STAMP {
+							if let JsonValue::String(obj) = v {
+								event_time_stamp =
+									obj.iter().map(|c| *c as u8).collect::<Vec<u8>>();
+							}
+						} else if key == KEY_TX_HASH {
+							if let JsonValue::String(obj) = v {
+								tx_hash = obj.iter().map(|c| *c as u8).collect::<Vec<u8>>();
+							}
+						} else if key == KEY_TX_INDEX {
+							if let JsonValue::String(obj) = v {
+								tx_index = obj.iter().map(|c| *c as u8).collect::<Vec<u8>>();
+							}
 						}
-					} else if key == KEY_DATA {
-						if let JsonValue::String(obj) = v {
-							data = obj.iter().map(|c| *c as u8).collect::<Vec<u8>>();
-						}
-					} else if key == KEY_BLOCK_NUMBER {
-						if let JsonValue::String(obj) = v {
-							event_block_number = obj.iter().map(|c| *c as u8).collect::<Vec<u8>>();
-						}
-					} else if key == KEY_TIME_STAMP {
-						if let JsonValue::String(obj) = v {
-							event_time_stamp = obj.iter().map(|c| *c as u8).collect::<Vec<u8>>();
-						}
-					} else if key == KEY_TX_HASH {
-						if let JsonValue::String(obj) = v {
-							tx_hash = obj.iter().map(|c| *c as u8).collect::<Vec<u8>>();
-						}
-					} else if key == KEY_TX_INDEX {
-						if let JsonValue::String(obj) = v {
-							tx_index = obj.iter().map(|c| *c as u8).collect::<Vec<u8>>();
-						}
-					}
-				});
+					});
 
 				if topics.len() == 0 {
 					continue;
@@ -452,24 +468,54 @@ impl<T: Trait> Module<T> {
 
 				match core::str::from_utf8(&topics[0]).unwrap() {
 					EVENT_SIG_HTLC => {
-							match Self::parse_htlc_event(contract_addr, topics, data, event_block_number, event_time_stamp, tx_hash, tx_index) {
-								Ok(htlc) => vec_results.push(htlc),
-								Err(e) => { sp_io::misc::print_utf8(e.as_bytes()); }
+						match Self::parse_htlc_event(
+							contract_addr,
+							topics,
+							data,
+							event_block_number,
+							event_time_stamp,
+							tx_hash,
+							tx_index,
+						) {
+							Ok(htlc) => vec_results.push(htlc),
+							Err(e) => {
+								sp_io::misc::print_utf8(e.as_bytes());
 							}
-						},
+						}
+					}
 					EVENT_SIG_REFUND => {
-							match Self::parse_refund_event(contract_addr, topics, data, event_block_number, event_time_stamp, tx_hash, tx_index) {
-								Ok(htlc) => vec_results.push(htlc),
-								Err(e) => { sp_io::misc::print_utf8(e.as_bytes()); }
+						match Self::parse_refund_event(
+							contract_addr,
+							topics,
+							data,
+							event_block_number,
+							event_time_stamp,
+							tx_hash,
+							tx_index,
+						) {
+							Ok(htlc) => vec_results.push(htlc),
+							Err(e) => {
+								sp_io::misc::print_utf8(e.as_bytes());
 							}
-						},
+						}
+					}
 					EVENT_SIG_CLAIM => {
-							match Self::parse_claim_event(contract_addr, topics, data, event_block_number, event_time_stamp, tx_hash, tx_index) {
-								Ok(htlc) => vec_results.push(htlc),
-								Err(e) => { sp_io::misc::print_utf8(e.as_bytes()); }
+						match Self::parse_claim_event(
+							contract_addr,
+							topics,
+							data,
+							event_block_number,
+							event_time_stamp,
+							tx_hash,
+							tx_index,
+						) {
+							Ok(htlc) => vec_results.push(htlc),
+							Err(e) => {
+								sp_io::misc::print_utf8(e.as_bytes());
 							}
-						},
-					_ => sp_io::misc::print_utf8(b"not valid event signature")
+						}
+					}
+					_ => sp_io::misc::print_utf8(b"not valid event signature"),
 				}
 			}
 		}
@@ -477,10 +523,15 @@ impl<T: Trait> Module<T> {
 		return vec_results;
 	}
 
-	fn parse_htlc_event(contract_addr: Vec<u8>, topics: Vec<Vec<u8>>, data: Vec<u8>,
-						event_block_number: Vec<u8>, event_time_stamp: Vec<u8>, tx_hash: Vec<u8>, tx_index: Vec<u8>)
-						-> Result<EventHTLC<T::BlockNumber, T::Balance, T::Hash>, &'static str> {
-
+	fn parse_htlc_event(
+		contract_addr: Vec<u8>,
+		topics: Vec<Vec<u8>>,
+		data: Vec<u8>,
+		event_block_number: Vec<u8>,
+		event_time_stamp: Vec<u8>,
+		tx_hash: Vec<u8>,
+		tx_index: Vec<u8>,
+	) -> Result<EventHTLC<T::BlockNumber, T::Balance, T::Hash>, &'static str> {
 		//indexed topics: _msgSender(Address); _recipientAddr(FixedBytes(32));_swapID(FixedBytes(32))
 		//topics[0] is EventSignature
 		let msg_sender = &topics[1][STR_PREFIX.len()..].to_vec();
@@ -488,44 +539,74 @@ impl<T: Trait> Module<T> {
 		let swap_id = &topics[3][STR_PREFIX.len()..].to_vec();
 
 		let random_num_hash = &data[STR_PREFIX.len()..66].to_vec();
-		let htlc_time_stamp = &data[STR_PREFIX.len()+64..66+64].to_vec();
-		let expire_height = &data[STR_PREFIX.len()+64+64..66+64+64].to_vec();
-		let out_amount = &data[STR_PREFIX.len()+64+64+64..66+64+64+64].to_vec();
-		let pra_amount = &data[STR_PREFIX.len()+64+64+64+64..66+64+64+64+64].to_vec();
-		let receiver_addr_len = &data[STR_PREFIX.len()+64+64+64+64+64+64..64+64+64+64+64+64+66].to_vec();
-		let receiver_addr = &data[STR_PREFIX.len()+64+64+64+64+64+64+64..].to_vec();
+		let htlc_time_stamp = &data[STR_PREFIX.len() + 64..66 + 64].to_vec();
+		let expire_height = &data[STR_PREFIX.len() + 64 + 64..66 + 64 + 64].to_vec();
+		let out_amount = &data[STR_PREFIX.len() + 64 + 64 + 64..66 + 64 + 64 + 64].to_vec();
+		let pra_amount =
+			&data[STR_PREFIX.len() + 64 + 64 + 64 + 64..66 + 64 + 64 + 64 + 64].to_vec();
+		let receiver_addr_len = &data
+			[STR_PREFIX.len() + 64 + 64 + 64 + 64 + 64 + 64..64 + 64 + 64 + 64 + 64 + 64 + 66]
+			.to_vec();
+		let receiver_addr = &data[STR_PREFIX.len() + 64 + 64 + 64 + 64 + 64 + 64 + 64..].to_vec();
 
 		let d = core::str::from_utf8(&receiver_addr_len[..]).unwrap();
-		let mut length = usize::from_str_radix(d, 16).map_err(|_| "error parse length from utf8")?;
+		let mut length =
+			usize::from_str_radix(d, 16).map_err(|_| "error parse length from utf8")?;
 
-		let event_ts = u64::from_str_radix(core::str::from_utf8(&event_time_stamp[STR_PREFIX.len()..]).unwrap(), 16)
-				.map_err(|_| "error parse event_time_stamp from utf8")?;
-		let htlc_ts = u64::from_str_radix(core::str::from_utf8(&htlc_time_stamp[STR_PREFIX.len()..]).unwrap(), 16)
-				.map_err(|_| "error parse htlc_time_stamp from utf8")?;
-		let event_block_num = u32::from_str_radix(core::str::from_utf8(&event_block_number[STR_PREFIX.len()..]).unwrap(), 16)
-				.map_err(|_| "error parse event_block_num from utf8")?;
-		let expire_block_num = u32::from_str_radix(core::str::from_utf8(&expire_height[STR_PREFIX.len()..]).unwrap(), 16)
-				.map_err(|_| "error parse event_block_num from utf8")?;
+		let event_ts = u64::from_str_radix(
+			core::str::from_utf8(&event_time_stamp[STR_PREFIX.len()..]).unwrap(),
+			16,
+		)
+		.map_err(|_| "error parse event_time_stamp from utf8")?;
+		let htlc_ts = u64::from_str_radix(
+			core::str::from_utf8(&htlc_time_stamp[STR_PREFIX.len()..]).unwrap(),
+			16,
+		)
+		.map_err(|_| "error parse htlc_time_stamp from utf8")?;
+		let event_block_num = u32::from_str_radix(
+			core::str::from_utf8(&event_block_number[STR_PREFIX.len()..]).unwrap(),
+			16,
+		)
+		.map_err(|_| "error parse event_block_num from utf8")?;
+		let expire_block_num = u32::from_str_radix(
+			core::str::from_utf8(&expire_height[STR_PREFIX.len()..]).unwrap(),
+			16,
+		)
+		.map_err(|_| "error parse event_block_num from utf8")?;
 
-		let event_out_amount = u128::from_str_radix(core::str::from_utf8(&out_amount[STR_PREFIX.len()..]).unwrap(), 16)
-				.map_err(|_| "error parse out_amount from utf8")?;
-		let event_pra_amount = u128::from_str_radix(core::str::from_utf8(&pra_amount[STR_PREFIX.len()..]).unwrap(), 16)
-				.map_err(|_| "error parse pra_amount from utf8")?;
-		ensure!(event_out_amount > 0 && event_out_amount == event_pra_amount, "not valid out_amount or pra_amount");
+		let event_out_amount = u128::from_str_radix(
+			core::str::from_utf8(&out_amount[STR_PREFIX.len()..]).unwrap(),
+			16,
+		)
+		.map_err(|_| "error parse out_amount from utf8")?;
+		let event_pra_amount = u128::from_str_radix(
+			core::str::from_utf8(&pra_amount[STR_PREFIX.len()..]).unwrap(),
+			16,
+		)
+		.map_err(|_| "error parse pra_amount from utf8")?;
+		ensure!(
+			event_out_amount > 0 && event_out_amount == event_pra_amount,
+			"not valid out_amount or pra_amount"
+		);
 
 		//Important: precision from eth contract is 8, substrate precision is 15
-		let out_balance = Self::to_balance(event_out_amount * 10000000).map_err(|_| "error parse event_out_amount to balance")?;
+		let out_balance = Self::to_balance(event_out_amount * 10000000)
+			.map_err(|_| "error parse event_out_amount to balance")?;
 
 		length = length * 2usize;
-		let did_hex = Vec::from_hex(&receiver_addr[..length]).map_err(|_| "error parse receiver_addr from utf8")?;
-		let data_str = core::str::from_utf8(&did_hex[..]).map_err(|_| "error not valid utf8 did")?;
+		let did_hex = Vec::from_hex(&receiver_addr[..length])
+			.map_err(|_| "error parse receiver_addr from utf8")?;
+		let data_str =
+			core::str::from_utf8(&did_hex[..]).map_err(|_| "error not valid utf8 did")?;
 
 		let vecs: Vec<&str> = data_str.split(":").collect();
-		ensure!(vecs.len() == 3 && vecs[2].len() > 0, "error not found valid did");
+		ensure!(
+			vecs.len() == 3 && vecs[2].len() > 0,
+			"error not found valid did"
+		);
 
 		let did_ele_hex = Self::from_base58(vecs[2].clone()).map_err(|_| "error Bad Base58")?;
 		let receiver_did_hash = T::Hashing::hash(&did_ele_hex);
-
 
 		let htlc = EventHTLC {
 			eth_contract_addr: contract_addr,
@@ -547,33 +628,48 @@ impl<T: Trait> Module<T> {
 		Ok(htlc)
 	}
 
-	fn parse_claim_event(contract_addr: Vec<u8>, topics: Vec<Vec<u8>>, data: Vec<u8>,
-						event_block_number: Vec<u8>, event_time_stamp: Vec<u8>, tx_hash: Vec<u8>, tx_index: Vec<u8>)
-						-> Result<EventHTLC<T::BlockNumber, T::Balance, T::Hash>, &'static str> {
+	fn parse_claim_event(
+		contract_addr: Vec<u8>,
+		topics: Vec<Vec<u8>>,
+		data: Vec<u8>,
+		event_block_number: Vec<u8>,
+		event_time_stamp: Vec<u8>,
+		tx_hash: Vec<u8>,
+		tx_index: Vec<u8>,
+	) -> Result<EventHTLC<T::BlockNumber, T::Balance, T::Hash>, &'static str> {
 		//indexed topics: _msgSender(Address); _recipientAddr(FixedBytes(32));_swapID(FixedBytes(32))
 		let msg_sender = &topics[1][STR_PREFIX.len()..].to_vec();
 		let recipient_addr = &topics[2][STR_PREFIX.len()..].to_vec();
 		let swap_id = T::Hashing::hash(&topics[3][STR_PREFIX.len()..]);
 
 		let random_num = &data[STR_PREFIX.len()..66].to_vec();
-		let receiver_addr_len = &data[STR_PREFIX.len()+64+64..64+64+66].to_vec();
-		let receiver_addr = &data[STR_PREFIX.len()+64+64+64..].to_vec();
+		let receiver_addr_len = &data[STR_PREFIX.len() + 64 + 64..64 + 64 + 66].to_vec();
+		let receiver_addr = &data[STR_PREFIX.len() + 64 + 64 + 64..].to_vec();
 
 		let d = core::str::from_utf8(&receiver_addr_len[..]).unwrap();
-		let mut length = usize::from_str_radix(d, 16).map_err(|_| "error parse length from utf8")?;
+		let mut length =
+			usize::from_str_radix(d, 16).map_err(|_| "error parse length from utf8")?;
 		length = length * 2usize;
 
-		let did_hex = Vec::from_hex(&receiver_addr[..length]).map_err(|_| "error parse receiver_addr from utf8")?;
-		let data_str = core::str::from_utf8(&did_hex[..]).map_err(|_| "error not valid utf8 did")?;
+		let did_hex = Vec::from_hex(&receiver_addr[..length])
+			.map_err(|_| "error parse receiver_addr from utf8")?;
+		let data_str =
+			core::str::from_utf8(&did_hex[..]).map_err(|_| "error not valid utf8 did")?;
 
 		let vecs: Vec<&str> = data_str.split(":").collect();
-		ensure!(vecs.len() == 3 && vecs[2].len() > 0, "error not found valid did");
+		ensure!(
+			vecs.len() == 3 && vecs[2].len() > 0,
+			"error not found valid did"
+		);
 
 		let did_ele_hex = Self::from_base58(vecs[2].clone()).map_err(|_| "error Bad Base58")?;
 		let receiver_did_hash = T::Hashing::hash(&did_ele_hex);
 
-		let event_block_num = u32::from_str_radix(core::str::from_utf8(&event_block_number[STR_PREFIX.len()..]).unwrap(), 16)
-				.map_err(|_| "error parse event_block_num from utf8")?;
+		let event_block_num = u32::from_str_radix(
+			core::str::from_utf8(&event_block_number[STR_PREFIX.len()..]).unwrap(),
+			16,
+		)
+		.map_err(|_| "error parse event_block_num from utf8")?;
 
 		let htlc = EventHTLC {
 			eth_contract_addr: contract_addr,
@@ -595,34 +691,48 @@ impl<T: Trait> Module<T> {
 		Ok(htlc)
 	}
 
-	fn parse_refund_event(contract_addr: Vec<u8>, topics: Vec<Vec<u8>>, data: Vec<u8>,
-						event_block_number: Vec<u8>, event_time_stamp: Vec<u8>, tx_hash: Vec<u8>, tx_index: Vec<u8>)
-						-> Result<EventHTLC<T::BlockNumber, T::Balance, T::Hash>, &'static str> {
-
+	fn parse_refund_event(
+		contract_addr: Vec<u8>,
+		topics: Vec<Vec<u8>>,
+		data: Vec<u8>,
+		event_block_number: Vec<u8>,
+		event_time_stamp: Vec<u8>,
+		tx_hash: Vec<u8>,
+		tx_index: Vec<u8>,
+	) -> Result<EventHTLC<T::BlockNumber, T::Balance, T::Hash>, &'static str> {
 		//indexed topics: _msgSender(Address); _recipientAddr(FixedBytes(32));_swapID(FixedBytes(32))
 		let msg_sender = &topics[1][STR_PREFIX.len()..].to_vec();
 		let recipient_addr = &topics[2][STR_PREFIX.len()..].to_vec();
 		let swap_id = T::Hashing::hash(&topics[3][STR_PREFIX.len()..]);
 
 		let random_num_hash = &data[STR_PREFIX.len()..66].to_vec();
-		let receiver_addr_len = &data[STR_PREFIX.len()+64+64+64..64+64+64+66].to_vec();
-		let receiver_addr = &data[STR_PREFIX.len()+64+64+64..].to_vec();
+		let receiver_addr_len = &data[STR_PREFIX.len() + 64 + 64 + 64..64 + 64 + 64 + 66].to_vec();
+		let receiver_addr = &data[STR_PREFIX.len() + 64 + 64 + 64..].to_vec();
 
 		let d = core::str::from_utf8(&receiver_addr_len[..]).unwrap();
-		let mut length = usize::from_str_radix(d, 16).map_err(|_| "error parse length from utf8")?;
+		let mut length =
+			usize::from_str_radix(d, 16).map_err(|_| "error parse length from utf8")?;
 		length = length * 2usize;
 
-		let did_hex = Vec::from_hex(&receiver_addr[..length]).map_err(|_| "error parse receiver_addr from utf8")?;
-		let data_str = core::str::from_utf8(&did_hex[..]).map_err(|_| "error not valid utf8 did")?;
+		let did_hex = Vec::from_hex(&receiver_addr[..length])
+			.map_err(|_| "error parse receiver_addr from utf8")?;
+		let data_str =
+			core::str::from_utf8(&did_hex[..]).map_err(|_| "error not valid utf8 did")?;
 
 		let vecs: Vec<&str> = data_str.split(":").collect();
-		ensure!(vecs.len() == 3 && vecs[2].len() > 0, "error not found valid did");
+		ensure!(
+			vecs.len() == 3 && vecs[2].len() > 0,
+			"error not found valid did"
+		);
 
 		let did_ele_hex = Self::from_base58(vecs[2].clone()).map_err(|_| "error Bad Base58")?;
 		let receiver_did_hash = T::Hashing::hash(&did_ele_hex);
 
-		let event_block_num = u32::from_str_radix(core::str::from_utf8(&event_block_number[STR_PREFIX.len()..]).unwrap(), 16)
-			.map_err(|_| "error parse event_block_num from utf8")?;
+		let event_block_num = u32::from_str_radix(
+			core::str::from_utf8(&event_block_number[STR_PREFIX.len()..]).unwrap(),
+			16,
+		)
+		.map_err(|_| "error parse event_block_num from utf8")?;
 
 		let htlc = EventHTLC {
 			eth_contract_addr: contract_addr,
@@ -662,10 +772,13 @@ impl<T: Trait> Module<T> {
 
 		let mut result: Vec<u8> = vec![];
 		loop {
-		  let mut buffer = vec![0; 1024];
-		  let _read = sp_io::offchain::http_response_read_body(id, &mut buffer, Some(deadline)).map_err(|_e| ());
-		  result = [&result[..], &buffer[..]].concat();
-		  if _read == Ok(0) { break }
+			let mut buffer = vec![0; 1024];
+			let _read = sp_io::offchain::http_response_read_body(id, &mut buffer, Some(deadline))
+				.map_err(|_e| ());
+			result = [&result[..], &buffer[..]].concat();
+			if _read == Ok(0) {
+				break;
+			}
 		}
 		if result.len() > 0 {
 			return Ok(result);
@@ -694,7 +807,9 @@ impl<T: Trait> Module<T> {
 			let swap = Self::swap_data(swap_id);
 			if swap.is_some() {
 				let swap = swap.unwrap();
-				if <system::Module<T>>::block_number() < swap.htlc_block_number + T::BlockNumber::from(swap.expire_height) {
+				if <system::Module<T>>::block_number()
+					< swap.htlc_block_number + T::BlockNumber::from(swap.expire_height)
+				{
 					return true;
 				}
 			}
@@ -703,26 +818,56 @@ impl<T: Trait> Module<T> {
 	}
 
 	//transfer to receiver by did
-	fn transfer_to_did(sender: T::AccountId, receiver_did: Vec<u8>, amount: T::Balance, memo: Vec<u8>) -> dispatch_result {
+	fn transfer_to_did(
+		sender: T::AccountId,
+		receiver_did: Vec<u8>,
+		amount: T::Balance,
+		memo: Vec<u8>,
+	) -> dispatch_result {
 		ensure!(receiver_did.len() > 0, "error receiver_did is empty");
 
-		let receiver_hash = <T::Hash as Decode>::decode(&mut receiver_did.as_slice()).map_err(|_| "error parse receiver_did from utf8")?;
+		let receiver_hash = <T::Hash as Decode>::decode(&mut receiver_did.as_slice())
+			.map_err(|_| "error parse receiver_did from utf8")?;
 		let receiver = <did::Module<T>>::identity_of(receiver_hash.clone());
 		ensure!(receiver.is_some(), "error not valid receiver did");
 
 		let receiver = receiver.unwrap();
-		<pallet_balances::Module<T> as Currency<_>>::transfer(&sender, &receiver, amount, ExistenceRequirement::KeepAlive)?;
-		Self::deposit_event(RawEvent::TransferToDid(sender, receiver, receiver_hash, amount));
+		<pallet_balances::Module<T> as Currency<_>>::transfer(
+			&sender,
+			&receiver,
+			amount,
+			ExistenceRequirement::KeepAlive,
+		)?;
+		Self::deposit_event(RawEvent::TransferToDid(
+			sender,
+			receiver,
+			receiver_hash,
+			amount,
+		));
 		Ok(())
 	}
 
-	fn transfer_to_did_hash(sender: T::AccountId, receiver_did: T::Hash, amount: T::Balance) -> dispatch_result {
+	fn transfer_to_did_hash(
+		sender: T::AccountId,
+		receiver_did: T::Hash,
+		amount: T::Balance,
+	) -> dispatch_result {
 		let receiver = <did::Module<T>>::identity_of(receiver_did.clone());
 		ensure!(receiver.is_some(), "error not valid receiver did");
 
 		let receiver = receiver.unwrap();
-		<pallet_balances::Module<T> as Currency<_>>::transfer(&sender, &receiver, amount, ExistenceRequirement::KeepAlive)?;
-		Self::deposit_event(RawEvent::TransferToDid(sender, receiver, receiver_did, amount));
+		<pallet_balances::Module<T> as Currency<_>>::transfer(
+			&sender,
+			&receiver,
+			amount,
+			ExistenceRequirement::KeepAlive,
+		)?;
+		Self::deposit_event(RawEvent::TransferToDid(
+			sender,
+			receiver,
+			receiver_did,
+			amount,
+		));
 		Ok(())
 	}
 
@@ -730,7 +875,10 @@ impl<T: Trait> Module<T> {
 	fn parse_did(did: Vec<u8>) -> Result<T::AccountId, &'static str> {
 		let data = core::str::from_utf8(&did).map_err(|_| "error not valid utf8 did")?;
 		let vecs: Vec<&str> = data.split(":").collect();
-		ensure!(vecs.len() == 3 && vecs[2].len() > 0, "error not found valid did");
+		ensure!(
+			vecs.len() == 3 && vecs[2].len() > 0,
+			"error not found valid did"
+		);
 
 		let did_ele_hex = Self::from_base58(vecs[2].clone()).map_err(|_| "error Bad Base58")?;
 
@@ -750,13 +898,16 @@ impl<T: Trait> Module<T> {
 		let mut rad_mult: BigUint = One::one();
 
 		for (idx, &byte) in data.as_bytes().iter().enumerate().rev() {
-			let first_idx = B_ALPHA.iter()
-									 .enumerate()
-									 .find(|x| *x.1 == byte)
-									 .map(|x| x.0);
+			let first_idx = B_ALPHA
+				.iter()
+				.enumerate()
+				.find(|x| *x.1 == byte)
+				.map(|x| x.0);
 			match first_idx {
-				Some(i) => { x = x + i.to_biguint().unwrap() * &rad_mult; },
-				None => return Err("InvalidBase58Byte")
+				Some(i) => {
+					x = x + i.to_biguint().unwrap() * &rad_mult;
+				}
+				None => return Err("InvalidBase58Byte"),
 			}
 
 			rad_mult = &rad_mult * &radix;
@@ -779,8 +930,7 @@ impl<T: Trait> frame_support::unsigned::ValidateUnsigned for Module<T> {
 
 	fn validate_unsigned(call: &Self::Call) -> TransactionValidity {
 		match call {
-			Call::update_enevt_htlc(_) => Ok(
-			ValidTransaction {
+			Call::update_enevt_htlc(_) => Ok(ValidTransaction {
 				priority: TransactionPriority::max_value(),
 				requires: vec![],
 				provides: vec![0.encode()],

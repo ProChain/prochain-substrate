@@ -1,0 +1,43 @@
+[package]
+name = "prices"
+version = "0.1.0"
+authors = ["eri0x <eri0x@chain.pro>"]
+edition = "2018"
+
+[dependencies]
+# third-party dependencies
+codec = { package = "parity-scale-codec", version = "1.0.6", default-features = false, features = ["derive"] }
+serde = { version = "1.0.102", optional = true }
+simple-json = { version = '0.1.2', git = "https://github.com/jingleizhang/simple-json.git", default-features = false }
+num-traits = { version = "0.2.10", default-features = false }
+
+# primitives
+node-primitives = { version = "2.0.0", path = "../../primitives", default-features = false }
+sp-core = { version = "2.0.0", git = "https://github.com/ProChain/substrate.git", default-features = false }
+sp-std = { version = "2.0.0", git = "https://github.com/ProChain/substrate.git", default-features = false }
+sp-runtime = { version = "2.0.0", git = "https://github.com/ProChain/substrate.git",default-features = false }
+sp-io = { version = "2.0.0", git = "https://github.com/ProChain/substrate.git", default-features = false }
+
+# frame dependencies
+frame-support = { version = "2.0.0", git = "https://github.com/ProChain/substrate.git", default-features = false }
+frame-system = { version = "2.0.0", git = "https://github.com/ProChain/substrate.git", default-features = false }
+pallet-timestamp = { version = "2.0.0", git = "https://github.com/ProChain/substrate.git", default-features = false }
+utilities = { path = "../utilities", default-features = false }
+
+[dev-dependencies]
+
+
+[features]
+default = ["std"]
+std = [
+	"codec/std",
+	"sp-core/std",
+	"sp-std/std",
+    "simple-json/std",
+	"serde",
+	"sp-runtime/std",
+	"frame-support/std",
+	"frame-system/std",
+	"pallet-timestamp/std",
+	"utilities/std"
+]
