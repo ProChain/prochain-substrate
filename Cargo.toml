@@ -8,7 +8,6 @@ members = [
 	"bin/node/modules/did",
 	"bin/node/modules/ads",
 	"bin/node/modules/prices",
-	"bin/node/modules/utilities",
 	"bin/node/runtime",
 	"bin/node/testing",
 	"bin/node/transaction-factory",

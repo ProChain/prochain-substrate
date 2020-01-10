@@ -5,7 +5,7 @@ var request = require('request');
 
 const ROPSTEN = "https://ropsten.infura.io/v3/32d3935c7ba0400d97a7d8f983753a34";
 const ROPSTEN_URL = "https://api-ropsten.etherscan.io";
-const CONTRACT_ADDRESS = '0xbd261550e087f19A842e375D0031a85525B9714F';
+const CONTRACT_ADDRESS = '0x49e532fa0d95195d6a07be152e481c67715149eb';
 const API_KEY = 'T845RJWFC5DV7F5Y4QZPZXK1AQF5ZENUHT';
 
 var web3 = new Web3(new Web3.providers.HttpProvider(ROPSTEN));
@@ -16,8 +16,9 @@ const Keyring = require('@polkadot/keyring').default;
 //const testKeyring = require("@polkadot/keyring/testing");
 const { ApiPromise, WsProvider } = require('@polkadot/api');
 const { stringToHex } = require('@polkadot/util');
-const WS_PROVIDER = 'ws://127.0.0.1:9944';
-//const WS_PROVIDER = 'wss://substrate.chain.pro/v2/ws';
+
+//const WS_PROVIDER = 'ws://127.0.0.1:9944';
+const WS_PROVIDER = 'wss://substrate.chain.pro/v2/ws';
 
 const provider = new WsProvider(WS_PROVIDER);
 const AUTH_ADDRESS = "5FnHzLERt8crDpCG9BGVckb6uu6P5nCEEr31RkBMh6wWFhJx";
@@ -50,6 +51,7 @@ const run = async () => {
 	const api = await ApiPromise.create({
 		provider,
 		types: {
+			"Did": "Vec<u8>",
 			"ExternalAddress": {
 				"btc": "Vec<u8>",
 				"eth": "Vec<u8>",
@@ -219,7 +221,10 @@ const run = async () => {
 						console.log("inside update _id", record_id);
 					}
 
-					process.exit(0);
+					sleep(5000).then(() => {
+						console.log("sleep 5s to flush db data");
+						process.exit(0);
+					})
 				}
 			}).catch(e => {
 				logger.error(e, 'kickoff_event_fetch internal error');
@@ -229,42 +234,16 @@ const run = async () => {
 	from = to + 1;
 	to = from + FETCH_STEP;
 	db.update({ _id: record_id }, { $set: { from: from, to: to } });
-	console.log("outside update _id", record_id);
+	console.log("outside update _id", record_id, ", from:", from, ", to:", to);
 
+	sleep(5000).then(() => {
+		console.log("sleep 5s to flush db data");
+		process.exit(0);
+	})
 
-	// fs.readFile(`./keys/${AUTH_ADDRESS}.json`, async (err, res) => {
-	// 	if (err) {
-	// 		logger.error(err, 'read key json failed');
-	// 		return false;
-	// 	}
-	// 	const keyring = new Keyring({ type: 'sr25519' });
-
-	// 	const { seed } = JSON.parse(res.toString())
-	// 	const pair = keyring.addFromMnemonic(seed)
-
-	// 	const nonce = api.query.system.accountNonce(pair.address);
-
-	// 	let url = util.format(ROPSTEN_URL + '/api?module=logs&action=getLogs&fromBlock=%s&toBlock=%s&address=%s&apikey=%s', from, to, CONTRACT_ADDRESS, API_KEY);
-	// 	const name_hex = stringToHex("swap");
-	// 	const url_hex = stringToHex(url);
-
-	// 	console.log(url);
-
-	// 	api.tx.oracle.kickoff(name_hex, url_hex)
-	// 		.signAndSend(pair, { nonce }, ({ events = [], status }) => {
-	// 			if (status.isFinalized) {
-	// 				events.forEach(({ phase, event: { data, method, section } }) => {
-	// 					console.log('\t', phase.toString(), `: ${section}.${method}`, data.toString())
-	// 					if (method.includes('ExtrinsicFailed')) {
-	// 						success = false
-	// 					}
-	// 				});
-	// 			}
-	// 		}).catch(e => {
-	// 			logger.error(e, 'kickoff_event_fetch internal error');
-	// 			success = false;
-	// 		})
-	// })
+	function sleep(time) {
+		return new Promise((resolve) => setTimeout(resolve, time));
+	}
 
 	async function get_latest_block_num() {
 		var latest_block_num;

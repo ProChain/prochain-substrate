@@ -69,7 +69,7 @@ pub mod constants;
 use constants::{currency::*, time::*};
 
 mod oracle;
-mod prices;
+//mod prices;
 
 // Make the WASM binary available.
 #[cfg(feature = "std")]
@@ -562,10 +562,10 @@ impl ads::Trait for Runtime {
 	type Event = Event;
 }
 
-impl prices::Trait for Runtime {
-	type Call = Call;
-	type Event = Event;
-}
+// impl prices::Trait for Runtime {
+// 	type Call = Call;
+// 	type Event = Event;
+// }
 
 construct_runtime!(
 	pub enum Runtime where
@@ -601,7 +601,7 @@ construct_runtime!(
 		Did: did::{Module, Storage, Call, Config<T>, Event<T>},
 		Oracle: oracle::{Module, Storage, Call, Event<T>, ValidateUnsigned},
 		Ads: ads::{Module, Storage, Call, Config<T>, Event<T>},
-		Prices: prices::{Module, Storage, Call, Event<T>},
+		//Prices: prices::{Module, Storage, Call, Event<T>},
 	}
 );
 

@@ -59,7 +59,7 @@ const run = async () => {
 	// let hex = didToHex(did);
 	// console.log(hex);
 
-	var did_ele = "0x01a1deace74120fe8d070f84a2036ccc7a7569933c83198982";
+	var did_ele = "0x01c6a1f12ee6222ef62a7ea5dacbd4522ac7bbb99c5d34ec39";
 	console.log("dle_ele:", did_ele);
 	var receiver = hexToDid(did_ele);
 	//let receiver = "did:pra:f6VXkbHFCTpJkYZFkFm3AWVCFmJTZSHg5";

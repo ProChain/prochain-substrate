@@ -63,8 +63,8 @@
 - 测试网API入口 https://ropsten.infura.io/v3/32d3935c7ba0400d97a7d8f983753a34
 - UserA: 0xf7FeA1722F9b27B0666919A5664BaB486a4b18D3
 - UserB: 0xCF5bECb7245E2e6eE2E092F0BD63F6Bd79eF19Fe
-- `ProToken`合约地址: 0x605FE1c2BE58FE2fC3fbc409a7488635ea8AcBd8
-- `ERC20HTLC`合约地址: 0xbd261550e087f19A842e375D0031a85525B9714F
+- `ProToken`合约地址: 0xd2bc5bf7563c6d308ecb36f46f9848bb054223d1
+- `ERC20HTLC`合约地址: 0x49e532fa0d95195d6a07be152e481c67715149eb
 - PRA DEV地址（receiver）: 5CiPPseXPECbkjWCa6MnjNokrgYjMqmKndv2rSnekmSK2DjL
 
 #### 根据randomNumber和timestamp，计算randomNumberHash和swapID
