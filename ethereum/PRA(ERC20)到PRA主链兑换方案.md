@@ -65,7 +65,15 @@
 - UserB: 0xCF5bECb7245E2e6eE2E092F0BD63F6Bd79eF19Fe
 - `ProToken`合约地址: 0xd2bc5bf7563c6d308ecb36f46f9848bb054223d1
 - `ERC20HTLC`合约地址: 0x49e532fa0d95195d6a07be152e481c67715149eb
-- PRA DEV地址（receiver）: 5CiPPseXPECbkjWCa6MnjNokrgYjMqmKndv2rSnekmSK2DjL
+- PRA主网地址（receiver）: did:pra:iSsn2ZV65sGY2g1xdkqe2CT5pc5B6oMhS
+
+##### Eth主网
+- API入口 https://mainnet.infura.io/v3/32d3935c7ba0400d97a7d8f983753a34
+- UserA: 0xf7FeA1722F9b27B0666919A5664BaB486a4b18D3
+- UserB: 0xCF5bECb7245E2e6eE2E092F0BD63F6Bd79eF19Fe
+- `ProToken`合约地址: 0x9041Fe5B3FDEA0f5e4afDC17e75180738D877A01
+- `ERC20HTLC`合约地址: 0x415379f5d396feab48cd26d6ba5e5afdbe9c5e15
+- PRA主网地址（receiver）: did:pra:iSsn2ZV65sGY2g1xdkqe2CT5pc5B6oMhS
 
 #### 根据randomNumber和timestamp，计算randomNumberHash和swapID
 - 使用当前目录下的calculate-ids模块

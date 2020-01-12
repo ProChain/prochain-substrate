@@ -59,9 +59,9 @@ const run = async () => {
 	// let hex = didToHex(did);
 	// console.log(hex);
 
-	var did_ele = "0x01c6a1f12ee6222ef62a7ea5dacbd4522ac7bbb99c5d34ec39";
-	console.log("dle_ele:", did_ele);
-	var receiver = hexToDid(did_ele);
+	var did = "0x0190556d561e7761381590fdfd1b5a1dd52e976e6c9bba825d";
+	console.log("did_raw:", did);
+	var receiver = hexToDid(did);
 	//let receiver = "did:pra:f6VXkbHFCTpJkYZFkFm3AWVCFmJTZSHg5";
 
 	let id = calculateSwapID(randomNumberHash, receiver);

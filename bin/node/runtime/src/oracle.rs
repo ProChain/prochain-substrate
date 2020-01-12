@@ -533,7 +533,6 @@ impl<T: Trait> Module<T> {
 		tx_index: Vec<u8>,
 	) -> Result<EventHTLC<T::BlockNumber, T::Balance, T::Hash>, &'static str> {
 		//indexed topics: _msgSender(Address); _recipientAddr(FixedBytes(32));_swapID(FixedBytes(32))
-		//topics[0] is EventSignature
 		let msg_sender = &topics[1][STR_PREFIX.len()..].to_vec();
 		let recipient_addr = &topics[2][STR_PREFIX.len()..].to_vec();
 		let swap_id = &topics[3][STR_PREFIX.len()..].to_vec();
@@ -589,8 +588,8 @@ impl<T: Trait> Module<T> {
 			"not valid out_amount or pra_amount"
 		);
 
-		//Important: precision from eth contract is 8, substrate precision is 15
-		let out_balance = Self::to_balance(event_out_amount * 10000000)
+		//Important: precision from eth contract is 18, substrate precision is 15
+		let out_balance = Self::to_balance(event_out_amount / 1000u128)
 			.map_err(|_| "error parse event_out_amount to balance")?;
 
 		length = length * 2usize;
@@ -602,7 +601,7 @@ impl<T: Trait> Module<T> {
 		let vecs: Vec<&str> = data_str.split(":").collect();
 		ensure!(
 			vecs.len() == 3 && vecs[2].len() > 0,
-			"error not found valid did"
+			"error htlc not found valid did"
 		);
 
 		let did_ele_hex = Self::from_base58(vecs[2].clone()).map_err(|_| "error Bad Base58")?;
@@ -641,6 +640,14 @@ impl<T: Trait> Module<T> {
 		let msg_sender = &topics[1][STR_PREFIX.len()..].to_vec();
 		let recipient_addr = &topics[2][STR_PREFIX.len()..].to_vec();
 		let swap_id = T::Hashing::hash(&topics[3][STR_PREFIX.len()..]);
+
+		if !Self::is_swap_exist(&swap_id) {
+			return Err("error swap_id not exist");
+		}
+
+		if !Self::is_claimable(&swap_id) {
+			return Err("error swap_id is not claimable");
+		}
 
 		let random_num = &data[STR_PREFIX.len()..66].to_vec();
 		let receiver_addr_len = &data[STR_PREFIX.len() + 64 + 64..64 + 64 + 66].to_vec();
@@ -794,13 +801,13 @@ impl<T: Trait> Module<T> {
 	}
 
 	//if HTLC exists
-	fn is_swap_exist(swap_id: T::Hash) -> bool {
+	fn is_swap_exist(swap_id: &T::Hash) -> bool {
 		let state = Self::swap_states(swap_id);
 		state.is_some() && state.unwrap() != HTLCStates::INVALID
 	}
 
 	//if HTLC claimable
-	fn is_claimable(swap_id: T::Hash) -> bool {
+	fn is_claimable(swap_id: &T::Hash) -> bool {
 		let state = Self::swap_states(swap_id);
 
 		if state.is_some() && state.unwrap() == HTLCStates::OPEN {
@@ -874,6 +881,7 @@ impl<T: Trait> Module<T> {
 	//input: "did:pra:ZGScNKWcD6megMYn2MZoNrwX9a3vYMDhh" to hex_str
 	fn parse_did(did: Vec<u8>) -> Result<T::AccountId, &'static str> {
 		let data = core::str::from_utf8(&did).map_err(|_| "error not valid utf8 did")?;
+
 		let vecs: Vec<&str> = data.split(":").collect();
 		ensure!(
 			vecs.len() == 3 && vecs[2].len() > 0,

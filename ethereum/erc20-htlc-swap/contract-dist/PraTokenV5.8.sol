@@ -4,8 +4,8 @@
 // The Web Interface is https://etherscan.io/token/0x9041fe5b3fdea0f5e4afdc17e75180738d877a01
 pragma solidity ^0.5.8;
 
-interface tokenRecipient { 
-    function receiveApproval(address _from, uint256 _value, address _token, bytes calldata _extraData) external; 
+interface tokenRecipient {
+    function receiveApproval(address _from, uint256 _value, address _token, bytes calldata _extraData) external;
 }
 
 contract Token {
@@ -144,9 +144,9 @@ contract ProToken is StandardToken {
         //receiveApproval(address _from, uint256 _value, address _tokenContract, bytes _extraData)
         //it is assumed that when does this that the call *should* succeed, otherwise one would use vanilla approve instead.
         //require(spender.call(bytes4(bytes32(keccak256("receiveApproval(address,uint256,address,bytes)"))), msg.sender, _value, this, _extraData));
-        
+
         //return true;
-        
+
         tokenRecipient spender = tokenRecipient(_spender);
         if (approve(_spender, _value)) {
             spender.receiveApproval(msg.sender, _value, address(this), _extraData);

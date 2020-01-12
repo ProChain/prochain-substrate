@@ -10,7 +10,6 @@ App = {
 	},
 
 	initWeb3: async function () {
-
 		// Modern dapp browsers...
 		if (window.ethereum) {
 			App.web3Provider = window.ethereum;
@@ -64,7 +63,7 @@ App = {
 			});
 		});
 
-		$.getJSON('ProToken.json', function (data) {
+		$.getJSON('ProTokenMainnet.json', function (data) {
 			App.contracts.praContract = TruffleContract(data);
 			App.contracts.praContract.setProvider(App.web3Provider);
 
@@ -123,8 +122,12 @@ App = {
 		// });
 
 		$("#approve_new").on('click', function () {
-			var v = document.getElementById("input_num").value;
-			var amount = parseFloat(v) * 100000000;
+			var amount = parseFloat(document.getElementById("input_num").value);
+			if (amount < 0.1) {
+				alert("amount must >= 0.1");
+				return;
+			}
+			amount = amount * 1000000000000000000;
 			App.praIntance.approve(App.contracts.htlcContract.address, amount).then(
 				function (result) {
 					if (result.receipt.status == 1) {
@@ -139,8 +142,13 @@ App = {
 		});
 
 		$("#htlc_new").on('click', function () {
-			var value = document.getElementById("input_num").value;
-			var amount = parseFloat(value) * 100000000;
+			var amount = parseFloat(document.getElementById("input_num").value);
+			if (amount < 0.1) {
+				alert("amount must >= 0.1");
+				return;
+			}
+
+			amount = amount * 1000000000000000000;
 
 			var randomNumberHash = document.getElementById("random_num_hash").value;
 			var timeStamp = document.getElementById("time_stamp").value;
@@ -219,10 +227,10 @@ App = {
 	// 	return "0x" + hash.digest('hex');
 	// },
 
-	calculateSwapIds: function () {
-		// counted by second
-		const timestamp = Math.floor(Date.now() / 1000);
-	},
+	// calculateSwapIds: function () {
+	// 	// counted by second
+	// 	const timestamp = Math.floor(Date.now() / 1000);
+	// },
 
 };
 

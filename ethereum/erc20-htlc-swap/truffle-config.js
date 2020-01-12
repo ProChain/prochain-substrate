@@ -29,13 +29,27 @@ module.exports = {
 			timeoutBlocks: 500,  // # of blocks before a deployment times out  (minimum/default: 50)
 			skipDryRun: true,     // Skip dry run before migrations? (default: false for public nets ),
 			from: "0xf7FeA1722F9b27B0666919A5664BaB486a4b18D3" // the contract owner
+		},
+		main: {
+			provider: mainNetProvider,
+			network_id: 1,
+			gas: 5000000,
+			gasPrice: 10 * 1000000000, //10 gwei
+			skipDryRun: true,     // Skip dry run before migrations? (default: false for public nets ),
+			from: "0xf7FeA1722F9b27B0666919A5664BaB486a4b18D3" // the contract owner
 		}
-		// sokol: {
-		//     provider: function () {
-		//         return new HDWalletProvider(mnemonic, "https://sokol.poa.network")
-		//     },
-		//     network_id: 77,
-		//     gasPrice: 1000000000
-		// }
+	},
+	compilers: {
+		solc: {
+			version: "^0.5.8"    // Fetch exact version from solc-bin (default: truffle's version)
+			// docker: true,        // Use "0.5.1" you've installed locally with docker (default: false)
+			// settings: {          // See the solidity docs for advice about optimization and evmVersion
+			//  optimizer: {
+			//    enabled: false,
+			//    runs: 200
+			//  },
+			//  evmVersion: "byzantium"
+			// }
+		}
 	}
 };
