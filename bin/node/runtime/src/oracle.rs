@@ -280,6 +280,8 @@ decl_module! {
 
 							Self::deposit_event(RawEvent::HTLC(htlc.receiver_addr, htlc.eth_contract_addr, htlc.htlc_block_number, htlc.expire_height,
 								htlc.random_number_hash, htlc.swap_id, htlc.sender_addr, htlc.out_amount, htlc.htlc_timestamp));
+						} else {
+							sp_io::misc::print_utf8(b"error HTLC init swap_id already exists");
 						}
 					},
 					HTLCType::Claimed => {
@@ -293,6 +295,8 @@ decl_module! {
 							<SwapData<T>>::remove(&swap_id);
 							<SwapStates<T>>::insert(htlc.swap_id, HTLCStates::COMPLETED);
 							Self::deposit_event(RawEvent::Claim(htlc.receiver_addr, htlc.eth_contract_addr, swap_id, htlc.sender_addr, htlc.random_number_hash));
+						} else {
+							sp_io::misc::print_utf8(b"error HTLC claimed swap_id not exists");
 						}
 					},
 					HTLCType::Refunded => {
@@ -302,6 +306,8 @@ decl_module! {
 							<SwapStates<T>>::insert(htlc.swap_id, HTLCStates::EXPIRED);
 
 							Self::deposit_event(RawEvent::Refund(htlc.receiver_addr, htlc.eth_contract_addr, swap_id, htlc.sender_addr, htlc.random_number_hash));
+						} else {
+							sp_io::misc::print_utf8(b"error HTLC refund swap_id not exists");
 						}
 					},
 					_ =>  Err(Error::<T>::InvalidEventType)?

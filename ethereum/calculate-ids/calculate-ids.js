@@ -55,17 +55,16 @@ const run = async () => {
 	let randomNumberHash = calculateRandomNumberHash(randomNumber, timestamp);
 	console.log('randomNumberHash ' + randomNumberHash.toString('hex'));
 
-	// var did = "did:pra:Lt23xGimVoUNvZ3EXM9FcgBsJXzrSaUo8p";
-	// let hex = didToHex(did);
-	// console.log(hex);
-
-	var did = "0x0190556d561e7761381590fdfd1b5a1dd52e976e6c9bba825d";
-	console.log("did_raw:", did);
-	var receiver = hexToDid(did);
-	//let receiver = "did:pra:f6VXkbHFCTpJkYZFkFm3AWVCFmJTZSHg5";
+	//var did = "0x0190556d561e7761381590fdfd1b5a1dd52e976e6c9bba825d";
+	//console.log("did_raw:", did);
+	//var receiver = hexToDid(did);
+	let receiver = "did:pra:Lt23xGimVoUNvZ3EXM9FcgBsJXzrSaUo8p";
 
 	let id = calculateSwapID(randomNumberHash, receiver);
 	console.log('swapID ' + id.toString('hex'));
+
+	var did_raw = didToHex('did:pra:Lt23xGimVoUNvZ3EXM9FcgBsJXzrSaUo8p');
+	console.log("didRaw:", did_raw);
 }
 
 run();

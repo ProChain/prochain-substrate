@@ -4,12 +4,21 @@ var util = require('util');
 var request = require('request');
 
 const ROPSTEN = "https://ropsten.infura.io/v3/32d3935c7ba0400d97a7d8f983753a34";
-const ROPSTEN_URL = "https://api-ropsten.etherscan.io";
-const CONTRACT_ADDRESS = '0x49e532fa0d95195d6a07be152e481c67715149eb';
+const MAINNET = "https://mainnet.infura.io/v3/32d3935c7ba0400d97a7d8f983753a34";
+
 const API_KEY = 'T845RJWFC5DV7F5Y4QZPZXK1AQF5ZENUHT';
 
-var web3 = new Web3(new Web3.providers.HttpProvider(ROPSTEN));
-const FETCH_STEP = 12;
+//ropsten
+//const CONTRACT_ADDRESS = '0x49e532fa0d95195d6a07be152e481c67715149eb';
+//const API_URL = "https://api-ropsten.etherscan.io";
+//var web3 = new Web3(new Web3.providers.HttpProvider(ROPSTEN));
+//const WS_PROVIDER = 'ws://127.0.0.1:9944';
+
+//mainnet
+const CONTRACT_ADDRESS = '0x415379f5d396feab48cd26d6ba5e5afdbe9c5e15';
+var web3 = new Web3(new Web3.providers.HttpProvider(MAINNET));
+const API_URL = "https://api-cn.etherscan.com";
+const WS_PROVIDER = 'wss://substrate.chain.pro/v2/ws';
 
 //substrate
 const Keyring = require('@polkadot/keyring').default;
@@ -17,10 +26,11 @@ const Keyring = require('@polkadot/keyring').default;
 const { ApiPromise, WsProvider } = require('@polkadot/api');
 const { stringToHex } = require('@polkadot/util');
 
-//const WS_PROVIDER = 'ws://127.0.0.1:9944';
-const WS_PROVIDER = 'wss://substrate.chain.pro/v2/ws';
+//block number step
+const FETCH_STEP = 12;
 
 const provider = new WsProvider(WS_PROVIDER);
+
 const AUTH_ADDRESS = "5FnHzLERt8crDpCG9BGVckb6uu6P5nCEEr31RkBMh6wWFhJx";
 
 const fs = require('fs')
@@ -151,6 +161,8 @@ const run = async () => {
 		}
 	}
 
+
+
 	from = latest_block_num - FETCH_STEP - 1;
 	to = from + FETCH_STEP;
 	let record_id = "";
@@ -193,7 +205,7 @@ const run = async () => {
 		const pair = keyring.addFromMnemonic(seed)
 		const nonce = await api.query.system.accountNonce(pair.address);
 
-		let url = util.format(ROPSTEN_URL + '/api?module=logs&action=getLogs&fromBlock=%s&toBlock=%s&address=%s&apikey=%s', from, to, CONTRACT_ADDRESS, API_KEY);
+		let url = util.format(API_URL + '/api?module=logs&action=getLogs&fromBlock=%s&toBlock=%s&address=%s&apikey=%s', from, to, CONTRACT_ADDRESS, API_KEY);
 		const name_hex = stringToHex("swap");
 		const url_hex = stringToHex(url);
 
@@ -248,7 +260,7 @@ const run = async () => {
 	async function get_latest_block_num() {
 		var latest_block_num;
 		await new Promise((resolve, reject) => {
-			request(util.format(ROPSTEN_URL + '/api?module=proxy&action=eth_blockNumber&apikey=%s', API_KEY), function (error, response, data) {
+			request(util.format(API_URL + '/api?module=proxy&action=eth_blockNumber&apikey=%s', API_KEY), function (error, response, data) {
 				if (response.statusCode == 200) {
 					var data = JSON.parse(data)
 					resolve(data.result);
@@ -268,7 +280,7 @@ const run = async () => {
 	async function get_contract_logs(fromBlock, toBlock) {
 		var logs;
 		await new Promise((resolve, reject) => {
-			request(util.format(ROPSTEN_URL + '/api?module=logs&action=getLogs&fromBlock=%s&toBlock=%s&address=%s&apikey=%s', fromBlock, toBlock, CONTRACT_ADDRESS, API_KEY), function (error, response, data) {
+			request(util.format(API_URL + '/api?module=logs&action=getLogs&fromBlock=%s&toBlock=%s&address=%s&apikey=%s', fromBlock, toBlock, CONTRACT_ADDRESS, API_KEY), function (error, response, data) {
 				var data = JSON.parse(data)
 				if (data.message == 'OK') {
 					resolve(data.result);
@@ -287,7 +299,7 @@ const run = async () => {
 	async function get_contract_abi() {
 		var abi;
 		await new Promise((resolve, reject) => {
-			request(util.format(ROPSTEN_URL + '/api?module=contract&action=getabi&address=%s&apikey=%s', CONTRACT_ADDRESS, API_KEY), function (error, response, data) {
+			request(util.format(API_URL + '/api?module=contract&action=getabi&address=%s&apikey=%s', CONTRACT_ADDRESS, API_KEY), function (error, response, data) {
 				if (response.statusCode == 200) {
 					var data = JSON.parse(data)
 					resolve(data.result);
