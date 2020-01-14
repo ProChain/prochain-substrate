@@ -1,22 +1,21 @@
 //ethereum web3
-var Web3 = require('web3');
-var util = require('util');
-var request = require('request');
-
-const ROPSTEN = "https://ropsten.infura.io/v3/32d3935c7ba0400d97a7d8f983753a34";
-const MAINNET = "https://mainnet.infura.io/v3/32d3935c7ba0400d97a7d8f983753a34";
+let Web3 = require('web3');
+let util = require('util');
+let request = require('request');
 
 const API_KEY = 'T845RJWFC5DV7F5Y4QZPZXK1AQF5ZENUHT';
 
 //ropsten
+//const ROPSTEN = "https://ropsten.infura.io/v3/32d3935c7ba0400d97a7d8f983753a34";
 //const CONTRACT_ADDRESS = '0x49e532fa0d95195d6a07be152e481c67715149eb';
 //const API_URL = "https://api-ropsten.etherscan.io";
-//var web3 = new Web3(new Web3.providers.HttpProvider(ROPSTEN));
+//let web3 = new Web3(new Web3.providers.HttpProvider(ROPSTEN));
 //const WS_PROVIDER = 'ws://127.0.0.1:9944';
 
 //mainnet
+const MAINNET = "https://mainnet.infura.io/v3/32d3935c7ba0400d97a7d8f983753a34";
 const CONTRACT_ADDRESS = '0x415379f5d396feab48cd26d6ba5e5afdbe9c5e15';
-var web3 = new Web3(new Web3.providers.HttpProvider(MAINNET));
+let web3 = new Web3(new Web3.providers.HttpProvider(MAINNET));
 const API_URL = "https://api-cn.etherscan.com";
 const WS_PROVIDER = 'wss://substrate.chain.pro/v2/ws';
 
@@ -25,9 +24,12 @@ const Keyring = require('@polkadot/keyring').default;
 //const testKeyring = require("@polkadot/keyring/testing");
 const { ApiPromise, WsProvider } = require('@polkadot/api');
 const { stringToHex } = require('@polkadot/util');
+const globalNonce = {}
 
 //block number step
 const FETCH_STEP = 12;
+const SLEEP_TIME = 5;
+const LOOP_TIME = 6;
 
 const provider = new WsProvider(WS_PROVIDER);
 
@@ -39,25 +41,43 @@ const log4js = require('log4js')
 log4js.configure({
 	appenders: {
 		file: {
-			type: 'file',
-			filename: `./logs/creation.log`,
+			type: 'dateFile',
+			filename: `./logs/deputy.log`,
 			layout: {
 				type: 'pattern',
-				pattern: '%d{MM/dd-hh:mm.ss.SSS} %p - %m',
+				pattern: '%d{yyyy/MM/dd-hh:mm.ss} %p - %m',
+			},
+			alwaysIncludePattern: true,
+			daysToKeep: 100
+		},
+		console: { type: 'console' },
+		error_file: {
+			type: 'dateFile',
+			filename: `./logs/error.log`,
+			alwaysIncludePattern: true,
+			daysToKeep: 100,
+			layout: {
+				type: 'pattern',
+				pattern: '%d{yyyy/MM/dd-hh:mm.ss} %p - %m',
 			}
 		}
 	},
 	categories: {
 		default: {
-			appenders: ['file'],
+			appenders: ['file', 'console'],
 			level: 'debug'
-		}
+		},
+		error_log: { appenders: ['error_file'], level: 'error' }
 	}
 })
 const logger = log4js.getLogger()
+logger.level = 'debug';
+
+//const sleep = (waitTimeInMs) => new Promise(resolve => setTimeout(resolve, waitTimeInMs));
+let sleep = require('sleep');
 
 const run = async () => {
-	var db = datastore({ filename: './nedb/datafile', autoload: true })
+	let db = datastore({ filename: './nedb/datafile', autoload: true })
 	const api = await ApiPromise.create({
 		provider,
 		types: {
@@ -144,126 +164,191 @@ const run = async () => {
 			}
 		}
 	})
-	console.log('api created -----')
+	logger.debug('api created -----')
 
-	var latest_block_num = await get_latest_block_num()
-	console.log("latest_block_num:", latest_block_num);
-
-	var abi = await get_contract_abi()
-	var abi_json = JSON.parse(abi);
-	var event_map = new Map();
-	var event_name_map = new Map();
+	let abi = await get_contract_abi()
+	let abi_json = JSON.parse(abi);
+	let event_map = new Map();
+	let event_name_map = new Map();
 	for (index in abi_json) {
 		if (abi_json[index].type == 'event') {
-			var event_sign = await web3.eth.abi.encodeEventSignature(abi_json[index]);
+			let event_sign = await web3.eth.abi.encodeEventSignature(abi_json[index]);
 			event_map.set(event_sign, abi_json[index])
 			event_name_map.set(event_sign, abi_json[index].name);
 		}
 	}
 
+	//key pair
+	let res = fs.readFileSync(`./keys/${AUTH_ADDRESS}.json`, 'utf8');
+	const keyring = new Keyring({ type: 'sr25519' });
+	const { seed } = JSON.parse(res.toString());
+	const pair = keyring.addFromMnemonic(seed);
 
+	let latest_block_num = await get_latest_block_num()
+	let from = latest_block_num - FETCH_STEP - 1;
+	let to = from + FETCH_STEP;
 
-	from = latest_block_num - FETCH_STEP - 1;
-	to = from + FETCH_STEP;
-	let record_id = "";
+	while (true) {
+		//sleep 60s to fetch event data
+		sleep.sleep(LOOP_TIME);
 
-	//从上次处理后的block_num继续查
-	let htlc_events = await db.findOne({ event_type: 'htlc_events' })
+		//从上次处理后的block_num继续查
+		let htlc_events = await db.findOne({ event_type: 'htlc_events' })
+		let record_id = "";
+		if (htlc_events === null) {
+			let result = await db.insert({ event_type: 'htlc_events', from: from, to: to, });
 
-	if (htlc_events === null) {
-		let result = await db.insert({ event_type: 'htlc_events', from: from, to: to, });
+			record_id = result._id;
+			logger.info("init insert _id ", record_id);
+		} else {
+			from = htlc_events.from;
+			to = htlc_events.to;
+			record_id = htlc_events._id;
+		}
 
-		record_id = result._id;
-		console.log("insert _id", record_id);
-	} else {
-		from = htlc_events.from;
-		to = htlc_events.to;
-		record_id = htlc_events._id;
-
+		latest_block_num = await get_latest_block_num()
 		if (to + FETCH_STEP >= latest_block_num) {
-			console.log("to + FETCH_STEP", to, FETCH_STEP, " >= latest_block_num, exit");
-			process.exit(0);
-		}
-	}
-
-	console.log("from:", from, ", to:", to, ", record_id:", record_id);
-
-	var enent_logs = await get_contract_logs(from, to);
-	if (enent_logs != undefined) {
-		for (index in enent_logs) {
-			var raw = enent_logs[index].data;
-			var topics = enent_logs[index].topics;
-			var emit_event_json = event_map.get(topics[0]);
-			var event_name = event_name_map.get(topics[0]);
-			var result = web3.eth.abi.decodeLog(emit_event_json.inputs, raw, topics);
-			console.log("got events", event_name);
+			logger.info("to + FETCH_STEP", to, FETCH_STEP, " >= latest_block_num ", latest_block_num, ", continue");
+			continue;
 		}
 
-		var res = fs.readFileSync(`./keys/${AUTH_ADDRESS}.json`, 'utf8');
-		const keyring = new Keyring({ type: 'sr25519' });
-		const { seed } = JSON.parse(res.toString())
-		const pair = keyring.addFromMnemonic(seed)
-		const nonce = await api.query.system.accountNonce(pair.address);
+		logger.info("from:", from, ", to:", to);
 
-		let url = util.format(API_URL + '/api?module=logs&action=getLogs&fromBlock=%s&toBlock=%s&address=%s&apikey=%s', from, to, CONTRACT_ADDRESS, API_KEY);
-		const name_hex = stringToHex("swap");
-		const url_hex = stringToHex(url);
+		let enent_logs = await get_contract_logs(from, to);
+		if (enent_logs != undefined) {
+			for (index in enent_logs) {
+				let topics = enent_logs[index].topics;
+				let event_name = event_name_map.get(topics[0]);
+				logger.info("get_contract_logs: ", event_name);
+			}
 
-		console.log("url:", url, "pair,", pair.address.toString());
-		api.tx.oracle.kickoff(name_hex, url_hex)
-			.signAndSend(pair, { nonce }, ({ events = [], status }) => {
-				console.log("Transaction status:", status.type);
-				let success = true;
+			let url = util.format(API_URL + '/api?module=logs&action=getLogs&fromBlock=%s&toBlock=%s&address=%s&apikey=%s', from, to, CONTRACT_ADDRESS, API_KEY);
+			try {
+				const nonce = api.query.system.accountNonce(pair.address) + 1;
+				console.log('nonce ', nonce);
+				let job_name = "swap_" + from.toString() + "_" + to.toString();
 
-				if (status.isFinalized) {
-					console.log("Completed at block hash", status.asFinalized.toHex());
-					console.log("Events:");
+				api.tx.oracle.kickoff(stringToHex(job_name), stringToHex(url))
+					.signAndSend(pair, { nonce }, ({ events = [], status }) => {
+						logger.info("Transaction status:", status.type);
 
-					events.forEach(({ phase, event: { data, method, section } }) => {
-						console.log('\t', phase.toString(), `: ${section}.${method}`, data.toString())
-						if (method.includes('ExtrinsicFailed')) {
-							success = false
+						let success = true;
+						if (status.isFinalized) {
+							logger.info("Completed at block hash", status.asFinalized.toHex());
+							logger.info("Events:");
+
+							events.forEach(({ phase, event: { data, method, section } }) => {
+								logger.info('phase:\t', phase.toString(), `: ${section}.${method}`, data.toString())
+								if (method.includes('ExtrinsicFailed')) {
+									success = false
+								}
+							});
 						}
-					});
 
-					if (success) {
-						from = to + 1;
-						to = from + FETCH_STEP;
-						db.update({ _id: record_id }, { $set: { from: from, to: to } });
-						console.log("inside update _id", record_id);
-					}
+						if (status.error) {
+							logger.error(`status error, submit result failed`);
+							success = false;
+						}
 
-					sleep(5000).then(() => {
-						console.log("sleep 5s to flush db data");
-						process.exit(0);
+						if (success) {
+							from = to + 1;
+							to = from + FETCH_STEP;
+							db.update({ _id: record_id }, { $set: { from: from, to: to } });
+							logger.info("success, then update _id", record_id);
+
+							//sleep 5s to flush db data
+							sleep.sleep(SLEEP_TIME);
+						}
+					}).catch(e => {
+						logger.error(e, 'kickoff_event_fetch internal error');
 					})
-				}
-			}).catch(e => {
-				logger.error(e, 'kickoff_event_fetch internal error');
-			})
+			}
+			catch (error) {
+				logger.error(error, 'sign error-----')
+			}
+		} else {
+			from = to + 1;
+			to = from + FETCH_STEP;
+			db.update({ _id: record_id }, { $set: { from: from, to: to } });
+			logger.info("get empty logs, then update _id", record_id);
+
+			//sleep 5s to flush db data
+			sleep.sleep(SLEEP_TIME);
+		}
 	}
 
-	from = to + 1;
-	to = from + FETCH_STEP;
-	db.update({ _id: record_id }, { $set: { from: from, to: to } });
-	console.log("outside update _id", record_id, ", from:", from, ", to:", to);
+	// let enent_logs = await get_contract_logs(from, to);
+	// if (enent_logs != undefined) {
+	// 	for (index in enent_logs) {
+	// 		let raw = enent_logs[index].data;
+	// 		let topics = enent_logs[index].topics;
+	// 		let emit_event_json = event_map.get(topics[0]);
+	// 		let event_name = event_name_map.get(topics[0]);
+	// 		let result = web3.eth.abi.decodeLog(emit_event_json.inputs, raw, topics);
+	// 		logger.info("got events", event_name);
+	// 	}
 
-	sleep(5000).then(() => {
-		console.log("sleep 5s to flush db data");
-		process.exit(0);
-	})
+	// 	let res = fs.readFileSync(`./keys/${AUTH_ADDRESS}.json`, 'utf8');
+	// 	const keyring = new Keyring({ type: 'sr25519' });
+	// 	const { seed } = JSON.parse(res.toString())
+	// 	const pair = keyring.addFromMnemonic(seed)
+	// 	const nonce = await api.query.system.accountNonce(pair.address);
 
-	function sleep(time) {
-		return new Promise((resolve) => setTimeout(resolve, time));
-	}
+	// 	let url = util.format(API_URL + '/api?module=logs&action=getLogs&fromBlock=%s&toBlock=%s&address=%s&apikey=%s', from, to, CONTRACT_ADDRESS, API_KEY);
+	// 	const name_hex = stringToHex("swap");
+	// 	const url_hex = stringToHex(url);
+
+	// 	logger.info("url:", url);
+	// 	api.tx.oracle.kickoff(name_hex, url_hex)
+	// 		.signAndSend(pair, { nonce }, ({ events = [], status }) => {
+	// 			logger.info("Transaction status:", status.type);
+	// 			let success = true;
+
+	// 			if (status.isFinalized) {
+	// 				logger.info("Completed at block hash", status.asFinalized.toHex());
+	// 				logger.info("Events:");
+
+	// 				events.forEach(({ phase, event: { data, method, section } }) => {
+	// 					logger.info('\t', phase.toString(), `: ${section}.${method}`, data.toString())
+	// 					if (method.includes('ExtrinsicFailed')) {
+	// 						success = false
+	// 					}
+	// 				});
+
+	// 				if (success) {
+	// 					from = to + 1;
+	// 					to = from + FETCH_STEP;
+	// 					db.update({ _id: record_id }, { $set: { from: from, to: to } });
+	// 					logger.info("inside update _id", record_id);
+	// 				}
+
+	// 				sleep(5000).then(() => {
+	// 					logger.info("sleep 5s to flush db data");
+	// 					process.exit(0);
+	// 				})
+	// 			}
+	// 		}).catch(e => {
+	// 			logger.error(e, 'kickoff_event_fetch internal error');
+	// 		})
+	// }
+
+	// from = to + 1;
+	// to = from + FETCH_STEP;
+	// db.update({ _id: record_id }, { $set: { from: from, to: to } });
+	// logger.info("outside update, from:", from, ", to:", to);
+
+	// sleep(5000).then(() => {
+	// 	logger.info("sleep 5s to flush db data");
+	// 	process.exit(0);
+	// })
 
 	async function get_latest_block_num() {
-		var latest_block_num;
+		let latest_block_num;
 		await new Promise((resolve, reject) => {
 			request(util.format(API_URL + '/api?module=proxy&action=eth_blockNumber&apikey=%s', API_KEY), function (error, response, data) {
 				if (response.statusCode == 200) {
-					var data = JSON.parse(data)
-					resolve(data.result);
+					let data_json = JSON.parse(data)
+					resolve(data_json.result);
 				} else {
 					reject(error)
 				}
@@ -271,19 +356,19 @@ const run = async () => {
 		}).then(result => {
 			latest_block_num = parseInt(result, 16);
 		}).catch(err => {
-			console.log(err, 'get_latest_block_num request error')
+			logger.info(err, 'get_latest_block_num return error')
 		})
 
 		return latest_block_num;
 	}
 
 	async function get_contract_logs(fromBlock, toBlock) {
-		var logs;
+		let logs;
 		await new Promise((resolve, reject) => {
 			request(util.format(API_URL + '/api?module=logs&action=getLogs&fromBlock=%s&toBlock=%s&address=%s&apikey=%s', fromBlock, toBlock, CONTRACT_ADDRESS, API_KEY), function (error, response, data) {
-				var data = JSON.parse(data)
-				if (data.message == 'OK') {
-					resolve(data.result);
+				let data_json = JSON.parse(data);
+				if (data_json.message == 'OK') {
+					resolve(data_json.result);
 				} else {
 					reject(error)
 				}
@@ -291,18 +376,20 @@ const run = async () => {
 		}).then(result => {
 			logs = result;
 		}).catch(err => {
-			console.log(err, 'get_contract_logs request error')
+			if (err != null) {
+				logger.info(err, 'get_contract_logs return error')
+			}
 		})
 		return logs;
 	}
 
 	async function get_contract_abi() {
-		var abi;
+		let abi;
 		await new Promise((resolve, reject) => {
 			request(util.format(API_URL + '/api?module=contract&action=getabi&address=%s&apikey=%s', CONTRACT_ADDRESS, API_KEY), function (error, response, data) {
-				if (response.statusCode == 200) {
-					var data = JSON.parse(data)
-					resolve(data.result);
+				if (response != null && response.statusCode != null && response.statusCode == 200) {
+					let data_json = JSON.parse(data)
+					resolve(data_json.result);
 				} else {
 					reject(error)
 				}
@@ -310,7 +397,7 @@ const run = async () => {
 		}).then(result => {
 			abi = result;
 		}).catch(err => {
-			console.log(err, 'get_contract_abi request error')
+			logger.info(err, 'get_contract_abi return error')
 		})
 		return abi;
 	}

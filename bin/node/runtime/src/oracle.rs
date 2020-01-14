@@ -4,6 +4,7 @@ use codec::{Decode, Encode};
 use frame_support::{
 	decl_error, decl_event, decl_module, decl_storage, ensure,
 	traits::{Currency, ExistenceRequirement},
+	weights::SimpleDispatchInfo,
 	Parameter, StorageMap, StorageValue,
 };
 use frame_system::{
@@ -216,6 +217,7 @@ decl_module! {
 		}
 
 		// Initializing event fetch jobs
+		#[weight = SimpleDispatchInfo::FixedNormal(500_000)]
 		fn kickoff(origin, event_name: Vec<u8>, event_url: Vec<u8>) -> dispatch_result {
 			let sender = ensure_signed(origin)?;
 			ensure!(Self::is_authority(&sender), "error not authority sender");

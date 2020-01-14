@@ -73,7 +73,7 @@
 - UserB: 0xCF5bECb7245E2e6eE2E092F0BD63F6Bd79eF19Fe
 - `ProToken`合约地址: 0x9041Fe5B3FDEA0f5e4afDC17e75180738D877A01
 - `ERC20HTLC`合约地址: 0x415379f5d396feab48cd26d6ba5e5afdbe9c5e15
-- PRA主网地址（receiver）: did:pra:iSsn2ZV65sGY2g1xdkqe2CT5pc5B6oMhS
+- PRA主网地址（receiver）: did:pra:Lt23xGimVoUNvZ3EXM9FcgBsJXzrSaUo8p
 
 #### 根据randomNumber和timestamp，计算randomNumberHash和swapID
 - 使用当前目录下的calculate-ids模块
