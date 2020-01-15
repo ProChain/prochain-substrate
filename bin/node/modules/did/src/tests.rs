@@ -301,13 +301,17 @@ fn should_pass_lock() {
 
     prepare_dids_for_test();
 
-    assert_ok!(DidModule::lock(Origin::signed(2), 10, 5));
+    assert_ok!(DidModule::lock(Origin::signed(2), 1000, 5));
 
-    assert_eq!(Balances::free_balance(&2), 8990);
+    assert_eq!(Balances::free_balance(&2), 8000);
     assert_eq!(Balances::free_balance(&1), 10025);
 
 
     assert_ok!(DidModule::lock(Origin::signed(3), 1000, 5));
+
+    assert_eq!(Balances::free_balance(&1), 10030);
+    assert_eq!(Balances::free_balance(&2), 8020);
+    assert_eq!(Balances::free_balance(&3), 9000);
 
     assert_ok!(DidModule::create(
       Origin::signed(1),
@@ -321,9 +325,11 @@ fn should_pass_lock() {
 
     assert_ok!(DidModule::lock(Origin::signed(4), 1000, 5));
 
-    assert_eq!(Balances::free_balance(&3), 9025);
+    // get 20% part of locked funds
+    assert_eq!(Balances::free_balance(&2), 8025);
+    // get 80% part of locked funds
+    assert_eq!(Balances::free_balance(&3), 9020);
     assert_eq!(Balances::free_balance(&4), 9000);
-
   });
 }
 

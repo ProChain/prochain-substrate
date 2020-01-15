@@ -11,7 +11,7 @@ use frame_support::{
 	traits::{Currency, ReservableCurrency, ExistenceRequirement, Get},
 };
 use sp_runtime::{
-	RuntimeDebug, DispatchResult,
+	RuntimeDebug, DispatchResult, Permill,
 	traits::{CheckedSub, CheckedAdd, Hash, SaturatedConversion,}
 };
 use frame_system::{self as system, ensure_signed};
@@ -54,6 +54,7 @@ pub struct MetadataRecord<AccountId, Hash, Balance, Moment> {
 	did: Did,
 	locked_records: Option<LockedRecords<Balance, Moment>>,
 	unlocked_records: Option<UnlockedRecords<Balance, Moment>>,
+	is_partner: bool,
 	social_account: Option<Hash>,
 	subordinate_count: u64,
 	group_name: Option<Vec<u8>>,
@@ -173,6 +174,7 @@ decl_module! {
 				locked_records: None,
 				social_account: social_account_hash,
 				unlocked_records: None,
+				is_partner: false,
 				subordinate_count: 0,
 				group_name: None,
 				external_address: ExternalAddress {
@@ -254,21 +256,34 @@ decl_module! {
 			// make sure the superior exists
 			ensure!(<Metadata<T>>::exists(metadata.superior), "superior does not exsit");
 
+			let level2_metadata = Self::metadata(metadata.superior);
+
 			let locked_funds;
 			let mut rewards_ratio = 20;// basis rewards_ratio is 20%
 
-			if metadata.locked_records.is_none() {
+			if !metadata.is_partner {
 				ensure!(value >= Self::min_deposit(), "you must lock at least 50 pra first time");
 
 				let fee = Self::fee_to_previous();
 
 				locked_funds = value - fee;
 
-				let memo = "新群主抵押分成".as_bytes().to_vec();
+				let memo = "抵押分成".as_bytes().to_vec();
 
-				Self::transfer_by_did(user_key, metadata.superior, fee, memo)?;
+
+				// second level division
+				if level2_metadata.superior != Default::default() {
+					let fee1 = Permill::from_percent(80) * fee;
+					let fee2 = Permill::from_percent(20) * fee;
+
+					Self::transfer_by_did(user_key, metadata.superior, fee1, memo.clone())?;
+					Self::transfer_by_did(user_key, level2_metadata.superior, fee2, memo.clone())?;
+				} else {
+					Self::transfer_by_did(user_key, metadata.superior, fee, memo)?;
+				}
 
 				<pallet_balances::Module<T>>::reserve(&sender, locked_funds)?;
+				metadata.is_partner = true;
 			} else {
 				let locked_records = metadata.locked_records.unwrap();
 

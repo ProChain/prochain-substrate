@@ -69,6 +69,7 @@ To start up the Prochain node, run:
     "did": "Did",
     "locked_records": "Option<LockedRecords<Balance, Moment>>",
     "unlocked_records": "Option<UnlockedRecords<Balance, Moment>>",
+    "is_partner": "bool",
     "social_account": "Option<Hash>",
     "subordinate_count": "u64",
     "group_name": "Option<Vec<u8>>",
