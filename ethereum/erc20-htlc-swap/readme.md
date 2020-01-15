@@ -14,7 +14,7 @@
 truffle migrate --network ropsten
 
 4. 启动
-npm run dev
+node index.js
 
-5. http://localhost:3000
+5. http://localhost:3005
 

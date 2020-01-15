@@ -20,7 +20,6 @@ rls*.log
 **/wip/*.stderr
 .local
 node_modules
-package-lock.json
 yarn.lock
 keys
 creation.log
