@@ -115,12 +115,9 @@ App = {
 
 	bindEvents: function () {
 		$("#approve_new").on('click', function () {
-			var amount = parseFloat(document.getElementById("input_num").value);
-			if (amount < 0.1) {
-				alert("amount must >= 0.1");
-				return;
-			}
-			amount = amount * 1000000000000000000;
+			//TODO：若approve有效，将该按钮disable，无需再次approve
+
+			var amount = 500000 * 1000000000000000000;
 			App.praIntance.approve(App.contracts.htlcContract.address, amount).then(
 				function (result) {
 					if (result.receipt.status == 1) {
@@ -136,7 +133,7 @@ App = {
 
 		$("#htlc_new").on('click', function () {
 			var amount = parseFloat(document.getElementById("input_num").value);
-			if (amount < 0.1) {
+			if (amount !== amount || amount < 0.1) {
 				alert("amount must >= 0.1");
 				return;
 			}
@@ -145,20 +142,25 @@ App = {
 
 			var randomNum = document.getElementById("random_num").value;
 			var did = document.getElementById("did").value;
+			if (did == null || did.length < 11) {
+				alert("did must be valid");
+				return;
+			}
 
-			$.get("/getRandomNumberHash?randomNumber=" + randomNum + "&receiver=" + did, function (data) {
+			$.get("/getRandomNumberHash?randomNumber=" + randomNum + "&receiver=" + did + "&amount=" + amount, function (data) {
 				if (data == null || data == "Error" || data.code != 0) {
-					alert('提示 http 500 错误');
+					alert('提示 http 500 错误，请重新发起兑换');
+					return;
 				}
 
 				var timestamp = data.data.timestamp;
-				App.swapID = data.data.swapID;
 				var randomNumberHash = data.data.randomNumberHash;
 
 				App.htlcIntance.htlc(randomNumberHash, timestamp, App.heightSpan, App.recipientAddr, amount, amount, did).then(
 					function (result) {
 						if (result.receipt.status == 1) {
 							console.log("status success!!");
+							App.swapID = data.data.swapID;
 						} else {
 							console.log("status fail!!");
 						}
@@ -172,10 +174,18 @@ App = {
 		$("#claim").on('click', function () {
 			var randomNum = document.getElementById("random_num").value;
 
+			if (App.swapId == null || App.swapId === '') {
+				alert('提示 Swap Id 无效，请先发起一笔htlc兑换');
+				return;
+			}
+
+			console.log(App.swapId);
+
 			App.htlcIntance.claim(App.swapId, randomNum).then(
 				function (result) {
 					if (result.receipt.status == 1) {
 						console.log("status success!!");
+						App.swapId = '';
 					} else {
 						console.log("status fail!!");
 					}
@@ -186,10 +196,16 @@ App = {
 		});
 
 		$("#refund").on('click', function () {
+			if (App.swapId == null || App.swapId === '') {
+				alert('提示 Swap Id 无效，请先发起一笔htlc兑换');
+				return;
+			}
+
 			App.htlcIntance.refund(App.swapId).then(
 				function (result) {
 					if (result.receipt.status == 1) {
 						console.log("status success!!");
+						App.swapId = '';
 					} else {
 						console.log("status fail!!");
 					}
@@ -205,32 +221,6 @@ App = {
 		var r = window.location.search.substr(1).match(reg);
 		if (r != null) return unescape(r[2]); return null;
 	},
-
-	// calculateRandomNumberHash: function () {
-	//     var randomNumber = document.getElementById("random_num").value;
-	//     var timestamp = document.getElementById("time_stamp").value;
-
-	//     const timestampHexStr = timestamp.toString(16);
-	//     var timestampHexStrFormat = timestampHexStr;
-
-	//     // timestampHexStrFormat should be the hex string of a 32-length byte array.
-	//     // Fill 0 if the timestampHexStr length is less than 64
-	//     for (var i = 0; i < 16 - timestampHexStr.length; i++) {
-	//         timestampHexStrFormat = '0' + timestampHexStrFormat;
-	//     }
-
-	//     const timestampBytes = Buffer.from(timestampHexStrFormat, "hex");
-	//     const newBuffer = Buffer.concat([Buffer.from(randomNumber.substring(2, 66), "hex"), timestampBytes]);
-	//     const hash = crypto.createHash('sha256');
-	//     hash.update(newBuffer);
-	//     return "0x" + hash.digest('hex');
-	// },
-
-	// calculateSwapIds: function () {
-	//     // counted by second
-	//     const timestamp = Math.floor(Date.now() / 1000);
-	// },
-
 };
 
 $(function () {

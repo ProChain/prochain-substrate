@@ -21,22 +21,22 @@
 		</div>
 		<div class="form-horizontal">
 			<div class="form-group">
+				<button for="approve_new" class="btn btn-primary" id="approve_new">approve允许扣款</button>
+				<label>每个account只须调用一次</label>
+			</div>
+		</div>
+		<div class="form-horizontal">
+			<div class="form-group">
 				<label>数量:</label>
 				<input id="input_num" placeholder="大于等于0.1" size="50"></input>
 			</div>
 			<div class="form-group">
-				<button for="approve_new" class="btn btn-primary" id="approve_new">approve允许扣款</button>
-			</div>
-
-		</div>
-		<div class="form-horizontal">
-			<div class="form-group">
 				<label>DID:</label>
 				<input id="did" placeholder="收款did" size="50"></input>
 			</div>
-			<div class="form-group">
-				<label>随机数:</label>
-				<input id="random_num" placeholder="0x开头的hex_string" size="50"></input>
+			<div class="form-group" hidden>
+				<label>随机数（自动生成）:</label>
+				<input id="random_num" placeholder="0x开头的hex_string" size="50" readonly="true"></input>
 			</div>
 			<div class="form-group">
 				<button for="htlc_new" class="btn btn-primary " id="htlc_new">htlc发起兑换</button>
@@ -56,6 +56,19 @@
 	<script src="js/web3.min.js"></script>
 	<script src="js/truffle-contract.js"></script>
 	<script src="js/app.js"></script>
+	<script type="text/javascript">
+		var chars = ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'a', 'b', 'c', 'd', 'e', 'f'];
+		function generateMixed(n) {
+			var res = "";
+			for (var i = 0; i < n; i++) {
+				var id = Math.ceil(Math.random() * 15);
+				res += chars[id];
+			}
+			return res;
+		}
+		var randomNum = "0x" + generateMixed(32);
+		document.getElementById("random_num").value = randomNum;
+	</script>
 </body>
 
 </html>

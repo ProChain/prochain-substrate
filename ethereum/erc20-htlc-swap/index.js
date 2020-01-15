@@ -55,6 +55,9 @@ app.use(express.static('contract-dist'));
 app.get("/getRandomNumberHash", function (req, res) {
 	var randomNumber = req.query.randomNumber;
 	var receiver = req.query.receiver;
+	var amount = req.query.amount;
+	console.log('amount ', amount);
+
 	const timestamp = Math.floor(Date.now() / 1000);
 
 	let randomNumberHash = calculateRandomNumberHash(randomNumber, timestamp);
