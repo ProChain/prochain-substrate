@@ -34,7 +34,7 @@
 				<label>DID:</label>
 				<input id="did" placeholder="收款did" size="50"></input>
 			</div>
-			<div class="form-group" hidden>
+			<div class="form-group">
 				<label>随机数（自动生成）:</label>
 				<input id="random_num" placeholder="0x开头的hex_string" size="50" readonly="true"></input>
 			</div>
@@ -66,7 +66,7 @@
 			}
 			return res;
 		}
-		var randomNum = "0x" + generateMixed(32);
+		var randomNum = "0x" + generateMixed(64);
 		document.getElementById("random_num").value = randomNum;
 	</script>
 </body>
