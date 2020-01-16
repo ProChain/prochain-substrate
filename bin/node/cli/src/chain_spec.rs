@@ -1,4 +1,4 @@
-// Copyright 2018-2019 Parity Technologies (UK) Ltd.
+// Copyright 2018-2020 Parity Technologies (UK) Ltd.
 // This file is part of Substrate.
 
 // Substrate is free software: you can redistribute it and/or modify
@@ -59,9 +59,12 @@ struct Allocation {
 /// Additional parameters for some Substrate core modules,
 /// customizable from the chain spec.
 #[derive(Default, Clone, Serialize, Deserialize, ChainSpecExtension)]
+#[serde(rename_all = "camelCase")]
 pub struct Extensions {
 	/// Block numbers with known hashes.
 	pub fork_blocks: sc_client::ForkBlocks<Block>,
+	/// Known bad block hashes.
+	pub bad_blocks: sc_client::BadBlocks<Block>,
 }
 
 /// Specialized `ChainSpec`.
