@@ -426,6 +426,7 @@ dependencies = [
 [[package]]
 name = "browser-utils"
 version = "0.8.0"
+source = "git+https://github.com/ProChain/substrate.git#39db16e213d92db4f0bffc9dae715ad9c59d2a0c"
 dependencies = [
  "clear_on_drop",
  "console_error_panic_hook",
@@ -467,15 +468,6 @@ dependencies = [
  "memchr",
  "regex-automata",
  "serde",
-]
-
-[[package]]
-name = "build-helper"
-version = "0.1.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "bdce191bf3fa4995ce948c8c83b4640a1745457a149e73c6db75b4ffe36aad5f"
-dependencies = [
- "semver 0.6.0",
 ]
 
 [[package]]
@@ -539,18 +531,6 @@ name = "c_linked_list"
 version = "1.1.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "4964518bd3b4a8190e832886cdc0da9794f12e8e6c1613a9e90ff331c4c8724b"
-
-[[package]]
-name = "cargo_metadata"
-version = "0.9.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "46e3374c604fb39d1a2f35ed5e4a4e30e60d01fab49446e08f1b3e9a90aef202"
-dependencies = [
- "semver 0.9.0",
- "serde",
- "serde_derive",
- "serde_json",
-]
 
 [[package]]
 name = "cast"
@@ -1387,13 +1367,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "fork-tree"
-version = "2.0.0"
-dependencies = [
- "parity-scale-codec",
-]
-
-[[package]]
 name = "frame-executive"
 version = "2.0.0"
 source = "git+https://github.com/ProChain/substrate.git#39db16e213d92db4f0bffc9dae715ad9c59d2a0c"
@@ -1510,16 +1483,6 @@ dependencies = [
  "lazy_static",
  "libc",
  "libloading",
- "winapi 0.3.8",
-]
-
-[[package]]
-name = "fs2"
-version = "0.4.3"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "9564fc758e15025b46aa6643b1b77d047d1a56a1aea6e01002ac0c7026876213"
-dependencies = [
- "libc",
  "winapi 0.3.8",
 ]
 
@@ -1846,34 +1809,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "grafana-data-source"
-version = "0.8.0"
-dependencies = [
- "async-std",
- "chrono",
- "derive_more",
- "futures-timer 2.0.2",
- "futures-util",
- "hyper 0.13.1",
- "lazy_static",
- "log 0.4.8",
- "parking_lot 0.9.0",
- "serde",
- "serde_json",
- "tokio 0.2.9",
-]
-
-[[package]]
-name = "grafana-data-source-test"
-version = "2.0.0"
-dependencies = [
- "futures 0.3.1",
- "futures-timer 2.0.2",
- "grafana-data-source 0.8.0",
- "rand 0.7.3",
-]
-
-[[package]]
 name = "h2"
 version = "0.1.26"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2164,19 +2099,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "hyper-tls"
-version = "0.3.2"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "3a800d6aa50af4b5850b2b0f659625ce9504df908e9733b635720483be26174f"
-dependencies = [
- "bytes 0.4.12",
- "futures 0.1.29",
- "hyper 0.12.35",
- "native-tls",
- "tokio-io",
-]
-
-[[package]]
 name = "idna"
 version = "0.1.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2314,7 +2236,6 @@ dependencies = [
  "failure",
  "futures 0.1.29",
  "hyper 0.12.35",
- "hyper-tls",
  "jsonrpc-core",
  "jsonrpc-pubsub",
  "log 0.4.8",
@@ -3353,7 +3274,7 @@ dependencies = [
  "sp-runtime",
  "sp-state-machine",
  "sp-trie",
- "substrate-test-client 2.0.0",
+ "substrate-test-client",
  "trie-root",
  "wabt",
 ]
@@ -3461,7 +3382,7 @@ dependencies = [
  "sp-std",
  "sp-transaction-pool",
  "sp-version",
- "substrate-wasm-builder-runner 1.0.4",
+ "substrate-wasm-builder-runner",
  "utilities",
 ]
 
@@ -3491,7 +3412,7 @@ dependencies = [
  "sp-io",
  "sp-keyring",
  "sp-runtime",
- "substrate-test-client 2.0.0",
+ "substrate-test-client",
  "wabt",
 ]
 
@@ -3815,7 +3736,7 @@ dependencies = [
  "frame-support",
  "frame-system",
  "parity-scale-codec",
- "parity-wasm 0.41.0",
+ "parity-wasm",
  "pwasm-utils",
  "serde",
  "sp-core",
@@ -4334,15 +4255,6 @@ dependencies = [
 
 [[package]]
 name = "parity-wasm"
-version = "0.32.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "16ad52817c4d343339b3bc2e26861bd21478eda0b7509acf83505727000512ac"
-dependencies = [
- "byteorder 1.3.2",
-]
-
-[[package]]
-name = "parity-wasm"
 version = "0.41.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "ddfc878dac00da22f8f61e7af3157988424567ab01d9920b962ef7dcbd7cd865"
@@ -4714,7 +4626,7 @@ checksum = "4f7a12f176deee919f4ba55326ee17491c8b707d0987aed822682c821b660192"
 dependencies = [
  "byteorder 1.3.2",
  "log 0.4.8",
- "parity-wasm 0.41.0",
+ "parity-wasm",
 ]
 
 [[package]]
@@ -5116,7 +5028,7 @@ version = "0.2.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "138e3e0acb6c9fb258b19b67cb8abd63c00679d2851805ea151465464fe9030a"
 dependencies = [
- "semver 0.9.0",
+ "semver",
 ]
 
 [[package]]
@@ -5404,7 +5316,7 @@ version = "0.8.0"
 source = "git+https://github.com/ProChain/substrate.git#39db16e213d92db4f0bffc9dae715ad9c59d2a0c"
 dependencies = [
  "derive_more",
- "fork-tree 2.0.0 (git+https://github.com/ProChain/substrate.git)",
+ "fork-tree",
  "futures 0.3.1",
  "futures-timer 0.4.0",
  "log 0.4.8",
@@ -5482,7 +5394,7 @@ dependencies = [
  "libsecp256k1",
  "log 0.4.8",
  "parity-scale-codec",
- "parity-wasm 0.41.0",
+ "parity-wasm",
  "parking_lot 0.9.0",
  "sc-executor-common",
  "sc-executor-wasmi",
@@ -5521,7 +5433,7 @@ source = "git+https://github.com/ProChain/substrate.git#39db16e213d92db4f0bffc9d
 dependencies = [
  "log 0.4.8",
  "parity-scale-codec",
- "parity-wasm 0.41.0",
+ "parity-wasm",
  "sc-executor-common",
  "sp-core",
  "sp-externalities",
@@ -5542,7 +5454,7 @@ dependencies = [
  "cranelift-wasm",
  "log 0.4.8",
  "parity-scale-codec",
- "parity-wasm 0.41.0",
+ "parity-wasm",
  "sc-executor-common",
  "sp-core",
  "sp-externalities",
@@ -5560,7 +5472,7 @@ version = "0.8.0"
 source = "git+https://github.com/ProChain/substrate.git#39db16e213d92db4f0bffc9dae715ad9c59d2a0c"
 dependencies = [
  "finality-grandpa",
- "fork-tree 2.0.0 (git+https://github.com/ProChain/substrate.git)",
+ "fork-tree",
  "futures 0.1.29",
  "futures 0.3.1",
  "futures-timer 2.0.2",
@@ -5610,7 +5522,7 @@ dependencies = [
  "either",
  "erased-serde",
  "fnv",
- "fork-tree 2.0.0 (git+https://github.com/ProChain/substrate.git)",
+ "fork-tree",
  "futures 0.3.1",
  "futures-timer 0.4.0",
  "futures_codec",
@@ -5773,7 +5685,7 @@ dependencies = [
  "futures 0.1.29",
  "futures 0.3.1",
  "futures-timer 2.0.2",
- "grafana-data-source 0.8.0 (git+https://github.com/ProChain/substrate.git)",
+ "grafana-data-source",
  "lazy_static",
  "log 0.4.8",
  "parity-multiaddr 0.5.0",
@@ -5869,7 +5781,7 @@ version = "2.0.0"
 source = "git+https://github.com/ProChain/substrate.git#39db16e213d92db4f0bffc9dae715ad9c59d2a0c"
 dependencies = [
  "erased-serde",
- "grafana-data-source 0.8.0 (git+https://github.com/ProChain/substrate.git)",
+ "grafana-data-source",
  "log 0.4.8",
  "parking_lot 0.9.0",
  "sc-telemetry",
@@ -6005,21 +5917,11 @@ dependencies = [
 
 [[package]]
 name = "semver"
-version = "0.6.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "7a3186ec9e65071a2095434b1f5bb24838d4e8e130f584c790f6033c79943537"
-dependencies = [
- "semver-parser",
-]
-
-[[package]]
-name = "semver"
 version = "0.9.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "1d7eb9ef2c18661902cc47e535f9bc51b78acd254da71d375c2f6720d9a40403"
 dependencies = [
  "semver-parser",
- "serde",
 ]
 
 [[package]]
@@ -6364,20 +6266,6 @@ dependencies = [
  "sp-state-machine",
  "sp-std",
  "sp-version",
-]
-
-[[package]]
-name = "sp-consensus-aura"
-version = "0.8.0"
-source = "git+https://github.com/ProChain/substrate.git#39db16e213d92db4f0bffc9dae715ad9c59d2a0c"
-dependencies = [
- "parity-scale-codec",
- "sp-api",
- "sp-application-crypto",
- "sp-inherents",
- "sp-runtime",
- "sp-std",
- "sp-timestamp",
 ]
 
 [[package]]
@@ -6849,28 +6737,13 @@ dependencies = [
 [[package]]
 name = "substrate-build-script-utils"
 version = "2.0.0"
-
-[[package]]
-name = "substrate-frame-rpc-support"
-version = "2.0.0"
-dependencies = [
- "frame-support",
- "frame-system",
- "futures 0.3.1",
- "jsonrpc-client-transports",
- "jsonrpc-core",
- "parity-scale-codec",
- "sc-rpc-api",
- "serde",
- "sp-storage",
- "tokio 0.1.22",
-]
+source = "git+https://github.com/ProChain/substrate.git#39db16e213d92db4f0bffc9dae715ad9c59d2a0c"
 
 [[package]]
 name = "substrate-frame-rpc-system"
 version = "2.0.0"
+source = "git+https://github.com/ProChain/substrate.git#39db16e213d92db4f0bffc9dae715ad9c59d2a0c"
 dependencies = [
- "env_logger 0.7.1",
  "frame-system-rpc-runtime-api",
  "futures 0.3.1",
  "jsonrpc-core",
@@ -6879,14 +6752,12 @@ dependencies = [
  "log 0.4.8",
  "parity-scale-codec",
  "sc-client",
- "sc-transaction-pool",
  "serde",
  "sp-api",
  "sp-blockchain",
  "sp-core",
  "sp-runtime",
  "sp-transaction-pool",
- "substrate-test-runtime-client 2.0.0 (git+https://github.com/ProChain/substrate.git)",
 ]
 
 [[package]]
@@ -6910,159 +6781,9 @@ dependencies = [
 ]
 
 [[package]]
-name = "substrate-test-client"
-version = "2.0.0"
-dependencies = [
- "futures 0.3.1",
- "hash-db",
- "parity-scale-codec",
- "sc-client",
- "sc-client-api",
- "sc-client-db",
- "sc-executor",
- "sp-blockchain",
- "sp-consensus",
- "sp-core",
- "sp-keyring",
- "sp-runtime",
- "sp-state-machine",
-]
-
-[[package]]
-name = "substrate-test-runtime"
-version = "2.0.0"
-source = "git+https://github.com/ProChain/substrate.git#39db16e213d92db4f0bffc9dae715ad9c59d2a0c"
-dependencies = [
- "cfg-if",
- "frame-executive",
- "frame-support",
- "frame-system",
- "frame-system-rpc-runtime-api",
- "log 0.4.8",
- "memory-db",
- "pallet-babe",
- "pallet-timestamp",
- "parity-scale-codec",
- "sc-client",
- "serde",
- "sp-api",
- "sp-application-crypto",
- "sp-block-builder",
- "sp-consensus-aura",
- "sp-consensus-babe",
- "sp-core",
- "sp-inherents",
- "sp-io",
- "sp-keyring",
- "sp-offchain",
- "sp-runtime",
- "sp-runtime-interface",
- "sp-session",
- "sp-std",
- "sp-transaction-pool",
- "sp-trie",
- "sp-version",
- "substrate-wasm-builder-runner 1.0.4 (git+https://github.com/ProChain/substrate.git)",
- "trie-db",
-]
-
-[[package]]
-name = "substrate-test-runtime"
-version = "2.0.0"
-dependencies = [
- "cfg-if",
- "frame-executive",
- "frame-support",
- "frame-system",
- "frame-system-rpc-runtime-api",
- "log 0.4.8",
- "memory-db",
- "pallet-babe",
- "pallet-timestamp",
- "parity-scale-codec",
- "sc-client",
- "sc-executor",
- "serde",
- "sp-api",
- "sp-application-crypto",
- "sp-block-builder",
- "sp-consensus-aura",
- "sp-consensus-babe",
- "sp-core",
- "sp-inherents",
- "sp-io",
- "sp-keyring",
- "sp-offchain",
- "sp-runtime",
- "sp-runtime-interface",
- "sp-session",
- "sp-state-machine",
- "sp-std",
- "sp-transaction-pool",
- "sp-trie",
- "sp-version",
- "substrate-test-runtime-client 2.0.0",
- "substrate-wasm-builder-runner 1.0.4",
- "trie-db",
-]
-
-[[package]]
-name = "substrate-test-runtime-client"
-version = "2.0.0"
-source = "git+https://github.com/ProChain/substrate.git#39db16e213d92db4f0bffc9dae715ad9c59d2a0c"
-dependencies = [
- "futures 0.3.1",
- "parity-scale-codec",
- "sc-block-builder",
- "sc-client",
- "sc-client-api",
- "sp-api",
- "sp-blockchain",
- "sp-core",
- "sp-runtime",
- "substrate-test-client 2.0.0 (git+https://github.com/ProChain/substrate.git)",
- "substrate-test-runtime 2.0.0 (git+https://github.com/ProChain/substrate.git)",
-]
-
-[[package]]
-name = "substrate-test-runtime-client"
-version = "2.0.0"
-dependencies = [
- "futures 0.3.1",
- "parity-scale-codec",
- "sc-block-builder",
- "sc-client",
- "sc-client-api",
- "sp-api",
- "sp-blockchain",
- "sp-core",
- "sp-runtime",
- "substrate-test-client 2.0.0",
- "substrate-test-runtime 2.0.0",
-]
-
-[[package]]
-name = "substrate-wasm-builder"
-version = "1.0.8"
-dependencies = [
- "atty",
- "build-helper",
- "cargo_metadata",
- "fs2",
- "tempfile",
- "toml",
- "walkdir",
- "wasm-gc-api",
-]
-
-[[package]]
 name = "substrate-wasm-builder-runner"
 version = "1.0.4"
 source = "git+https://github.com/ProChain/substrate.git#39db16e213d92db4f0bffc9dae715ad9c59d2a0c"
-
-[[package]]
-name = "substrate-wasm-builder-runner"
-version = "1.0.4"
 
 [[package]]
 name = "subtle"
@@ -7963,17 +7684,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "wasm-gc-api"
-version = "0.1.11"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "d0c32691b6c7e6c14e7f8fd55361a9088b507aa49620fcd06c09b3a1082186b9"
-dependencies = [
- "log 0.4.8",
- "parity-wasm 0.32.0",
- "rustc-demangle",
-]
-
-[[package]]
 name = "wasm-timer"
 version = "0.2.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -8000,7 +7710,7 @@ dependencies = [
  "memory_units",
  "num-rational",
  "num-traits",
- "parity-wasm 0.41.0",
+ "parity-wasm",
  "wasmi-validation",
 ]
 
@@ -8010,7 +7720,7 @@ version = "0.3.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "ea78c597064ba73596099281e2f4cfc019075122a65cdda3205af94f0b264d93"
 dependencies = [
- "parity-wasm 0.41.0",
+ "parity-wasm",
 ]
 
 [[package]]

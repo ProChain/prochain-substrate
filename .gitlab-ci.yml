@@ -122,7 +122,7 @@ cargo-check-subkey:
   except:
     - /^v[0-9]+\.[0-9]+.*$/        # i.e. v1.0, v2.1rc1
   script:
-    - cd ./bin/utils/subkey
+    - cd ./utils/subkey
     - BUILD_DUMMY_WASM_BINARY=1 time cargo check --release
     - sccache -s
 
@@ -232,7 +232,7 @@ check-web-wasm:
     - time cargo build --target=wasm32-unknown-unknown -p sp-consensus
     - time cargo build --target=wasm32-unknown-unknown -p sc-telemetry
     # Note: the command below is a bit weird because several Cargo issues prevent us from compiling the node in a more straight-forward way.
-    - time cargo build --manifest-path=bin/node/cli/Cargo.toml --no-default-features --features "browser" --target=wasm32-unknown-unknown
+    - time cargo build --manifest-path=node/cli/Cargo.toml --no-default-features --features "browser" --target=wasm32-unknown-unknown
     - sccache -s
 
 node-exits:
@@ -297,7 +297,7 @@ build-linux-subkey:
   before_script:
     - mkdir -p ./artifacts/subkey
   script:
-    - cd ./bin/utils/subkey
+    - cd ./utils/subkey
     - BUILD_DUMMY_WASM_BINARY=1 time cargo build --release --verbose
     - cd -
     - mv ./target/release/subkey ./artifacts/subkey/.

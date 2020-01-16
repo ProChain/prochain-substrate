@@ -12,7 +12,7 @@ set -e # fail on any error
 # give some context
 git log --graph --oneline --decorate=short -n 10
 
-VERSIONS_FILE="bin/node/runtime/src/lib.rs"
+VERSIONS_FILE="node/runtime/src/lib.rs"
 
 github_label () {
 	echo
@@ -29,7 +29,7 @@ github_label () {
 
 # check if the wasm sources changed
 if ! git diff --name-only origin/master...${CI_COMMIT_SHA} \
-	| grep -q -e '^bin/node/src/runtime' -e '^frame/' -e '^primitives/sr-' | grep -v -e '^primitives/sr-arithmetic/fuzzer'
+	| grep -q -e '^node/src/runtime' -e '^frame/' -e '^primitives/sr-' | grep -v -e '^primitives/sr-arithmetic/fuzzer'
 then
 	cat <<-EOT
 	
@@ -98,7 +98,7 @@ else
 	If they do change logic, bump 'spec_version' and rebuild wasm.
 
 	source file directories:
-	- bin/node/src/runtime
+	- node/src/runtime
 	- frame
 	- primitives/sr-*
 
