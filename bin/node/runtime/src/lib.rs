@@ -411,7 +411,7 @@ impl pallet_treasury::Trait for Runtime {
 	type ProposalBondMinimum = ProposalBondMinimum;
 	type SpendPeriod = SpendPeriod;
 	type Burn = Burn;
-	type Tippers = Elections;
+	type Tippers = ElectionsPhragmen;
 	type TipCountdown = TipCountdown;
 	type TipFindersFee = TipFindersFee;
 	type TipReportDepositBase = TipReportDepositBase;

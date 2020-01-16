@@ -18,6 +18,7 @@ members = [
 	"utils/wasm-builder-runner",
 	"utils/grafana-data-source",
 	"utils/grafana-data-source/test",
+	"utils/browser",
 	"utils/build-script-utils",
 	"utils/fork-tree",
 	"utils/frame/rpc/support",
