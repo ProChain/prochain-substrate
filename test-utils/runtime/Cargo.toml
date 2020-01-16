@@ -16,7 +16,7 @@ frame-executive = { version = "2.0.0", default-features = false, git = "https://
 sp-inherents = { version = "2.0.0", default-features = false, git = "https://github.com/ProChain/substrate.git" }
 sp-keyring = { version = "2.0.0", optional = true, git = "https://github.com/ProChain/substrate.git" }
 log = { version = "0.4.8", optional = true }
-memory-db = { version = "0.15.2", default-features = false }
+memory-db = { version = "0.18.0", default-features = false }
 sp-offchain = { git = "https://github.com/ProChain/substrate.git", default-features = false}
 sp-core = { version = "2.0.0", default-features = false, git = "https://github.com/ProChain/substrate.git" }
 sp-std = { version = "2.0.0", default-features = false, git = "https://github.com/ProChain/substrate.git" }
@@ -32,15 +32,15 @@ pallet-babe = { version = "2.0.0", default-features = false, git = "https://gith
 frame-system = { version = "2.0.0", default-features = false, git = "https://github.com/ProChain/substrate.git" }
 frame-system-rpc-runtime-api = { version = "2.0.0", default-features = false, git = "https://github.com/ProChain/substrate.git" }
 pallet-timestamp = { version = "2.0.0", default-features = false, git = "https://github.com/ProChain/substrate.git" }
-sc-client = { version = "2.0.0", optional = true, git = "https://github.com/ProChain/substrate.git" }
+sc-client = { version = "0.8", optional = true, git = "https://github.com/ProChain/substrate.git" }
 sp-trie = { version = "2.0.0", default-features = false, git = "https://github.com/ProChain/substrate.git" }
 sp-transaction-pool = { version = "2.0.0", default-features = false, git = "https://github.com/ProChain/substrate.git" }
-trie-db = { version = "0.16.0", default-features = false }
+trie-db = { version = "0.18.1", default-features = false }
 
 [dev-dependencies]
-sc-executor = { version = "2.0.0", git = "https://github.com/ProChain/substrate.git" }
+sc-executor = { version = "0.8", git = "https://github.com/ProChain/substrate.git" }
 substrate-test-runtime-client = { version = "2.0.0", path = "./client" }
-sp-state-machine = { version = "2.0.0", git = "https://github.com/ProChain/substrate.git" }
+sp-state-machine = { version = "0.8", git = "https://github.com/ProChain/substrate.git" }
 
 [build-dependencies]
 wasm-builder-runner = { version = "1.0.4", package = "substrate-wasm-builder-runner", path = "../../utils/wasm-builder-runner" }
