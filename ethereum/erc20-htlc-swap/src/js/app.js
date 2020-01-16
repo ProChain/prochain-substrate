@@ -155,12 +155,12 @@ App = {
 
 				var timestamp = data.data.timestamp;
 				var randomNumberHash = data.data.randomNumberHash;
+				App.swapID = data.data.swapID;
 
 				App.htlcIntance.htlc(randomNumberHash, timestamp, App.heightSpan, App.recipientAddr, amount, amount, did).then(
 					function (result) {
 						if (result.receipt.status == 1) {
 							console.log("status success!!");
-							App.swapID = data.data.swapID;
 						} else {
 							console.log("status fail!!");
 						}
@@ -174,18 +174,17 @@ App = {
 		$("#claim").on('click', function () {
 			var randomNum = document.getElementById("random_num").value;
 
-			if (App.swapId == null || App.swapId === '') {
+			if (App.swapID == null || App.swapID === '') {
 				alert('提示 Swap Id 无效，请先发起一笔htlc兑换');
 				return;
 			}
 
-			console.log(App.swapId);
+			console.log('App.swapID:', App.swapID);
 
-			App.htlcIntance.claim(App.swapId, randomNum).then(
+			App.htlcIntance.claim(App.swapID, randomNum).then(
 				function (result) {
 					if (result.receipt.status == 1) {
 						console.log("status success!!");
-						App.swapId = '';
 					} else {
 						console.log("status fail!!");
 					}
@@ -196,16 +195,15 @@ App = {
 		});
 
 		$("#refund").on('click', function () {
-			if (App.swapId == null || App.swapId === '') {
+			if (App.swapID == null || App.swapID === '') {
 				alert('提示 Swap Id 无效，请先发起一笔htlc兑换');
 				return;
 			}
 
-			App.htlcIntance.refund(App.swapId).then(
+			App.htlcIntance.refund(App.swapID).then(
 				function (result) {
 					if (result.receipt.status == 1) {
 						console.log("status success!!");
-						App.swapId = '';
 					} else {
 						console.log("status fail!!");
 					}
