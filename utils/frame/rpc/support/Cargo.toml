@@ -12,7 +12,7 @@ codec = { package = "parity-scale-codec", version = "1" }
 serde = "1"
 frame-support = { version = "2.0.0", git = "https://github.com/ProChain/substrate.git" }
 sp-storage = { version = "2.0.0", git = "https://github.com/ProChain/substrate.git" }
-sc-rpc-api = { version = "2.0.0", git = "https://github.com/ProChain/substrate.git" }
+sc-rpc-api = { version = "0.8", git = "https://github.com/ProChain/substrate.git" }
 
 [dev-dependencies]
 frame-system = { version = "2.0.0", git = "https://github.com/ProChain/substrate.git" }
