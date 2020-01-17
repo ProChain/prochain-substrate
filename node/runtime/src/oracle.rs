@@ -2,6 +2,7 @@
 
 use codec::{Decode, Encode};
 use frame_support::{
+	debug::native,
 	decl_error, decl_event, decl_module, decl_storage, ensure,
 	traits::{Currency, ExistenceRequirement},
 	weights::SimpleDispatchInfo,
@@ -15,6 +16,7 @@ use simple_json::{self, json::JsonValue};
 use sp_core::{offchain::Duration, offchain::HttpRequestId, offchain::HttpRequestStatus};
 use sp_runtime::app_crypto::{KeyTypeId, RuntimeAppPublic};
 use sp_runtime::{
+	offchain::http,
 	traits::{Hash, Member},
 	transaction_validity::{
 		TransactionLongevity, TransactionPriority, TransactionValidity, UnknownTransaction,
@@ -53,8 +55,9 @@ pub mod sr25519 {
 
 #[derive(Encode, Decode, Clone, PartialEq, Eq, Debug)]
 pub struct EventLogSource {
-	event_name: Vec<u8>,
+	event_type: Vec<u8>,
 	event_url: Vec<u8>,
+	event_data: Vec<u8>,
 }
 
 // Config event json parse fields
@@ -68,11 +71,16 @@ const KEY_BLOCK_NUMBER: &'static str = "blockNumber";
 const KEY_TIME_STAMP: &'static str = "timeStamp";
 const KEY_TX_HASH: &'static str = "transactionHash";
 const KEY_TX_INDEX: &'static str = "transactionIndex";
+const KEY_REMOVED: &'static str = "removed";
 
 const STATUS_OK: &'static str = "1";
 const MESSAGE_OK: &'static str = "OK";
 const MESSAGE_NOT_FOUND: &'static str = "No records found";
 const STR_PREFIX: &'static str = "0x";
+
+//event source types
+const EVENT_SRC_ETHERSCAN: &'static [u8; 9] = b"etherscan";
+const EVENT_SRC_INFURA: &'static [u8; 6] = b"infura";
 
 // TODO: auto generate EventSignature by contract abi
 const EVENT_SIG_HTLC: &'static str =
@@ -95,8 +103,8 @@ where
 	expire_height: u32,
 	random_number_hash: Vec<u8>, //When event_type is Claimed，value is random_number instead of hash
 	swap_id: Hash,
-	event_timestamp: u64,
-	htlc_timestamp: u64,
+	// event_timestamp: u64,
+	// htlc_timestamp: u64,
 	sender_addr: Vec<u8>,
 	sender_chain_type: HTLCChain,
 	receiver_addr: Hash,
@@ -150,6 +158,9 @@ decl_error! {
 
 		/// invlid did
 		InvalidDidType,
+
+		/// invlid event source type
+		InvalidEventSrcType,
 	}
 }
 
@@ -183,14 +194,14 @@ decl_event!(
 		<T as system::Trait>::Hash,
 		<T as pallet_balances::Trait>::Balance,
 	{
-		///Setup event_name, event_url
-		Init(Vec<u8>, Vec<u8>),
+		///Setup and kickoff event_type, event_url, event_data
+		Kickoff(Vec<u8>, Vec<u8>, Vec<u8>),
 
 		///kill scanned event_name and event_url, make sure run only once
 		//Kill(Vec<u8>, Vec<u8>),
 
-		///receiver_addr, eth_contract_addr, htlc_block_number, expire_height, random_number_hash, swap_id, sender_addr, out_amount, htlc_timestamp
-		HTLC(Hash, Vec<u8>, BlockNumber, u32, Vec<u8>, Hash, Vec<u8>, Balance, u64),
+		///receiver_addr, eth_contract_addr, htlc_block_number, expire_height, random_number_hash, swap_id, sender_addr, out_amount
+		HTLC(Hash, Vec<u8>, BlockNumber, u32, Vec<u8>, Hash, Vec<u8>, Balance),
 
 		///receiver_addr, eth_contract_addr, swap_id, sender_addr, random_number
 		Claim(Hash, Vec<u8>, Hash, Vec<u8>,Vec<u8>),
@@ -218,18 +229,23 @@ decl_module! {
 
 		// Initializing event fetch jobs
 		#[weight = SimpleDispatchInfo::FixedNormal(500_000)]
-		fn kickoff(origin, event_name: Vec<u8>, event_url: Vec<u8>) -> dispatch_result {
+		fn kickoff(origin, event_src_type: Vec<u8>, event_url: Vec<u8>, event_data: Vec<u8>) -> dispatch_result {
 			let sender = ensure_signed(origin)?;
 			ensure!(Self::is_authority(&sender), "error not authority sender");
 
-			sp_io::misc::print_utf8(b"======== kickoff event fetch jobs");
+			if event_src_type != EVENT_SRC_ETHERSCAN && event_src_type != EVENT_SRC_INFURA {
+				return Err(Error::<T>::InvalidEventSrcType)?;
+			}
+
+			native::info!(target: "swap", "kickoff event fetch jobs");
 
 			let event_src = EventLogSource {
-				event_name: event_name.clone(),
+				event_type: event_src_type.clone(),
 				event_url: event_url.clone(),
+				event_data: event_data.clone(),
 			};
 			<Self as Store>::OcRequests::put(event_src);
-			Self::deposit_event(RawEvent::Init(event_name, event_url));
+			Self::deposit_event(RawEvent::Kickoff(event_src_type, event_url, event_data));
 			Ok(())
 		}
 
@@ -238,7 +254,6 @@ decl_module! {
 			let sender = ensure_signed(origin)?;
 
 			if Self::is_authority(&sender) {
-				sp_io::misc::print_utf8(b"======== kill event fetch jobs");
 				<Self as Store>::OcRequests::take();
 			}
 
@@ -273,6 +288,7 @@ decl_module! {
 
 		// Runs after every block.
 		fn offchain_worker(now: T::BlockNumber) {
+			frame_support::debug::RuntimeLogger::init();
 			//if BLOCK_DURATION > 0 && (TryInto::<u64>::try_into(now).ok().unwrap()) % BLOCK_DURATION == 0 {
 			Self::offchain_events(now);
 			//}
@@ -298,9 +314,9 @@ decl_module! {
 							<SwapStatesCount>::put(new_count);
 
 							Self::deposit_event(RawEvent::HTLC(htlc.receiver_addr, htlc.eth_contract_addr, htlc.htlc_block_number, htlc.expire_height,
-								htlc.random_number_hash, htlc.swap_id, htlc.sender_addr, htlc.out_amount, htlc.htlc_timestamp));
+								htlc.random_number_hash, htlc.swap_id, htlc.sender_addr, htlc.out_amount));
 						} else {
-							sp_io::misc::print_utf8(b"error HTLC init swap_id already exists");
+							native::error!(target: "swap", "HTLC init swap_id already exists");
 						}
 					},
 					HTLCType::Claimed => {
@@ -315,7 +331,7 @@ decl_module! {
 							<SwapStates<T>>::insert(htlc.swap_id, HTLCStates::COMPLETED);
 							Self::deposit_event(RawEvent::Claim(htlc.receiver_addr, htlc.eth_contract_addr, swap_id, htlc.sender_addr, htlc.random_number_hash));
 						} else {
-							sp_io::misc::print_utf8(b"error HTLC claimed swap_id not exists");
+							native::error!(target: "swap", "HTLC claimed swap_id not exists");
 						}
 					},
 					HTLCType::Refunded => {
@@ -326,7 +342,7 @@ decl_module! {
 
 							Self::deposit_event(RawEvent::Refund(htlc.receiver_addr, htlc.eth_contract_addr, swap_id, htlc.sender_addr, htlc.random_number_hash));
 						} else {
-							sp_io::misc::print_utf8(b"error HTLC refund swap_id not exists");
+							native::error!(target: "swap", "HTLC refund swap_id not exists");
 						}
 					},
 					_ =>  Err(Error::<T>::InvalidEventType)?
@@ -344,7 +360,7 @@ impl<T: Trait> Module<T> {
 			let fetch_info = fetch_info.unwrap();
 
 			<Self as Store>::OcRequests::take();
-			Self::fetch_events(fetch_info.event_name, fetch_info.event_url);
+			Self::fetch_events(&fetch_info);
 		}
 	}
 
@@ -353,30 +369,61 @@ impl<T: Trait> Module<T> {
 			.map_err(|_| "Convert to Balance type overflow")
 	}
 
-	fn fetch_events(src: Vec<u8>, remote_url: Vec<u8>) -> Result<(), &'static str> {
+	//for etherscan
+	fn fetch_events(event: &EventLogSource) -> Result<(), &'static str> {
 		let pra_token_addr = Self::pra_token_addr();
 		ensure!(pra_token_addr.is_some(), "pra_token_addr can not be empty");
 
-		let url = core::str::from_utf8(&remote_url).unwrap();
-		let res = Self::http_request_get(&url, None);
-		if let Ok(buf) = res {
-			let htlcs = Self::parse_data(buf);
+		let url_result = core::str::from_utf8(&event.event_url);
+		if url_result.is_err() {
+			return Err("error event_url is not valid utf8");
+		}
 
-			let call = Call::update_enevt_htlc(htlcs);
-			let result = T::SubmitTransaction::submit_unsigned(call);
-			match result {
-				Ok(_) => sp_io::misc::print_utf8(b"execute off-chain worker success"),
-				Err(_) => {
-					sp_io::misc::print_utf8(b"execute off-chain worker failed!");
-					return Err("error happens when submit unsigned transaction");
+		let url = url_result.unwrap();
+		native::info!(target: "swap", "kickoff fetch events {:?}", url);
+		if event.event_type == EVENT_SRC_ETHERSCAN {
+			let res = Self::http_request_get(&url);
+			if let Ok(buf) = res {
+				let htlcs = Self::parse_data(buf);
+
+				let call = Call::update_enevt_htlc(htlcs);
+				let result = T::SubmitTransaction::submit_unsigned(call);
+				match result {
+					Ok(_) => {
+						native::info!(target: "swap", "execute off-chain worker success EVENT_SRC_ETHERSCAN");
+					}
+					Err(_) => {
+						native::error!(target: "swap", "execute off-chain worker failed EVENT_SRC_ETHERSCAN");
+						return Err("error happens when submit unsigned transaction");
+					}
+				}
+			} else {
+			}
+		} else if event.event_type == EVENT_SRC_INFURA {
+			let res = Self::http_request_post(&url, &event.event_data);
+			if let Ok(buf) = res {
+				let htlcs = Self::parse_infura_data(buf);
+
+				let call = Call::update_enevt_htlc(htlcs);
+				let result = T::SubmitTransaction::submit_unsigned(call);
+				match result {
+					Ok(_) => {
+						native::info!(target: "swap", "execute off-chain worker success EVENT_SRC_INFURA");
+					}
+					Err(_) => {
+						native::error!(target: "swap", "execute off-chain worker failed EVENT_SRC_INFURA");
+						return Err("error happens when submit unsigned transaction");
+					}
 				}
 			}
 		}
+
 		Ok(())
 	}
 
+	//for etherscan
 	fn parse_data(res: Vec<u8>) -> Vec<EventHTLC<T::BlockNumber, T::Balance, T::Hash>> {
-		sp_io::misc::print_utf8(&res);
+		native::debug!(target: "swap", "parse etherscan data {:?}", res);
 
 		let mut vec_results: Vec<EventHTLC<T::BlockNumber, T::Balance, T::Hash>> = Vec::new();
 
@@ -504,7 +551,7 @@ impl<T: Trait> Module<T> {
 						) {
 							Ok(htlc) => vec_results.push(htlc),
 							Err(e) => {
-								sp_io::misc::print_utf8(e.as_bytes());
+								native::error!(target: "swap", "parse_htlc_event err {:?}", e);
 							}
 						}
 					}
@@ -520,7 +567,7 @@ impl<T: Trait> Module<T> {
 						) {
 							Ok(htlc) => vec_results.push(htlc),
 							Err(e) => {
-								sp_io::misc::print_utf8(e.as_bytes());
+								native::error!(target: "swap", "parse_refund_event err {:?}", e);
 							}
 						}
 					}
@@ -536,11 +583,13 @@ impl<T: Trait> Module<T> {
 						) {
 							Ok(htlc) => vec_results.push(htlc),
 							Err(e) => {
-								sp_io::misc::print_utf8(e.as_bytes());
+								native::error!(target: "swap", "parse_claim_event err {:?}", e);
 							}
 						}
 					}
-					_ => sp_io::misc::print_utf8(b"not valid event signature"),
+					_ => {
+						native::error!(target: "swap", "not valid event signature {:?}", &topics[0]);
+					}
 				}
 			}
 		}
@@ -548,6 +597,173 @@ impl<T: Trait> Module<T> {
 		return vec_results;
 	}
 
+	//for infura
+	fn parse_infura_data(res: Vec<u8>) -> Vec<EventHTLC<T::BlockNumber, T::Balance, T::Hash>> {
+		native::debug!(target: "swap", "parse infura data {:?}", res);
+
+		let mut vec_results: Vec<EventHTLC<T::BlockNumber, T::Balance, T::Hash>> = Vec::new();
+
+		let json_str = core::str::from_utf8(&res);
+		if json_str.is_err() {
+			return vec_results;
+		}
+
+		if let Ok(json_val) = simple_json::parse_json(json_str.unwrap()) {
+			let mut results = Vec::new();
+
+			json_val
+				.get_object()
+				.iter()
+				.filter(|(k, _)| {
+					let key: Vec<u8> = k.iter().map(|c| *c as u8).collect();
+					KEY_RESULT.as_bytes().to_vec() == key
+				})
+				.for_each(|(k, v)| {
+					let vec_of_u8s: Vec<u8> = k.iter().map(|c| *c as u8).collect();
+					let key = core::str::from_utf8(&vec_of_u8s).unwrap();
+
+					if key == KEY_RESULT {
+						if let JsonValue::Array(array) = v {
+							results = array.to_vec();
+						}
+					}
+				});
+
+			for result in results.iter() {
+				let mut contract_addr = Vec::new();
+				let mut topics = Vec::new();
+				let mut data = Vec::new();
+				let mut event_block_number = Vec::new();
+				let removed: bool = false;
+				let mut event_time_stamp = Vec::new();
+				let mut tx_hash = Vec::new();
+				let mut tx_index = Vec::new();
+
+				result
+					.get_object()
+					.iter()
+					.filter(|(k, _)| {
+						let key: Vec<u8> = k.iter().map(|c| *c as u8).collect();
+						KEY_ADDRESS.as_bytes().to_vec() == key
+							|| KEY_TOPICS.as_bytes().to_vec() == key
+							|| KEY_DATA.as_bytes().to_vec() == key
+							|| KEY_BLOCK_NUMBER.as_bytes().to_vec() == key
+							|| KEY_TX_HASH.as_bytes().to_vec() == key
+							|| KEY_TX_INDEX.as_bytes().to_vec() == key
+							|| KEY_REMOVED.as_bytes().to_vec() == key
+					})
+					.for_each(|(k, v)| {
+						let vec_of_u8s: Vec<u8> = k.iter().map(|c| *c as u8).collect();
+						let key = core::str::from_utf8(&vec_of_u8s).unwrap();
+
+						if key == KEY_ADDRESS {
+							if let JsonValue::String(obj) = v {
+								contract_addr = obj.iter().map(|c| *c as u8).collect::<Vec<u8>>();
+							}
+						} else if key == KEY_TOPICS {
+							if let JsonValue::Array(array) = v {
+								for i in array.iter() {
+									if let JsonValue::String(obj) = i {
+										topics.push(
+											obj.iter().map(|c| *c as u8).collect::<Vec<u8>>(),
+										);
+									}
+								}
+							}
+						} else if key == KEY_DATA {
+							if let JsonValue::String(obj) = v {
+								data = obj.iter().map(|c| *c as u8).collect::<Vec<u8>>();
+							}
+						} else if key == KEY_BLOCK_NUMBER {
+							if let JsonValue::String(obj) = v {
+								event_block_number =
+									obj.iter().map(|c| *c as u8).collect::<Vec<u8>>();
+							}
+						} else if key == KEY_REMOVED {
+							if let JsonValue::Boolean(obj) = v {
+								//TODO: parse removed
+								//removed =
+								//	obj.iter().map(|c| *c as u8).collect::<Vec<u8>>();
+							}
+						} else if key == KEY_TX_HASH {
+							if let JsonValue::String(obj) = v {
+								tx_hash = obj.iter().map(|c| *c as u8).collect::<Vec<u8>>();
+							}
+						} else if key == KEY_TX_INDEX {
+							if let JsonValue::String(obj) = v {
+								tx_index = obj.iter().map(|c| *c as u8).collect::<Vec<u8>>();
+							}
+						}
+					});
+
+				if topics.len() == 0 || removed {
+					continue;
+				}
+
+				match core::str::from_utf8(&topics[0]).unwrap() {
+					EVENT_SIG_HTLC => {
+						match Self::parse_htlc_event(
+							contract_addr,
+							topics.clone(),
+							data,
+							event_block_number,
+							event_time_stamp,
+							tx_hash,
+							tx_index,
+						) {
+							Ok(htlc) => vec_results.push(htlc),
+							Err(e) => {
+								native::error!(target: "swap", "parse_htlc_event err {:?}", e);
+							}
+						}
+					}
+					EVENT_SIG_REFUND => {
+						match Self::parse_refund_event(
+							contract_addr,
+							topics.clone(),
+							data,
+							event_block_number,
+							event_time_stamp,
+							tx_hash,
+							tx_index,
+						) {
+							Ok(htlc) => vec_results.push(htlc),
+							Err(e) => {
+								native::error!(target: "swap", "parse_refund_event err {:?}", e);
+							}
+						}
+					}
+					EVENT_SIG_CLAIM => {
+						match Self::parse_claim_event(
+							contract_addr,
+							topics.clone(),
+							data,
+							event_block_number,
+							event_time_stamp,
+							tx_hash,
+							tx_index,
+						) {
+							Ok(htlc) => vec_results.push(htlc),
+							Err(e) => {
+								native::error!(target: "swap", "parse_claim_event err {:?}", e);
+							}
+						}
+					}
+					_ => {
+						native::error!(target: "swap", "not valid event signature {:?}", &topics[0]);
+					}
+				}
+
+				if topics.len() == 0 {
+					continue;
+				}
+			}
+		}
+
+		return vec_results;
+	}
+
+	//for etherscan
 	fn parse_htlc_event(
 		contract_addr: Vec<u8>,
 		topics: Vec<Vec<u8>>,
@@ -557,7 +773,6 @@ impl<T: Trait> Module<T> {
 		tx_hash: Vec<u8>,
 		tx_index: Vec<u8>,
 	) -> Result<EventHTLC<T::BlockNumber, T::Balance, T::Hash>, &'static str> {
-		//indexed topics: _msgSender(Address); _recipientAddr(FixedBytes(32));_swapID(FixedBytes(32))
 		let msg_sender = &topics[1][STR_PREFIX.len()..].to_vec();
 		let recipient_addr = &topics[2][STR_PREFIX.len()..].to_vec();
 		let swap_id = &topics[3][STR_PREFIX.len()..].to_vec();
@@ -577,16 +792,16 @@ impl<T: Trait> Module<T> {
 		let mut length =
 			usize::from_str_radix(d, 16).map_err(|_| "error parse length from utf8")?;
 
-		let event_ts = u64::from_str_radix(
-			core::str::from_utf8(&event_time_stamp[STR_PREFIX.len()..]).unwrap(),
-			16,
-		)
-		.map_err(|_| "error parse event_time_stamp from utf8")?;
-		let htlc_ts = u64::from_str_radix(
-			core::str::from_utf8(&htlc_time_stamp[STR_PREFIX.len()..]).unwrap(),
-			16,
-		)
-		.map_err(|_| "error parse htlc_time_stamp from utf8")?;
+		// let event_ts = u64::from_str_radix(
+		// 	core::str::from_utf8(&event_time_stamp[STR_PREFIX.len()..]).unwrap(),
+		// 	16,
+		// )
+		// .map_err(|_| "error parse event_time_stamp from utf8")?;
+		// let htlc_ts = u64::from_str_radix(
+		// 	core::str::from_utf8(&htlc_time_stamp[STR_PREFIX.len()..]).unwrap(),
+		// 	16,
+		// )
+		// .map_err(|_| "error parse htlc_time_stamp from utf8")?;
 		let event_block_num = u32::from_str_radix(
 			core::str::from_utf8(&event_block_number[STR_PREFIX.len()..]).unwrap(),
 			16,
@@ -640,8 +855,8 @@ impl<T: Trait> Module<T> {
 			expire_height: expire_block_num - event_block_num,
 			random_number_hash: random_num_hash.clone(),
 			swap_id: T::Hashing::hash(&swap_id[..]),
-			event_timestamp: event_ts,
-			htlc_timestamp: htlc_ts,
+			// event_timestamp: event_ts,
+			// htlc_timestamp: htlc_ts,
 			sender_addr: msg_sender.clone(),
 			sender_chain_type: HTLCChain::ETHMain,
 			receiver_addr: receiver_did_hash,
@@ -652,6 +867,7 @@ impl<T: Trait> Module<T> {
 		Ok(htlc)
 	}
 
+	//for etherscan
 	fn parse_claim_event(
 		contract_addr: Vec<u8>,
 		topics: Vec<Vec<u8>>,
@@ -661,7 +877,6 @@ impl<T: Trait> Module<T> {
 		tx_hash: Vec<u8>,
 		tx_index: Vec<u8>,
 	) -> Result<EventHTLC<T::BlockNumber, T::Balance, T::Hash>, &'static str> {
-		//indexed topics: _msgSender(Address); _recipientAddr(FixedBytes(32));_swapID(FixedBytes(32))
 		let msg_sender = &topics[1][STR_PREFIX.len()..].to_vec();
 		let recipient_addr = &topics[2][STR_PREFIX.len()..].to_vec();
 		let swap_id = T::Hashing::hash(&topics[3][STR_PREFIX.len()..]);
@@ -703,8 +918,6 @@ impl<T: Trait> Module<T> {
 			expire_height: 0u32,
 			random_number_hash: random_num.clone(),
 			swap_id: swap_id.clone(),
-			event_timestamp: 0u64,
-			htlc_timestamp: 0u64,
 			sender_addr: msg_sender.clone(),
 			sender_chain_type: HTLCChain::ETHMain,
 			receiver_addr: receiver_did_hash,
@@ -715,6 +928,7 @@ impl<T: Trait> Module<T> {
 		Ok(htlc)
 	}
 
+	//for etherscan
 	fn parse_refund_event(
 		contract_addr: Vec<u8>,
 		topics: Vec<Vec<u8>>,
@@ -724,7 +938,6 @@ impl<T: Trait> Module<T> {
 		tx_hash: Vec<u8>,
 		tx_index: Vec<u8>,
 	) -> Result<EventHTLC<T::BlockNumber, T::Balance, T::Hash>, &'static str> {
-		//indexed topics: _msgSender(Address); _recipientAddr(FixedBytes(32));_swapID(FixedBytes(32))
 		let msg_sender = &topics[1][STR_PREFIX.len()..].to_vec();
 		let recipient_addr = &topics[2][STR_PREFIX.len()..].to_vec();
 		let swap_id = T::Hashing::hash(&topics[3][STR_PREFIX.len()..]);
@@ -766,8 +979,6 @@ impl<T: Trait> Module<T> {
 			expire_height: 0u32,
 			random_number_hash: random_num_hash.clone(),
 			swap_id: swap_id.clone(),
-			event_timestamp: 0u64,
-			htlc_timestamp: 0u64,
 			sender_addr: msg_sender.clone(),
 			sender_chain_type: HTLCChain::ETHMain,
 			receiver_addr: receiver_did_hash,
@@ -778,9 +989,59 @@ impl<T: Trait> Module<T> {
 		Ok(htlc)
 	}
 
-	fn http_request_get(uri: &str, header: Option<(&str, &str)>) -> Result<Vec<u8>, &'static str> {
-		let id: HttpRequestId = sp_io::offchain::http_request_start("GET", uri, &[0]).unwrap();
-		let deadline = sp_io::offchain::timestamp().add(Duration::from_millis(10_000));
+	fn http_request_get(uri: &str) -> Result<Vec<u8>, &'static str> {
+		Self::http_simple_get(uri)
+	}
+
+	fn http_request_post(url: &str, data: &Vec<u8>) -> Result<Vec<u8>, &'static str> {
+		Self::http_request_with_header(url, "POST", None, &data[..])
+		//Self::http_simple_post(url, data)
+	}
+
+	fn http_simple_get(url: &str) -> Result<Vec<u8>, &'static str> {
+		native::info!(target: "swap", "[url: {:?}]", url);
+
+		let pending = http::Request::get(url)
+			.send()
+			.map_err(|_| "Request http GET failed")?;
+
+		let response = pending
+			.wait()
+			.map_err(|_| "Request waiting http GET response failed")?;
+
+		if response.code != 200 {
+			return Err("Request Non-200 status GET returned");
+		}
+
+		let result: Vec<u8> = response.body().collect::<Vec<u8>>();
+		return Ok(result);
+	}
+
+	// fn http_simple_post(url: &str, data: &Vec<u8>) -> Result<Vec<u8>, &'static str> {
+	// 	let pending = http::Request::post(url, &data[..])
+	// 		.send()
+	// 		.map_err(|_| "Request http POST failed")?;
+
+	// 	let response = pending
+	// 		.wait()
+	// 		.map_err(|_| "Request waiting http POST response failed")?;
+
+	// 	if response.code != 200 {
+	// 		return Err("Request Non-200 status POST returned");
+	// 	}
+
+	// 	let result: Vec<u8> = response.body().collect::<Vec<u8>>();
+	// 	return Ok(result);
+	// }
+
+	fn http_request_with_header(
+		uri: &str,
+		method: &str,
+		header: Option<(&str, &str)>,
+		data: &[u8],
+	) -> Result<Vec<u8>, &'static str> {
+		let id: HttpRequestId = sp_io::offchain::http_request_start(method, uri, &[]).unwrap();
+		let deadline = sp_io::offchain::timestamp().add(Duration::from_millis(100_000));
 
 		if let Some((name, value)) = header {
 			match sp_io::offchain::http_request_add_header(id, name, value) {
@@ -788,6 +1049,11 @@ impl<T: Trait> Module<T> {
 				Err(_) => return Err("Add request header failed"),
 			};
 		}
+
+		match sp_io::offchain::http_request_write_body(id, data, Some(deadline)) {
+			Ok(_) => (),
+			Err(_) => return Err("Add request write body failed"),
+		};
 
 		match sp_io::offchain::http_response_wait(&[id], Some(deadline))[0] {
 			HttpRequestStatus::Finished(200) => (),
