@@ -92,8 +92,6 @@ To start up the Prochain node, run:
     "expire_height": "u32",
     "random_number_hash": "Vec<u8>",
     "swap_id": "Hash",
-    "event_timestamp": "u64",
-    "htlc_timestamp": "u64",
     "sender_addr": "Vec<u8>",
     "sender_chain_type": "HTLCChain",
     "receiver_addr": "Hash",
@@ -118,7 +116,8 @@ To start up the Prochain node, run:
   },
   "EventLogSource": {
     "event_name": "Vec<u8>",
-    "event_url": "Vec<u8>"
+    "event_url": "Vec<u8>",
+	"event_data": "Vec<u8>"
   },
   "HTLCType": {
     "_enum": [
@@ -141,7 +140,7 @@ This document contains all the information one should need to start validating o
 ## Requirements
 1. You should have balances in your stash (ed25519 or sr25519) and controller (ed25519 or sr25519) accounts.
 2. You will need to additionally add the --validator flag to run a validator node.
-3. You should have a wallet, such as the polkadot-js extension, installed in your browser with the stash and controller keypairs. If you don't have it, get it [here](https://github.com/polkadot-js/extension) . 
+3. You should have a wallet, such as the polkadot-js extension, installed in your browser with the stash and controller keypairs. If you don't have it, get it [here](https://github.com/polkadot-js/extension) .
 
 ## Create a stake
 Go to the Staking tab, and select Account actions at the top. Click on New stake.
