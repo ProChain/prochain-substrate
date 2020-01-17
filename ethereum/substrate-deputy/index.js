@@ -164,7 +164,7 @@ const run = async () => {
 			}
 		}
 	})
-	logger.debug('api created -----')
+	logger.info('api created -----')
 
 	let abi = await get_contract_abi()
 	let abi_json = JSON.parse(abi);
@@ -207,8 +207,8 @@ const run = async () => {
 		}
 
 		latest_block_num = await get_latest_block_num()
-		if (to + FETCH_STEP >= latest_block_num) {
-			logger.info("to + FETCH_STEP", to, FETCH_STEP, " >= latest_block_num ", latest_block_num, ", continue");
+		if (to + FETCH_STEP / 2 >= latest_block_num) {
+			logger.info("to + FETCH_STEP", to, FETCH_STEP / 2, " >= latest_block_num ", latest_block_num, ", will continue");
 			continue;
 		}
 
@@ -222,13 +222,12 @@ const run = async () => {
 				logger.info("get_contract_logs: ", event_name);
 			}
 
-			let url = util.format(API_URL + '/api?module=logs&action=getLogs&fromBlock=%s&toBlock=%s&address=%s&apikey=%s', from, to, CONTRACT_ADDRESS, API_KEY);
 			try {
-				const nonce = api.query.system.accountNonce(pair.address) + 1;
-				console.log('nonce ', nonce);
-				let job_name = "swap_" + from.toString() + "_" + to.toString();
+				const nonce = await api.query.system.accountNonce(pair.address);
+				let post_data = '{"jsonrpc":"2.0","method":"eth_getLogs","params":[{"address": "0x415379f5d396feab48cd26d6ba5e5afdbe9c5e15", "fromBlock":"0x' + from.toString(16) + '","toBlock":"0x' + to.toString(16) + '"}],"id": 1}';
+				console.log('post_data: ', post_data, ", nonce: ", nonce.toString());
 
-				api.tx.oracle.kickoff(stringToHex(job_name), stringToHex(url))
+				await api.tx.oracle.kickoff(stringToHex("infura"), stringToHex(MAINNET), stringToHex(post_data))
 					.signAndSend(pair, { nonce }, ({ events = [], status }) => {
 						logger.info("Transaction status:", status.type);
 
