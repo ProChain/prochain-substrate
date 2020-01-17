@@ -6,27 +6,27 @@ description = "Test utilities for Substrate node."
 edition = "2018"
 
 [dependencies]
-pallet-balances = { version = "2.0.0", git = "https://github.com/ProChain/substrate.git" }
-sc-client = { version = "0.8", git = "https://github.com/ProChain/substrate.git" }
+pallet-balances = { version = "2.0.0", git = "https://github.com/ProChain/substrate.git",  rev = "6688c3be1ff71803d5963935df7a0d646b2d50d2" }
+sc-client = { version = "2.0.0", git = "https://github.com/ProChain/substrate.git",  rev = "6688c3be1ff71803d5963935df7a0d646b2d50d2" }
 codec = { package = "parity-scale-codec", version = "1.0.0" }
-pallet-contracts = { version = "2.0.0", git = "https://github.com/ProChain/substrate.git" }
-pallet-grandpa = { version = "2.0.0", git = "https://github.com/ProChain/substrate.git" }
-pallet-indices = { version = "2.0.0", git = "https://github.com/ProChain/substrate.git" }
-sp-keyring = { version = "2.0.0", git = "https://github.com/ProChain/substrate.git" }
+pallet-contracts = { version = "2.0.0", git = "https://github.com/ProChain/substrate.git",  rev = "6688c3be1ff71803d5963935df7a0d646b2d50d2" }
+pallet-grandpa = { version = "2.0.0", git = "https://github.com/ProChain/substrate.git",  rev = "6688c3be1ff71803d5963935df7a0d646b2d50d2" }
+pallet-indices = { version = "2.0.0", git = "https://github.com/ProChain/substrate.git",  rev = "6688c3be1ff71803d5963935df7a0d646b2d50d2" }
+sp-keyring = { version = "2.0.0", git = "https://github.com/ProChain/substrate.git",  rev = "6688c3be1ff71803d5963935df7a0d646b2d50d2" }
 node-executor = { version = "2.0.0", path = "../executor" }
 node-primitives = { version = "2.0.0", path = "../primitives" }
 node-runtime = { version = "2.0.0", path = "../runtime" }
-sp-core = { version = "2.0.0", git = "https://github.com/ProChain/substrate.git" }
-sp-io = { version = "2.0.0", git = "https://github.com/ProChain/substrate.git" }
-frame-support = { version = "2.0.0", git = "https://github.com/ProChain/substrate.git" }
-pallet-session = { version = "2.0.0", git = "https://github.com/ProChain/substrate.git" }
-sp-runtime = { version = "2.0.0", git = "https://github.com/ProChain/substrate.git" }
-pallet-staking = { version = "2.0.0", git = "https://github.com/ProChain/substrate.git" }
-sc-executor = { version = "0.8", git = "https://github.com/ProChain/substrate.git" }
-frame-system = { version = "2.0.0", git = "https://github.com/ProChain/substrate.git" }
-substrate-test-client = { version = "2.0.0", git = "https://github.com/ProChain/substrate.git" }
-pallet-timestamp = { version = "2.0.0", git = "https://github.com/ProChain/substrate.git" }
-pallet-transaction-payment = { version = "2.0.0", git = "https://github.com/ProChain/substrate.git" }
-pallet-treasury = { version = "2.0.0", git = "https://github.com/ProChain/substrate.git" }
+sp-core = { version = "2.0.0", git = "https://github.com/ProChain/substrate.git",  rev = "6688c3be1ff71803d5963935df7a0d646b2d50d2" }
+sp-io = { version = "2.0.0", git = "https://github.com/ProChain/substrate.git",  rev = "6688c3be1ff71803d5963935df7a0d646b2d50d2" }
+frame-support = { version = "2.0.0", git = "https://github.com/ProChain/substrate.git",  rev = "6688c3be1ff71803d5963935df7a0d646b2d50d2" }
+pallet-session = { version = "2.0.0", git = "https://github.com/ProChain/substrate.git",  rev = "6688c3be1ff71803d5963935df7a0d646b2d50d2" }
+sp-runtime = { version = "2.0.0", git = "https://github.com/ProChain/substrate.git",  rev = "6688c3be1ff71803d5963935df7a0d646b2d50d2" }
+pallet-staking = { version = "2.0.0", git = "https://github.com/ProChain/substrate.git",  rev = "6688c3be1ff71803d5963935df7a0d646b2d50d2" }
+sc-executor = { version = "2.0.0", git = "https://github.com/ProChain/substrate.git",  rev = "6688c3be1ff71803d5963935df7a0d646b2d50d2" }
+frame-system = { version = "2.0.0", git = "https://github.com/ProChain/substrate.git",  rev = "6688c3be1ff71803d5963935df7a0d646b2d50d2" }
+substrate-test-client = { version = "2.0.0", git = "https://github.com/ProChain/substrate.git",  rev = "6688c3be1ff71803d5963935df7a0d646b2d50d2" }
+pallet-timestamp = { version = "2.0.0", git = "https://github.com/ProChain/substrate.git",  rev = "6688c3be1ff71803d5963935df7a0d646b2d50d2" }
+pallet-transaction-payment = { version = "2.0.0", git = "https://github.com/ProChain/substrate.git",  rev = "6688c3be1ff71803d5963935df7a0d646b2d50d2" }
+pallet-treasury = { version = "2.0.0", git = "https://github.com/ProChain/substrate.git",  rev = "6688c3be1ff71803d5963935df7a0d646b2d50d2" }
 wabt = "0.9.2"
 hex-literal = "0.2.1"

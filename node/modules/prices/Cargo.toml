@@ -13,15 +13,15 @@ num-traits = { version = "0.2.10", default-features = false }
 
 # primitives
 node-primitives = { version = "2.0.0", path = "../../primitives", default-features = false }
-sp-core = { version = "2.0.0", git = "https://github.com/ProChain/substrate.git", default-features = false }
-sp-std = { version = "2.0.0", git = "https://github.com/ProChain/substrate.git", default-features = false }
-sp-runtime = { version = "2.0.0", git = "https://github.com/ProChain/substrate.git",default-features = false }
-sp-io = { version = "2.0.0", git = "https://github.com/ProChain/substrate.git", default-features = false }
+sp-core = { version = "2.0.0", git = "https://github.com/ProChain/substrate.git",  rev = "6688c3be1ff71803d5963935df7a0d646b2d50d2", default-features = false }
+sp-std = { version = "2.0.0", git = "https://github.com/ProChain/substrate.git",  rev = "6688c3be1ff71803d5963935df7a0d646b2d50d2", default-features = false }
+sp-runtime = { version = "2.0.0", git = "https://github.com/ProChain/substrate.git",  rev = "6688c3be1ff71803d5963935df7a0d646b2d50d2",default-features = false }
+sp-io = { version = "2.0.0", git = "https://github.com/ProChain/substrate.git",  rev = "6688c3be1ff71803d5963935df7a0d646b2d50d2", default-features = false }
 
 # frame dependencies
-frame-support = { version = "2.0.0", git = "https://github.com/ProChain/substrate.git", default-features = false }
-frame-system = { version = "2.0.0", git = "https://github.com/ProChain/substrate.git", default-features = false }
-pallet-timestamp = { version = "2.0.0", git = "https://github.com/ProChain/substrate.git", default-features = false }
+frame-support = { version = "2.0.0", git = "https://github.com/ProChain/substrate.git",  rev = "6688c3be1ff71803d5963935df7a0d646b2d50d2", default-features = false }
+frame-system = { version = "2.0.0", git = "https://github.com/ProChain/substrate.git",  rev = "6688c3be1ff71803d5963935df7a0d646b2d50d2", default-features = false }
+pallet-timestamp = { version = "2.0.0", git = "https://github.com/ProChain/substrate.git",  rev = "6688c3be1ff71803d5963935df7a0d646b2d50d2", default-features = false }
 utilities = { path = "../utilities", default-features = false }
 
 [dev-dependencies]

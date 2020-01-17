@@ -11,4 +11,4 @@ hyper = "0.12.35"
 jsonrpc-core-client = { version = "14.0.3", features = ["http", "ws"] }
 log = "0.4.8"
 node-primitives = { version = "2.0.0", path = "../primitives" }
-sc-rpc = { version = "2.0.0", git = "https://github.com/ProChain/substrate.git" }
+sc-rpc = { version = "2.0.0", git = "https://github.com/ProChain/substrate.git",  rev = "6688c3be1ff71803d5963935df7a0d646b2d50d2" }

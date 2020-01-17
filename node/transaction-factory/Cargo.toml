@@ -5,15 +5,15 @@ authors = ["Parity Technologies <admin@parity.io>"]
 edition = "2018"
 
 [dependencies]
-sp-block-builder = { version = "2.0.0", git = "https://github.com/ProChain/substrate.git" }
-sc-cli = { version = "0.8.0", git = "https://github.com/ProChain/substrate.git" }
-sc-client-api = { version = "2.0.0", git = "https://github.com/ProChain/substrate.git" }
-sc-client = { version = "0.8", git = "https://github.com/ProChain/substrate.git" }
+sp-block-builder = { version = "2.0.0", git = "https://github.com/ProChain/substrate.git",  rev = "6688c3be1ff71803d5963935df7a0d646b2d50d2" }
+sc-cli = { version = "2.0.0", git = "https://github.com/ProChain/substrate.git",  rev = "6688c3be1ff71803d5963935df7a0d646b2d50d2" }
+sc-client-api = { version = "2.0.0", git = "https://github.com/ProChain/substrate.git",  rev = "6688c3be1ff71803d5963935df7a0d646b2d50d2" }
+sc-client = { version = "2.0.0", git = "https://github.com/ProChain/substrate.git",  rev = "6688c3be1ff71803d5963935df7a0d646b2d50d2" }
 codec = { package = "parity-scale-codec", version = "1.0.0", features = ["derive"] }
-sp-consensus = { version = "0.8", git = "https://github.com/ProChain/substrate.git" }
+sp-consensus = { version = "0.8", git = "https://github.com/ProChain/substrate.git",  rev = "6688c3be1ff71803d5963935df7a0d646b2d50d2" }
 log = "0.4.8"
-sp-core = { version = "2.0.0", git = "https://github.com/ProChain/substrate.git" }
-sp-api = { version = "2.0.0", git = "https://github.com/ProChain/substrate.git" }
-sp-runtime = { version = "2.0.0", git = "https://github.com/ProChain/substrate.git" }
-sc-service = { version = "0.8", git = "https://github.com/ProChain/substrate.git" }
-sp-blockchain = { version = "2.0.0", git = "https://github.com/ProChain/substrate.git" }
+sp-core = { version = "2.0.0", git = "https://github.com/ProChain/substrate.git",  rev = "6688c3be1ff71803d5963935df7a0d646b2d50d2" }
+sp-api = { version = "2.0.0", git = "https://github.com/ProChain/substrate.git",  rev = "6688c3be1ff71803d5963935df7a0d646b2d50d2" }
+sp-runtime = { version = "2.0.0", git = "https://github.com/ProChain/substrate.git",  rev = "6688c3be1ff71803d5963935df7a0d646b2d50d2" }
+sc-service = { version = "2.0.0", git = "https://github.com/ProChain/substrate.git",  rev = "6688c3be1ff71803d5963935df7a0d646b2d50d2" }
+sp-blockchain = { version = "2.0.0", git = "https://github.com/ProChain/substrate.git",  rev = "6688c3be1ff71803d5963935df7a0d646b2d50d2" }

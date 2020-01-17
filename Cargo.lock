@@ -425,8 +425,8 @@ dependencies = [
 
 [[package]]
 name = "browser-utils"
-version = "0.8.0"
-source = "git+https://github.com/ProChain/substrate.git#39db16e213d92db4f0bffc9dae715ad9c59d2a0c"
+version = "2.0.0"
+source = "git+https://github.com/ProChain/substrate.git?rev=6688c3be1ff71803d5963935df7a0d646b2d50d2#6688c3be1ff71803d5963935df7a0d646b2d50d2"
 dependencies = [
  "clear_on_drop",
  "console_error_panic_hook",
@@ -1036,7 +1036,7 @@ version = "0.99.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "2159be042979966de68315bce7034bb000c775f22e3e834e1c52ff78f041cae8"
 dependencies = [
- "proc-macro2 1.0.7",
+ "proc-macro2 1.0.8",
  "quote 1.0.2",
  "syn 1.0.13",
 ]
@@ -1147,7 +1147,7 @@ version = "0.6.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "ecf634c5213044b8d54a46dd282cf5dd1f86bb5cb53e92c409cb4680a7fb9894"
 dependencies = [
- "proc-macro2 1.0.7",
+ "proc-macro2 1.0.8",
  "quote 1.0.2",
  "syn 1.0.13",
 ]
@@ -1255,7 +1255,7 @@ version = "0.1.6"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "0bc225b78e0391e4b8683440bf2e63c2deeeb2ce5189eab46e2b68c6d3725d08"
 dependencies = [
- "proc-macro2 1.0.7",
+ "proc-macro2 1.0.8",
  "quote 1.0.2",
  "syn 1.0.13",
  "synstructure",
@@ -1361,7 +1361,7 @@ checksum = "00b0228411908ca8685dba7fc2cdd70ec9990a6e753e89b6ac91a84c40fbaf4b"
 [[package]]
 name = "fork-tree"
 version = "2.0.0"
-source = "git+https://github.com/ProChain/substrate.git#39db16e213d92db4f0bffc9dae715ad9c59d2a0c"
+source = "git+https://github.com/ProChain/substrate.git?rev=6688c3be1ff71803d5963935df7a0d646b2d50d2#6688c3be1ff71803d5963935df7a0d646b2d50d2"
 dependencies = [
  "parity-scale-codec",
 ]
@@ -1369,7 +1369,7 @@ dependencies = [
 [[package]]
 name = "frame-executive"
 version = "2.0.0"
-source = "git+https://github.com/ProChain/substrate.git#39db16e213d92db4f0bffc9dae715ad9c59d2a0c"
+source = "git+https://github.com/ProChain/substrate.git?rev=6688c3be1ff71803d5963935df7a0d646b2d50d2#6688c3be1ff71803d5963935df7a0d646b2d50d2"
 dependencies = [
  "frame-support",
  "frame-system",
@@ -1382,8 +1382,8 @@ dependencies = [
 
 [[package]]
 name = "frame-metadata"
-version = "10.0.0"
-source = "git+https://github.com/ProChain/substrate.git#39db16e213d92db4f0bffc9dae715ad9c59d2a0c"
+version = "2.0.0"
+source = "git+https://github.com/ProChain/substrate.git?rev=6688c3be1ff71803d5963935df7a0d646b2d50d2#6688c3be1ff71803d5963935df7a0d646b2d50d2"
 dependencies = [
  "parity-scale-codec",
  "serde",
@@ -1394,7 +1394,7 @@ dependencies = [
 [[package]]
 name = "frame-support"
 version = "2.0.0"
-source = "git+https://github.com/ProChain/substrate.git#39db16e213d92db4f0bffc9dae715ad9c59d2a0c"
+source = "git+https://github.com/ProChain/substrate.git?rev=6688c3be1ff71803d5963935df7a0d646b2d50d2#6688c3be1ff71803d5963935df7a0d646b2d50d2"
 dependencies = [
  "bitmask",
  "frame-metadata",
@@ -1418,10 +1418,10 @@ dependencies = [
 [[package]]
 name = "frame-support-procedural"
 version = "2.0.0"
-source = "git+https://github.com/ProChain/substrate.git#39db16e213d92db4f0bffc9dae715ad9c59d2a0c"
+source = "git+https://github.com/ProChain/substrate.git?rev=6688c3be1ff71803d5963935df7a0d646b2d50d2#6688c3be1ff71803d5963935df7a0d646b2d50d2"
 dependencies = [
  "frame-support-procedural-tools",
- "proc-macro2 1.0.7",
+ "proc-macro2 1.0.8",
  "quote 1.0.2",
  "syn 1.0.13",
 ]
@@ -1429,11 +1429,11 @@ dependencies = [
 [[package]]
 name = "frame-support-procedural-tools"
 version = "2.0.0"
-source = "git+https://github.com/ProChain/substrate.git#39db16e213d92db4f0bffc9dae715ad9c59d2a0c"
+source = "git+https://github.com/ProChain/substrate.git?rev=6688c3be1ff71803d5963935df7a0d646b2d50d2#6688c3be1ff71803d5963935df7a0d646b2d50d2"
 dependencies = [
  "frame-support-procedural-tools-derive",
  "proc-macro-crate",
- "proc-macro2 1.0.7",
+ "proc-macro2 1.0.8",
  "quote 1.0.2",
  "syn 1.0.13",
 ]
@@ -1441,9 +1441,9 @@ dependencies = [
 [[package]]
 name = "frame-support-procedural-tools-derive"
 version = "2.0.0"
-source = "git+https://github.com/ProChain/substrate.git#39db16e213d92db4f0bffc9dae715ad9c59d2a0c"
+source = "git+https://github.com/ProChain/substrate.git?rev=6688c3be1ff71803d5963935df7a0d646b2d50d2#6688c3be1ff71803d5963935df7a0d646b2d50d2"
 dependencies = [
- "proc-macro2 1.0.7",
+ "proc-macro2 1.0.8",
  "quote 1.0.2",
  "syn 1.0.13",
 ]
@@ -1451,7 +1451,7 @@ dependencies = [
 [[package]]
 name = "frame-system"
 version = "2.0.0"
-source = "git+https://github.com/ProChain/substrate.git#39db16e213d92db4f0bffc9dae715ad9c59d2a0c"
+source = "git+https://github.com/ProChain/substrate.git?rev=6688c3be1ff71803d5963935df7a0d646b2d50d2#6688c3be1ff71803d5963935df7a0d646b2d50d2"
 dependencies = [
  "frame-support",
  "impl-trait-for-tuples",
@@ -1468,7 +1468,7 @@ dependencies = [
 [[package]]
 name = "frame-system-rpc-runtime-api"
 version = "2.0.0"
-source = "git+https://github.com/ProChain/substrate.git#39db16e213d92db4f0bffc9dae715ad9c59d2a0c"
+source = "git+https://github.com/ProChain/substrate.git?rev=6688c3be1ff71803d5963935df7a0d646b2d50d2#6688c3be1ff71803d5963935df7a0d646b2d50d2"
 dependencies = [
  "parity-scale-codec",
  "sp-api",
@@ -1596,7 +1596,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "52e7c56c15537adb4f76d0b7a76ad131cb4d2f4f32d3b0bcabcbe1c7c5e87764"
 dependencies = [
  "proc-macro-hack",
- "proc-macro2 1.0.7",
+ "proc-macro2 1.0.8",
  "quote 1.0.2",
  "syn 1.0.13",
 ]
@@ -1791,8 +1791,8 @@ dependencies = [
 
 [[package]]
 name = "grafana-data-source"
-version = "0.8.0"
-source = "git+https://github.com/ProChain/substrate.git#39db16e213d92db4f0bffc9dae715ad9c59d2a0c"
+version = "2.0.0"
+source = "git+https://github.com/ProChain/substrate.git?rev=6688c3be1ff71803d5963935df7a0d646b2d50d2#6688c3be1ff71803d5963935df7a0d646b2d50d2"
 dependencies = [
  "async-std",
  "chrono",
@@ -2153,7 +2153,7 @@ version = "0.1.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "7ef5550a42e3740a0e71f909d4c861056a284060af885ae7aa6242820f920d9d"
 dependencies = [
- "proc-macro2 1.0.7",
+ "proc-macro2 1.0.8",
  "quote 1.0.2",
  "syn 1.0.13",
 ]
@@ -2275,7 +2275,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "8609af8f63b626e8e211f52441fcdb6ec54f1a446606b10d5c89ae9bf8a20058"
 dependencies = [
  "proc-macro-crate",
- "proc-macro2 1.0.7",
+ "proc-macro2 1.0.8",
  "quote 1.0.2",
  "syn 1.0.13",
 ]
@@ -2965,7 +2965,7 @@ version = "0.1.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "e37c5d4cd9473c5f4c9c111f033f15d4df9bd378fdf615944e360a4f55a05f0b"
 dependencies = [
- "proc-macro2 1.0.7",
+ "proc-macro2 1.0.8",
  "syn 1.0.13",
  "synstructure",
 ]
@@ -3002,9 +3002,9 @@ dependencies = [
 
 [[package]]
 name = "memory-db"
-version = "0.18.0"
+version = "0.18.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "828bdf600636e90c56652689f7c3823ae2072104e4b0b5e83ea984f592f12ab9"
+checksum = "881736a0f68a6fae1b596bb066c5bd16d7b3ed645a4dd8ffaefd02f585abaf71"
 dependencies = [
  "ahash",
  "hash-db",
@@ -3197,7 +3197,7 @@ dependencies = [
  "node-primitives",
  "node-rpc",
  "node-runtime",
- "node-transaction-factory 0.8.0 (git+https://github.com/ProChain/substrate.git)",
+ "node-transaction-factory 2.0.0",
  "pallet-authority-discovery",
  "pallet-balances",
  "pallet-contracts",
@@ -3241,7 +3241,7 @@ dependencies = [
  "structopt",
  "substrate-build-script-utils",
  "tempfile",
- "tokio 0.2.9",
+ "tokio 0.1.22",
  "vergen",
  "wasm-bindgen",
  "wasm-bindgen-futures",
@@ -3350,9 +3350,7 @@ dependencies = [
  "pallet-membership",
  "pallet-offences",
  "pallet-randomness-collective-flip",
- "pallet-recovery",
  "pallet-session",
- "pallet-society",
  "pallet-staking",
  "pallet-staking-reward-curve",
  "pallet-sudo",
@@ -3419,7 +3417,6 @@ dependencies = [
 [[package]]
 name = "node-transaction-factory"
 version = "0.8.0"
-source = "git+https://github.com/ProChain/substrate.git#39db16e213d92db4f0bffc9dae715ad9c59d2a0c"
 dependencies = [
  "log 0.4.8",
  "parity-scale-codec",
@@ -3437,7 +3434,8 @@ dependencies = [
 
 [[package]]
 name = "node-transaction-factory"
-version = "0.8.0"
+version = "2.0.0"
+source = "git+https://github.com/ProChain/substrate.git?rev=6688c3be1ff71803d5963935df7a0d646b2d50d2#6688c3be1ff71803d5963935df7a0d646b2d50d2"
 dependencies = [
  "log 0.4.8",
  "parity-scale-codec",
@@ -3546,9 +3544,9 @@ dependencies = [
 
 [[package]]
 name = "num_cpus"
-version = "1.11.1"
+version = "1.12.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "76dac5ed2a876980778b8b85f75a71b6cbf0db0b1232ee12f826bccb00d09d72"
+checksum = "46203554f085ff89c235cd12f7075f3233af9b11ed7c9e16dfe2560d03313ce6"
 dependencies = [
  "hermit-abi",
  "libc",
@@ -3645,7 +3643,7 @@ dependencies = [
 [[package]]
 name = "pallet-authority-discovery"
 version = "2.0.0"
-source = "git+https://github.com/ProChain/substrate.git#39db16e213d92db4f0bffc9dae715ad9c59d2a0c"
+source = "git+https://github.com/ProChain/substrate.git?rev=6688c3be1ff71803d5963935df7a0d646b2d50d2#6688c3be1ff71803d5963935df7a0d646b2d50d2"
 dependencies = [
  "frame-support",
  "frame-system",
@@ -3663,7 +3661,7 @@ dependencies = [
 [[package]]
 name = "pallet-authorship"
 version = "2.0.0"
-source = "git+https://github.com/ProChain/substrate.git#39db16e213d92db4f0bffc9dae715ad9c59d2a0c"
+source = "git+https://github.com/ProChain/substrate.git?rev=6688c3be1ff71803d5963935df7a0d646b2d50d2#6688c3be1ff71803d5963935df7a0d646b2d50d2"
 dependencies = [
  "frame-support",
  "frame-system",
@@ -3680,7 +3678,7 @@ dependencies = [
 [[package]]
 name = "pallet-babe"
 version = "2.0.0"
-source = "git+https://github.com/ProChain/substrate.git#39db16e213d92db4f0bffc9dae715ad9c59d2a0c"
+source = "git+https://github.com/ProChain/substrate.git?rev=6688c3be1ff71803d5963935df7a0d646b2d50d2#6688c3be1ff71803d5963935df7a0d646b2d50d2"
 dependencies = [
  "frame-support",
  "frame-system",
@@ -3701,7 +3699,7 @@ dependencies = [
 [[package]]
 name = "pallet-balances"
 version = "2.0.0"
-source = "git+https://github.com/ProChain/substrate.git#39db16e213d92db4f0bffc9dae715ad9c59d2a0c"
+source = "git+https://github.com/ProChain/substrate.git?rev=6688c3be1ff71803d5963935df7a0d646b2d50d2#6688c3be1ff71803d5963935df7a0d646b2d50d2"
 dependencies = [
  "frame-support",
  "frame-system",
@@ -3715,7 +3713,7 @@ dependencies = [
 [[package]]
 name = "pallet-collective"
 version = "2.0.0"
-source = "git+https://github.com/ProChain/substrate.git#39db16e213d92db4f0bffc9dae715ad9c59d2a0c"
+source = "git+https://github.com/ProChain/substrate.git?rev=6688c3be1ff71803d5963935df7a0d646b2d50d2#6688c3be1ff71803d5963935df7a0d646b2d50d2"
 dependencies = [
  "frame-support",
  "frame-system",
@@ -3731,7 +3729,7 @@ dependencies = [
 [[package]]
 name = "pallet-contracts"
 version = "2.0.0"
-source = "git+https://github.com/ProChain/substrate.git#39db16e213d92db4f0bffc9dae715ad9c59d2a0c"
+source = "git+https://github.com/ProChain/substrate.git?rev=6688c3be1ff71803d5963935df7a0d646b2d50d2#6688c3be1ff71803d5963935df7a0d646b2d50d2"
 dependencies = [
  "frame-support",
  "frame-system",
@@ -3749,8 +3747,8 @@ dependencies = [
 
 [[package]]
 name = "pallet-contracts-rpc"
-version = "0.8.0"
-source = "git+https://github.com/ProChain/substrate.git#39db16e213d92db4f0bffc9dae715ad9c59d2a0c"
+version = "2.0.0"
+source = "git+https://github.com/ProChain/substrate.git?rev=6688c3be1ff71803d5963935df7a0d646b2d50d2#6688c3be1ff71803d5963935df7a0d646b2d50d2"
 dependencies = [
  "jsonrpc-core",
  "jsonrpc-core-client",
@@ -3767,8 +3765,8 @@ dependencies = [
 
 [[package]]
 name = "pallet-contracts-rpc-runtime-api"
-version = "0.8.0"
-source = "git+https://github.com/ProChain/substrate.git#39db16e213d92db4f0bffc9dae715ad9c59d2a0c"
+version = "2.0.0"
+source = "git+https://github.com/ProChain/substrate.git?rev=6688c3be1ff71803d5963935df7a0d646b2d50d2#6688c3be1ff71803d5963935df7a0d646b2d50d2"
 dependencies = [
  "parity-scale-codec",
  "sp-api",
@@ -3779,7 +3777,7 @@ dependencies = [
 [[package]]
 name = "pallet-democracy"
 version = "2.0.0"
-source = "git+https://github.com/ProChain/substrate.git#39db16e213d92db4f0bffc9dae715ad9c59d2a0c"
+source = "git+https://github.com/ProChain/substrate.git?rev=6688c3be1ff71803d5963935df7a0d646b2d50d2#6688c3be1ff71803d5963935df7a0d646b2d50d2"
 dependencies = [
  "frame-support",
  "frame-system",
@@ -3794,7 +3792,7 @@ dependencies = [
 [[package]]
 name = "pallet-elections-phragmen"
 version = "2.0.0"
-source = "git+https://github.com/ProChain/substrate.git#39db16e213d92db4f0bffc9dae715ad9c59d2a0c"
+source = "git+https://github.com/ProChain/substrate.git?rev=6688c3be1ff71803d5963935df7a0d646b2d50d2#6688c3be1ff71803d5963935df7a0d646b2d50d2"
 dependencies = [
  "frame-support",
  "frame-system",
@@ -3807,7 +3805,7 @@ dependencies = [
 [[package]]
 name = "pallet-finality-tracker"
 version = "2.0.0"
-source = "git+https://github.com/ProChain/substrate.git#39db16e213d92db4f0bffc9dae715ad9c59d2a0c"
+source = "git+https://github.com/ProChain/substrate.git?rev=6688c3be1ff71803d5963935df7a0d646b2d50d2#6688c3be1ff71803d5963935df7a0d646b2d50d2"
 dependencies = [
  "frame-support",
  "frame-system",
@@ -3823,7 +3821,7 @@ dependencies = [
 [[package]]
 name = "pallet-grandpa"
 version = "2.0.0"
-source = "git+https://github.com/ProChain/substrate.git#39db16e213d92db4f0bffc9dae715ad9c59d2a0c"
+source = "git+https://github.com/ProChain/substrate.git?rev=6688c3be1ff71803d5963935df7a0d646b2d50d2#6688c3be1ff71803d5963935df7a0d646b2d50d2"
 dependencies = [
  "frame-support",
  "frame-system",
@@ -3841,7 +3839,7 @@ dependencies = [
 [[package]]
 name = "pallet-identity"
 version = "2.0.0"
-source = "git+https://github.com/ProChain/substrate.git#39db16e213d92db4f0bffc9dae715ad9c59d2a0c"
+source = "git+https://github.com/ProChain/substrate.git?rev=6688c3be1ff71803d5963935df7a0d646b2d50d2#6688c3be1ff71803d5963935df7a0d646b2d50d2"
 dependencies = [
  "enumflags2",
  "frame-support",
@@ -3856,7 +3854,7 @@ dependencies = [
 [[package]]
 name = "pallet-im-online"
 version = "2.0.0"
-source = "git+https://github.com/ProChain/substrate.git#39db16e213d92db4f0bffc9dae715ad9c59d2a0c"
+source = "git+https://github.com/ProChain/substrate.git?rev=6688c3be1ff71803d5963935df7a0d646b2d50d2#6688c3be1ff71803d5963935df7a0d646b2d50d2"
 dependencies = [
  "frame-support",
  "frame-system",
@@ -3875,7 +3873,7 @@ dependencies = [
 [[package]]
 name = "pallet-indices"
 version = "2.0.0"
-source = "git+https://github.com/ProChain/substrate.git#39db16e213d92db4f0bffc9dae715ad9c59d2a0c"
+source = "git+https://github.com/ProChain/substrate.git?rev=6688c3be1ff71803d5963935df7a0d646b2d50d2#6688c3be1ff71803d5963935df7a0d646b2d50d2"
 dependencies = [
  "frame-support",
  "frame-system",
@@ -3892,7 +3890,7 @@ dependencies = [
 [[package]]
 name = "pallet-membership"
 version = "2.0.0"
-source = "git+https://github.com/ProChain/substrate.git#39db16e213d92db4f0bffc9dae715ad9c59d2a0c"
+source = "git+https://github.com/ProChain/substrate.git?rev=6688c3be1ff71803d5963935df7a0d646b2d50d2#6688c3be1ff71803d5963935df7a0d646b2d50d2"
 dependencies = [
  "frame-support",
  "frame-system",
@@ -3906,7 +3904,7 @@ dependencies = [
 [[package]]
 name = "pallet-offences"
 version = "2.0.0"
-source = "git+https://github.com/ProChain/substrate.git#39db16e213d92db4f0bffc9dae715ad9c59d2a0c"
+source = "git+https://github.com/ProChain/substrate.git?rev=6688c3be1ff71803d5963935df7a0d646b2d50d2#6688c3be1ff71803d5963935df7a0d646b2d50d2"
 dependencies = [
  "frame-support",
  "frame-system",
@@ -3921,7 +3919,7 @@ dependencies = [
 [[package]]
 name = "pallet-randomness-collective-flip"
 version = "2.0.0"
-source = "git+https://github.com/ProChain/substrate.git#39db16e213d92db4f0bffc9dae715ad9c59d2a0c"
+source = "git+https://github.com/ProChain/substrate.git?rev=6688c3be1ff71803d5963935df7a0d646b2d50d2#6688c3be1ff71803d5963935df7a0d646b2d50d2"
 dependencies = [
  "frame-support",
  "frame-system",
@@ -3932,24 +3930,9 @@ dependencies = [
 ]
 
 [[package]]
-name = "pallet-recovery"
-version = "2.0.0"
-source = "git+https://github.com/ProChain/substrate.git#39db16e213d92db4f0bffc9dae715ad9c59d2a0c"
-dependencies = [
- "enumflags2",
- "frame-support",
- "frame-system",
- "parity-scale-codec",
- "serde",
- "sp-io",
- "sp-runtime",
- "sp-std",
-]
-
-[[package]]
 name = "pallet-session"
 version = "2.0.0"
-source = "git+https://github.com/ProChain/substrate.git#39db16e213d92db4f0bffc9dae715ad9c59d2a0c"
+source = "git+https://github.com/ProChain/substrate.git?rev=6688c3be1ff71803d5963935df7a0d646b2d50d2#6688c3be1ff71803d5963935df7a0d646b2d50d2"
 dependencies = [
  "frame-support",
  "frame-system",
@@ -3966,24 +3949,9 @@ dependencies = [
 ]
 
 [[package]]
-name = "pallet-society"
-version = "2.0.0"
-source = "git+https://github.com/ProChain/substrate.git#39db16e213d92db4f0bffc9dae715ad9c59d2a0c"
-dependencies = [
- "frame-support",
- "frame-system",
- "parity-scale-codec",
- "rand_chacha 0.2.1",
- "serde",
- "sp-io",
- "sp-runtime",
- "sp-std",
-]
-
-[[package]]
 name = "pallet-staking"
 version = "2.0.0"
-source = "git+https://github.com/ProChain/substrate.git#39db16e213d92db4f0bffc9dae715ad9c59d2a0c"
+source = "git+https://github.com/ProChain/substrate.git?rev=6688c3be1ff71803d5963935df7a0d646b2d50d2#6688c3be1ff71803d5963935df7a0d646b2d50d2"
 dependencies = [
  "frame-support",
  "frame-system",
@@ -4003,10 +3971,10 @@ dependencies = [
 [[package]]
 name = "pallet-staking-reward-curve"
 version = "2.0.0"
-source = "git+https://github.com/ProChain/substrate.git#39db16e213d92db4f0bffc9dae715ad9c59d2a0c"
+source = "git+https://github.com/ProChain/substrate.git?rev=6688c3be1ff71803d5963935df7a0d646b2d50d2#6688c3be1ff71803d5963935df7a0d646b2d50d2"
 dependencies = [
  "proc-macro-crate",
- "proc-macro2 1.0.7",
+ "proc-macro2 1.0.8",
  "quote 1.0.2",
  "syn 1.0.13",
 ]
@@ -4014,7 +3982,7 @@ dependencies = [
 [[package]]
 name = "pallet-sudo"
 version = "2.0.0"
-source = "git+https://github.com/ProChain/substrate.git#39db16e213d92db4f0bffc9dae715ad9c59d2a0c"
+source = "git+https://github.com/ProChain/substrate.git?rev=6688c3be1ff71803d5963935df7a0d646b2d50d2#6688c3be1ff71803d5963935df7a0d646b2d50d2"
 dependencies = [
  "frame-support",
  "frame-system",
@@ -4028,7 +3996,7 @@ dependencies = [
 [[package]]
 name = "pallet-timestamp"
 version = "2.0.0"
-source = "git+https://github.com/ProChain/substrate.git#39db16e213d92db4f0bffc9dae715ad9c59d2a0c"
+source = "git+https://github.com/ProChain/substrate.git?rev=6688c3be1ff71803d5963935df7a0d646b2d50d2#6688c3be1ff71803d5963935df7a0d646b2d50d2"
 dependencies = [
  "frame-support",
  "frame-system",
@@ -4044,7 +4012,7 @@ dependencies = [
 [[package]]
 name = "pallet-transaction-payment"
 version = "2.0.0"
-source = "git+https://github.com/ProChain/substrate.git#39db16e213d92db4f0bffc9dae715ad9c59d2a0c"
+source = "git+https://github.com/ProChain/substrate.git?rev=6688c3be1ff71803d5963935df7a0d646b2d50d2#6688c3be1ff71803d5963935df7a0d646b2d50d2"
 dependencies = [
  "frame-support",
  "frame-system",
@@ -4057,7 +4025,7 @@ dependencies = [
 [[package]]
 name = "pallet-transaction-payment-rpc"
 version = "2.0.0"
-source = "git+https://github.com/ProChain/substrate.git#39db16e213d92db4f0bffc9dae715ad9c59d2a0c"
+source = "git+https://github.com/ProChain/substrate.git?rev=6688c3be1ff71803d5963935df7a0d646b2d50d2#6688c3be1ff71803d5963935df7a0d646b2d50d2"
 dependencies = [
  "jsonrpc-core",
  "jsonrpc-core-client",
@@ -4075,7 +4043,7 @@ dependencies = [
 [[package]]
 name = "pallet-transaction-payment-rpc-runtime-api"
 version = "2.0.0"
-source = "git+https://github.com/ProChain/substrate.git#39db16e213d92db4f0bffc9dae715ad9c59d2a0c"
+source = "git+https://github.com/ProChain/substrate.git?rev=6688c3be1ff71803d5963935df7a0d646b2d50d2#6688c3be1ff71803d5963935df7a0d646b2d50d2"
 dependencies = [
  "frame-support",
  "parity-scale-codec",
@@ -4088,7 +4056,7 @@ dependencies = [
 [[package]]
 name = "pallet-treasury"
 version = "2.0.0"
-source = "git+https://github.com/ProChain/substrate.git#39db16e213d92db4f0bffc9dae715ad9c59d2a0c"
+source = "git+https://github.com/ProChain/substrate.git?rev=6688c3be1ff71803d5963935df7a0d646b2d50d2#6688c3be1ff71803d5963935df7a0d646b2d50d2"
 dependencies = [
  "frame-support",
  "frame-system",
@@ -4102,7 +4070,7 @@ dependencies = [
 [[package]]
 name = "pallet-utility"
 version = "2.0.0"
-source = "git+https://github.com/ProChain/substrate.git#39db16e213d92db4f0bffc9dae715ad9c59d2a0c"
+source = "git+https://github.com/ProChain/substrate.git?rev=6688c3be1ff71803d5963935df7a0d646b2d50d2#6688c3be1ff71803d5963935df7a0d646b2d50d2"
 dependencies = [
  "frame-support",
  "frame-system",
@@ -4206,7 +4174,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "34e513ff3e406f3ede6796dcdc83d0b32ffb86668cea1ccf7363118abeb00476"
 dependencies = [
  "proc-macro-crate",
- "proc-macro2 1.0.7",
+ "proc-macro2 1.0.8",
  "quote 1.0.2",
  "syn 1.0.13",
 ]
@@ -4248,7 +4216,7 @@ version = "0.1.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "f557c32c6d268a07c921471619c0295f5efad3a0e76d4f97a05c091a51d110b2"
 dependencies = [
- "proc-macro2 1.0.7",
+ "proc-macro2 1.0.8",
  "syn 1.0.13",
  "synstructure",
 ]
@@ -4349,7 +4317,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "4214c9e912ef61bf42b81ba9a47e8aad1b2ffaf739ab162bf96d1e011f54e6c5"
 dependencies = [
  "proc-macro-hack",
- "proc-macro2 1.0.7",
+ "proc-macro2 1.0.8",
  "quote 1.0.2",
  "syn 1.0.13",
 ]
@@ -4412,7 +4380,7 @@ version = "0.4.6"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "44ca92f893f0656d3cba8158dd0f2b99b94de256a4a54e870bd6922fcc6c8355"
 dependencies = [
- "proc-macro2 1.0.7",
+ "proc-macro2 1.0.8",
  "quote 1.0.2",
  "syn 1.0.13",
 ]
@@ -4506,7 +4474,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "53c98547ceaea14eeb26fcadf51dc70d01a2479a7839170eae133721105e4428"
 dependencies = [
  "proc-macro-error-attr",
- "proc-macro2 1.0.7",
+ "proc-macro2 1.0.8",
  "quote 1.0.2",
  "rustversion",
  "syn 1.0.13",
@@ -4518,7 +4486,7 @@ version = "0.4.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "c2bf5d493cf5d3e296beccfd61794e445e830dfc8070a9c248ad3ee071392c6c"
 dependencies = [
- "proc-macro2 1.0.7",
+ "proc-macro2 1.0.8",
  "quote 1.0.2",
  "rustversion",
  "syn 1.0.13",
@@ -4531,7 +4499,7 @@ version = "0.5.11"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "ecd45702f76d6d3c75a80564378ae228a85f0b59d2f3ed43c91b4a69eb2ebfc5"
 dependencies = [
- "proc-macro2 1.0.7",
+ "proc-macro2 1.0.8",
  "quote 1.0.2",
  "syn 1.0.13",
 ]
@@ -4553,9 +4521,9 @@ dependencies = [
 
 [[package]]
 name = "proc-macro2"
-version = "1.0.7"
+version = "1.0.8"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "0319972dcae462681daf4da1adeeaa066e3ebd29c69be96c6abb1259d2ee2bcc"
+checksum = "3acb317c6ff86a4e579dfa00fc5e6cca91ecbb4e7eb2df0468805b674eb88548"
 dependencies = [
  "unicode-xid 0.2.0",
 ]
@@ -4661,7 +4629,7 @@ version = "1.0.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "053a8c8bcc71fcce321828dc897a98ab9760bef03a4fc36693c231e5b3216cfe"
 dependencies = [
- "proc-macro2 1.0.7",
+ "proc-macro2 1.0.8",
 ]
 
 [[package]]
@@ -5050,7 +5018,7 @@ version = "1.0.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "3a0538bd897e17257b0128d2fd95c2ed6df939374073a36166051a79e2eb7986"
 dependencies = [
- "proc-macro2 1.0.7",
+ "proc-macro2 1.0.8",
  "quote 1.0.2",
  "syn 1.0.13",
 ]
@@ -5097,8 +5065,8 @@ dependencies = [
 
 [[package]]
 name = "sc-authority-discovery"
-version = "0.8.0"
-source = "git+https://github.com/ProChain/substrate.git#39db16e213d92db4f0bffc9dae715ad9c59d2a0c"
+version = "2.0.0"
+source = "git+https://github.com/ProChain/substrate.git?rev=6688c3be1ff71803d5963935df7a0d646b2d50d2#6688c3be1ff71803d5963935df7a0d646b2d50d2"
 dependencies = [
  "bytes 0.4.12",
  "derive_more",
@@ -5123,8 +5091,8 @@ dependencies = [
 
 [[package]]
 name = "sc-basic-authority"
-version = "0.8.0"
-source = "git+https://github.com/ProChain/substrate.git#39db16e213d92db4f0bffc9dae715ad9c59d2a0c"
+version = "2.0.0"
+source = "git+https://github.com/ProChain/substrate.git?rev=6688c3be1ff71803d5963935df7a0d646b2d50d2#6688c3be1ff71803d5963935df7a0d646b2d50d2"
 dependencies = [
  "futures 0.3.1",
  "log 0.4.8",
@@ -5145,8 +5113,8 @@ dependencies = [
 
 [[package]]
 name = "sc-block-builder"
-version = "0.8.0"
-source = "git+https://github.com/ProChain/substrate.git#39db16e213d92db4f0bffc9dae715ad9c59d2a0c"
+version = "2.0.0"
+source = "git+https://github.com/ProChain/substrate.git?rev=6688c3be1ff71803d5963935df7a0d646b2d50d2#6688c3be1ff71803d5963935df7a0d646b2d50d2"
 dependencies = [
  "parity-scale-codec",
  "sc-client-api",
@@ -5162,7 +5130,7 @@ dependencies = [
 [[package]]
 name = "sc-chain-spec"
 version = "2.0.0"
-source = "git+https://github.com/ProChain/substrate.git#39db16e213d92db4f0bffc9dae715ad9c59d2a0c"
+source = "git+https://github.com/ProChain/substrate.git?rev=6688c3be1ff71803d5963935df7a0d646b2d50d2#6688c3be1ff71803d5963935df7a0d646b2d50d2"
 dependencies = [
  "impl-trait-for-tuples",
  "sc-chain-spec-derive",
@@ -5177,18 +5145,18 @@ dependencies = [
 [[package]]
 name = "sc-chain-spec-derive"
 version = "2.0.0"
-source = "git+https://github.com/ProChain/substrate.git#39db16e213d92db4f0bffc9dae715ad9c59d2a0c"
+source = "git+https://github.com/ProChain/substrate.git?rev=6688c3be1ff71803d5963935df7a0d646b2d50d2#6688c3be1ff71803d5963935df7a0d646b2d50d2"
 dependencies = [
  "proc-macro-crate",
- "proc-macro2 1.0.7",
+ "proc-macro2 1.0.8",
  "quote 1.0.2",
  "syn 1.0.13",
 ]
 
 [[package]]
 name = "sc-cli"
-version = "0.8.0"
-source = "git+https://github.com/ProChain/substrate.git#39db16e213d92db4f0bffc9dae715ad9c59d2a0c"
+version = "2.0.0"
+source = "git+https://github.com/ProChain/substrate.git?rev=6688c3be1ff71803d5963935df7a0d646b2d50d2#6688c3be1ff71803d5963935df7a0d646b2d50d2"
 dependencies = [
  "ansi_term 0.12.1",
  "app_dirs",
@@ -5222,8 +5190,8 @@ dependencies = [
 
 [[package]]
 name = "sc-client"
-version = "0.8.0"
-source = "git+https://github.com/ProChain/substrate.git#39db16e213d92db4f0bffc9dae715ad9c59d2a0c"
+version = "2.0.0"
+source = "git+https://github.com/ProChain/substrate.git?rev=6688c3be1ff71803d5963935df7a0d646b2d50d2#6688c3be1ff71803d5963935df7a0d646b2d50d2"
 dependencies = [
  "derive_more",
  "fnv",
@@ -5256,7 +5224,7 @@ dependencies = [
 [[package]]
 name = "sc-client-api"
 version = "2.0.0"
-source = "git+https://github.com/ProChain/substrate.git#39db16e213d92db4f0bffc9dae715ad9c59d2a0c"
+source = "git+https://github.com/ProChain/substrate.git?rev=6688c3be1ff71803d5963935df7a0d646b2d50d2#6688c3be1ff71803d5963935df7a0d646b2d50d2"
 dependencies = [
  "derive_more",
  "fnv",
@@ -5286,8 +5254,8 @@ dependencies = [
 
 [[package]]
 name = "sc-client-db"
-version = "0.8.0"
-source = "git+https://github.com/ProChain/substrate.git#39db16e213d92db4f0bffc9dae715ad9c59d2a0c"
+version = "2.0.0"
+source = "git+https://github.com/ProChain/substrate.git?rev=6688c3be1ff71803d5963935df7a0d646b2d50d2#6688c3be1ff71803d5963935df7a0d646b2d50d2"
 dependencies = [
  "hash-db",
  "kvdb",
@@ -5313,10 +5281,11 @@ dependencies = [
 [[package]]
 name = "sc-consensus-babe"
 version = "0.8.0"
-source = "git+https://github.com/ProChain/substrate.git#39db16e213d92db4f0bffc9dae715ad9c59d2a0c"
+source = "git+https://github.com/ProChain/substrate.git?rev=6688c3be1ff71803d5963935df7a0d646b2d50d2#6688c3be1ff71803d5963935df7a0d646b2d50d2"
 dependencies = [
  "derive_more",
  "fork-tree",
+ "futures 0.1.29",
  "futures 0.3.1",
  "futures-timer 0.4.0",
  "log 0.4.8",
@@ -5352,7 +5321,7 @@ dependencies = [
 [[package]]
 name = "sc-consensus-slots"
 version = "0.8.0"
-source = "git+https://github.com/ProChain/substrate.git#39db16e213d92db4f0bffc9dae715ad9c59d2a0c"
+source = "git+https://github.com/ProChain/substrate.git?rev=6688c3be1ff71803d5963935df7a0d646b2d50d2#6688c3be1ff71803d5963935df7a0d646b2d50d2"
 dependencies = [
  "futures 0.3.1",
  "futures-timer 2.0.2",
@@ -5373,7 +5342,7 @@ dependencies = [
 [[package]]
 name = "sc-consensus-uncles"
 version = "0.8.0"
-source = "git+https://github.com/ProChain/substrate.git#39db16e213d92db4f0bffc9dae715ad9c59d2a0c"
+source = "git+https://github.com/ProChain/substrate.git?rev=6688c3be1ff71803d5963935df7a0d646b2d50d2#6688c3be1ff71803d5963935df7a0d646b2d50d2"
 dependencies = [
  "log 0.4.8",
  "sc-client-api",
@@ -5386,8 +5355,8 @@ dependencies = [
 
 [[package]]
 name = "sc-executor"
-version = "0.8.0"
-source = "git+https://github.com/ProChain/substrate.git#39db16e213d92db4f0bffc9dae715ad9c59d2a0c"
+version = "2.0.0"
+source = "git+https://github.com/ProChain/substrate.git?rev=6688c3be1ff71803d5963935df7a0d646b2d50d2#6688c3be1ff71803d5963935df7a0d646b2d50d2"
 dependencies = [
  "derive_more",
  "lazy_static",
@@ -5413,8 +5382,8 @@ dependencies = [
 
 [[package]]
 name = "sc-executor-common"
-version = "0.8.0"
-source = "git+https://github.com/ProChain/substrate.git#39db16e213d92db4f0bffc9dae715ad9c59d2a0c"
+version = "2.0.0"
+source = "git+https://github.com/ProChain/substrate.git?rev=6688c3be1ff71803d5963935df7a0d646b2d50d2#6688c3be1ff71803d5963935df7a0d646b2d50d2"
 dependencies = [
  "derive_more",
  "log 0.4.8",
@@ -5428,8 +5397,8 @@ dependencies = [
 
 [[package]]
 name = "sc-executor-wasmi"
-version = "0.8.0"
-source = "git+https://github.com/ProChain/substrate.git#39db16e213d92db4f0bffc9dae715ad9c59d2a0c"
+version = "2.0.0"
+source = "git+https://github.com/ProChain/substrate.git?rev=6688c3be1ff71803d5963935df7a0d646b2d50d2#6688c3be1ff71803d5963935df7a0d646b2d50d2"
 dependencies = [
  "log 0.4.8",
  "parity-scale-codec",
@@ -5444,8 +5413,8 @@ dependencies = [
 
 [[package]]
 name = "sc-executor-wasmtime"
-version = "0.8.0"
-source = "git+https://github.com/ProChain/substrate.git#39db16e213d92db4f0bffc9dae715ad9c59d2a0c"
+version = "2.0.0"
+source = "git+https://github.com/ProChain/substrate.git?rev=6688c3be1ff71803d5963935df7a0d646b2d50d2#6688c3be1ff71803d5963935df7a0d646b2d50d2"
 dependencies = [
  "cranelift-codegen",
  "cranelift-entity",
@@ -5468,8 +5437,8 @@ dependencies = [
 
 [[package]]
 name = "sc-finality-grandpa"
-version = "0.8.0"
-source = "git+https://github.com/ProChain/substrate.git#39db16e213d92db4f0bffc9dae715ad9c59d2a0c"
+version = "2.0.0"
+source = "git+https://github.com/ProChain/substrate.git?rev=6688c3be1ff71803d5963935df7a0d646b2d50d2#6688c3be1ff71803d5963935df7a0d646b2d50d2"
 dependencies = [
  "finality-grandpa",
  "fork-tree",
@@ -5499,7 +5468,7 @@ dependencies = [
 [[package]]
 name = "sc-keystore"
 version = "2.0.0"
-source = "git+https://github.com/ProChain/substrate.git#39db16e213d92db4f0bffc9dae715ad9c59d2a0c"
+source = "git+https://github.com/ProChain/substrate.git?rev=6688c3be1ff71803d5963935df7a0d646b2d50d2#6688c3be1ff71803d5963935df7a0d646b2d50d2"
 dependencies = [
  "derive_more",
  "hex",
@@ -5514,7 +5483,7 @@ dependencies = [
 [[package]]
 name = "sc-network"
 version = "0.8.0"
-source = "git+https://github.com/ProChain/substrate.git#39db16e213d92db4f0bffc9dae715ad9c59d2a0c"
+source = "git+https://github.com/ProChain/substrate.git?rev=6688c3be1ff71803d5963935df7a0d646b2d50d2#6688c3be1ff71803d5963935df7a0d646b2d50d2"
 dependencies = [
  "bitflags",
  "bytes 0.5.3",
@@ -5557,8 +5526,8 @@ dependencies = [
 
 [[package]]
 name = "sc-network-gossip"
-version = "0.8.0"
-source = "git+https://github.com/ProChain/substrate.git#39db16e213d92db4f0bffc9dae715ad9c59d2a0c"
+version = "2.0.0"
+source = "git+https://github.com/ProChain/substrate.git?rev=6688c3be1ff71803d5963935df7a0d646b2d50d2#6688c3be1ff71803d5963935df7a0d646b2d50d2"
 dependencies = [
  "futures 0.1.29",
  "futures 0.3.1",
@@ -5574,7 +5543,7 @@ dependencies = [
 [[package]]
 name = "sc-offchain"
 version = "2.0.0"
-source = "git+https://github.com/ProChain/substrate.git#39db16e213d92db4f0bffc9dae715ad9c59d2a0c"
+source = "git+https://github.com/ProChain/substrate.git?rev=6688c3be1ff71803d5963935df7a0d646b2d50d2#6688c3be1ff71803d5963935df7a0d646b2d50d2"
 dependencies = [
  "bytes 0.4.12",
  "fnv",
@@ -5601,7 +5570,7 @@ dependencies = [
 [[package]]
 name = "sc-peerset"
 version = "2.0.0"
-source = "git+https://github.com/ProChain/substrate.git#39db16e213d92db4f0bffc9dae715ad9c59d2a0c"
+source = "git+https://github.com/ProChain/substrate.git?rev=6688c3be1ff71803d5963935df7a0d646b2d50d2#6688c3be1ff71803d5963935df7a0d646b2d50d2"
 dependencies = [
  "futures 0.3.1",
  "libp2p",
@@ -5612,7 +5581,7 @@ dependencies = [
 [[package]]
 name = "sc-rpc"
 version = "2.0.0"
-source = "git+https://github.com/ProChain/substrate.git#39db16e213d92db4f0bffc9dae715ad9c59d2a0c"
+source = "git+https://github.com/ProChain/substrate.git?rev=6688c3be1ff71803d5963935df7a0d646b2d50d2#6688c3be1ff71803d5963935df7a0d646b2d50d2"
 dependencies = [
  "futures 0.3.1",
  "hash-db",
@@ -5640,8 +5609,8 @@ dependencies = [
 
 [[package]]
 name = "sc-rpc-api"
-version = "0.8.0"
-source = "git+https://github.com/ProChain/substrate.git#39db16e213d92db4f0bffc9dae715ad9c59d2a0c"
+version = "2.0.0"
+source = "git+https://github.com/ProChain/substrate.git?rev=6688c3be1ff71803d5963935df7a0d646b2d50d2#6688c3be1ff71803d5963935df7a0d646b2d50d2"
 dependencies = [
  "derive_more",
  "futures 0.3.1",
@@ -5663,7 +5632,7 @@ dependencies = [
 [[package]]
 name = "sc-rpc-server"
 version = "2.0.0"
-source = "git+https://github.com/ProChain/substrate.git#39db16e213d92db4f0bffc9dae715ad9c59d2a0c"
+source = "git+https://github.com/ProChain/substrate.git?rev=6688c3be1ff71803d5963935df7a0d646b2d50d2#6688c3be1ff71803d5963935df7a0d646b2d50d2"
 dependencies = [
  "jsonrpc-core",
  "jsonrpc-http-server",
@@ -5677,14 +5646,13 @@ dependencies = [
 
 [[package]]
 name = "sc-service"
-version = "0.8.0"
-source = "git+https://github.com/ProChain/substrate.git#39db16e213d92db4f0bffc9dae715ad9c59d2a0c"
+version = "2.0.0"
+source = "git+https://github.com/ProChain/substrate.git?rev=6688c3be1ff71803d5963935df7a0d646b2d50d2#6688c3be1ff71803d5963935df7a0d646b2d50d2"
 dependencies = [
  "derive_more",
  "exit-future",
  "futures 0.1.29",
  "futures 0.3.1",
- "futures-timer 2.0.2",
  "grafana-data-source",
  "lazy_static",
  "log 0.4.8",
@@ -5719,13 +5687,14 @@ dependencies = [
  "sysinfo",
  "target_info",
  "tokio-executor 0.1.9",
+ "tokio-timer",
  "tracing",
 ]
 
 [[package]]
 name = "sc-service-test"
 version = "2.0.0"
-source = "git+https://github.com/ProChain/substrate.git#39db16e213d92db4f0bffc9dae715ad9c59d2a0c"
+source = "git+https://github.com/ProChain/substrate.git?rev=6688c3be1ff71803d5963935df7a0d646b2d50d2#6688c3be1ff71803d5963935df7a0d646b2d50d2"
 dependencies = [
  "env_logger 0.7.1",
  "fdlimit",
@@ -5745,8 +5714,8 @@ dependencies = [
 
 [[package]]
 name = "sc-state-db"
-version = "0.8.0"
-source = "git+https://github.com/ProChain/substrate.git#39db16e213d92db4f0bffc9dae715ad9c59d2a0c"
+version = "2.0.0"
+source = "git+https://github.com/ProChain/substrate.git?rev=6688c3be1ff71803d5963935df7a0d646b2d50d2#6688c3be1ff71803d5963935df7a0d646b2d50d2"
 dependencies = [
  "log 0.4.8",
  "parity-scale-codec",
@@ -5757,7 +5726,7 @@ dependencies = [
 [[package]]
 name = "sc-telemetry"
 version = "2.0.0"
-source = "git+https://github.com/ProChain/substrate.git#39db16e213d92db4f0bffc9dae715ad9c59d2a0c"
+source = "git+https://github.com/ProChain/substrate.git?rev=6688c3be1ff71803d5963935df7a0d646b2d50d2#6688c3be1ff71803d5963935df7a0d646b2d50d2"
 dependencies = [
  "bytes 0.5.3",
  "futures 0.3.1",
@@ -5778,7 +5747,7 @@ dependencies = [
 [[package]]
 name = "sc-tracing"
 version = "2.0.0"
-source = "git+https://github.com/ProChain/substrate.git#39db16e213d92db4f0bffc9dae715ad9c59d2a0c"
+source = "git+https://github.com/ProChain/substrate.git?rev=6688c3be1ff71803d5963935df7a0d646b2d50d2#6688c3be1ff71803d5963935df7a0d646b2d50d2"
 dependencies = [
  "erased-serde",
  "grafana-data-source",
@@ -5794,7 +5763,7 @@ dependencies = [
 [[package]]
 name = "sc-transaction-graph"
 version = "2.0.0"
-source = "git+https://github.com/ProChain/substrate.git#39db16e213d92db4f0bffc9dae715ad9c59d2a0c"
+source = "git+https://github.com/ProChain/substrate.git?rev=6688c3be1ff71803d5963935df7a0d646b2d50d2#6688c3be1ff71803d5963935df7a0d646b2d50d2"
 dependencies = [
  "derive_more",
  "futures 0.3.1",
@@ -5809,7 +5778,7 @@ dependencies = [
 [[package]]
 name = "sc-transaction-pool"
 version = "2.0.0"
-source = "git+https://github.com/ProChain/substrate.git#39db16e213d92db4f0bffc9dae715ad9c59d2a0c"
+source = "git+https://github.com/ProChain/substrate.git?rev=6688c3be1ff71803d5963935df7a0d646b2d50d2#6688c3be1ff71803d5963935df7a0d646b2d50d2"
 dependencies = [
  "derive_more",
  "futures 0.3.1",
@@ -5879,7 +5848,7 @@ version = "0.10.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "f8584eea9b9ff42825b46faf46a8c24d2cff13ec152fa2a50df788b87c07ee28"
 dependencies = [
- "proc-macro2 1.0.7",
+ "proc-macro2 1.0.8",
  "quote 1.0.2",
  "syn 1.0.13",
 ]
@@ -5957,7 +5926,7 @@ version = "1.0.104"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "128f9e303a5a29922045a830221b8f78ec74a5f544944f3d5984f8ec3895ef64"
 dependencies = [
- "proc-macro2 1.0.7",
+ "proc-macro2 1.0.8",
  "quote 1.0.2",
  "syn 1.0.13",
 ]
@@ -6086,7 +6055,7 @@ version = "0.2.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "a945ec7f7ce853e89ffa36be1e27dce9a43e82ff9093bf3461c30d5da74ed11b"
 dependencies = [
- "proc-macro2 1.0.7",
+ "proc-macro2 1.0.8",
  "quote 1.0.2",
  "syn 1.0.13",
 ]
@@ -6148,7 +6117,7 @@ checksum = "4bf77cb82ba8453b42b6ae1d692e4cdc92f9a47beaf89a847c8be83f4e328ad3"
 [[package]]
 name = "sp-api"
 version = "2.0.0"
-source = "git+https://github.com/ProChain/substrate.git#39db16e213d92db4f0bffc9dae715ad9c59d2a0c"
+source = "git+https://github.com/ProChain/substrate.git?rev=6688c3be1ff71803d5963935df7a0d646b2d50d2#6688c3be1ff71803d5963935df7a0d646b2d50d2"
 dependencies = [
  "hash-db",
  "parity-scale-codec",
@@ -6163,11 +6132,11 @@ dependencies = [
 [[package]]
 name = "sp-api-proc-macro"
 version = "2.0.0"
-source = "git+https://github.com/ProChain/substrate.git#39db16e213d92db4f0bffc9dae715ad9c59d2a0c"
+source = "git+https://github.com/ProChain/substrate.git?rev=6688c3be1ff71803d5963935df7a0d646b2d50d2#6688c3be1ff71803d5963935df7a0d646b2d50d2"
 dependencies = [
  "blake2-rfc",
  "proc-macro-crate",
- "proc-macro2 1.0.7",
+ "proc-macro2 1.0.8",
  "quote 1.0.2",
  "syn 1.0.13",
 ]
@@ -6175,7 +6144,7 @@ dependencies = [
 [[package]]
 name = "sp-application-crypto"
 version = "2.0.0"
-source = "git+https://github.com/ProChain/substrate.git#39db16e213d92db4f0bffc9dae715ad9c59d2a0c"
+source = "git+https://github.com/ProChain/substrate.git?rev=6688c3be1ff71803d5963935df7a0d646b2d50d2#6688c3be1ff71803d5963935df7a0d646b2d50d2"
 dependencies = [
  "parity-scale-codec",
  "serde",
@@ -6187,7 +6156,7 @@ dependencies = [
 [[package]]
 name = "sp-arithmetic"
 version = "2.0.0"
-source = "git+https://github.com/ProChain/substrate.git#39db16e213d92db4f0bffc9dae715ad9c59d2a0c"
+source = "git+https://github.com/ProChain/substrate.git?rev=6688c3be1ff71803d5963935df7a0d646b2d50d2#6688c3be1ff71803d5963935df7a0d646b2d50d2"
 dependencies = [
  "integer-sqrt",
  "num-traits",
@@ -6200,7 +6169,7 @@ dependencies = [
 [[package]]
 name = "sp-authority-discovery"
 version = "2.0.0"
-source = "git+https://github.com/ProChain/substrate.git#39db16e213d92db4f0bffc9dae715ad9c59d2a0c"
+source = "git+https://github.com/ProChain/substrate.git?rev=6688c3be1ff71803d5963935df7a0d646b2d50d2#6688c3be1ff71803d5963935df7a0d646b2d50d2"
 dependencies = [
  "parity-scale-codec",
  "sp-api",
@@ -6212,7 +6181,7 @@ dependencies = [
 [[package]]
 name = "sp-authorship"
 version = "2.0.0"
-source = "git+https://github.com/ProChain/substrate.git#39db16e213d92db4f0bffc9dae715ad9c59d2a0c"
+source = "git+https://github.com/ProChain/substrate.git?rev=6688c3be1ff71803d5963935df7a0d646b2d50d2#6688c3be1ff71803d5963935df7a0d646b2d50d2"
 dependencies = [
  "parity-scale-codec",
  "sp-inherents",
@@ -6223,7 +6192,7 @@ dependencies = [
 [[package]]
 name = "sp-block-builder"
 version = "2.0.0"
-source = "git+https://github.com/ProChain/substrate.git#39db16e213d92db4f0bffc9dae715ad9c59d2a0c"
+source = "git+https://github.com/ProChain/substrate.git?rev=6688c3be1ff71803d5963935df7a0d646b2d50d2#6688c3be1ff71803d5963935df7a0d646b2d50d2"
 dependencies = [
  "parity-scale-codec",
  "sp-api",
@@ -6235,7 +6204,7 @@ dependencies = [
 [[package]]
 name = "sp-blockchain"
 version = "2.0.0"
-source = "git+https://github.com/ProChain/substrate.git#39db16e213d92db4f0bffc9dae715ad9c59d2a0c"
+source = "git+https://github.com/ProChain/substrate.git?rev=6688c3be1ff71803d5963935df7a0d646b2d50d2#6688c3be1ff71803d5963935df7a0d646b2d50d2"
 dependencies = [
  "derive_more",
  "log 0.4.8",
@@ -6251,7 +6220,7 @@ dependencies = [
 [[package]]
 name = "sp-consensus"
 version = "0.8.0"
-source = "git+https://github.com/ProChain/substrate.git#39db16e213d92db4f0bffc9dae715ad9c59d2a0c"
+source = "git+https://github.com/ProChain/substrate.git?rev=6688c3be1ff71803d5963935df7a0d646b2d50d2#6688c3be1ff71803d5963935df7a0d646b2d50d2"
 dependencies = [
  "derive_more",
  "futures 0.3.1",
@@ -6271,7 +6240,7 @@ dependencies = [
 [[package]]
 name = "sp-consensus-babe"
 version = "0.8.0"
-source = "git+https://github.com/ProChain/substrate.git#39db16e213d92db4f0bffc9dae715ad9c59d2a0c"
+source = "git+https://github.com/ProChain/substrate.git?rev=6688c3be1ff71803d5963935df7a0d646b2d50d2#6688c3be1ff71803d5963935df7a0d646b2d50d2"
 dependencies = [
  "parity-scale-codec",
  "schnorrkel",
@@ -6287,7 +6256,7 @@ dependencies = [
 [[package]]
 name = "sp-core"
 version = "2.0.0"
-source = "git+https://github.com/ProChain/substrate.git#39db16e213d92db4f0bffc9dae715ad9c59d2a0c"
+source = "git+https://github.com/ProChain/substrate.git?rev=6688c3be1ff71803d5963935df7a0d646b2d50d2#6688c3be1ff71803d5963935df7a0d646b2d50d2"
 dependencies = [
  "base58",
  "blake2-rfc",
@@ -6326,17 +6295,17 @@ dependencies = [
 [[package]]
 name = "sp-debug-derive"
 version = "2.0.0"
-source = "git+https://github.com/ProChain/substrate.git#39db16e213d92db4f0bffc9dae715ad9c59d2a0c"
+source = "git+https://github.com/ProChain/substrate.git?rev=6688c3be1ff71803d5963935df7a0d646b2d50d2#6688c3be1ff71803d5963935df7a0d646b2d50d2"
 dependencies = [
- "proc-macro2 1.0.7",
+ "proc-macro2 1.0.8",
  "quote 1.0.2",
  "syn 1.0.13",
 ]
 
 [[package]]
 name = "sp-externalities"
-version = "0.8.0"
-source = "git+https://github.com/ProChain/substrate.git#39db16e213d92db4f0bffc9dae715ad9c59d2a0c"
+version = "2.0.0"
+source = "git+https://github.com/ProChain/substrate.git?rev=6688c3be1ff71803d5963935df7a0d646b2d50d2#6688c3be1ff71803d5963935df7a0d646b2d50d2"
 dependencies = [
  "environmental",
  "sp-std",
@@ -6346,7 +6315,7 @@ dependencies = [
 [[package]]
 name = "sp-finality-grandpa"
 version = "2.0.0"
-source = "git+https://github.com/ProChain/substrate.git#39db16e213d92db4f0bffc9dae715ad9c59d2a0c"
+source = "git+https://github.com/ProChain/substrate.git?rev=6688c3be1ff71803d5963935df7a0d646b2d50d2#6688c3be1ff71803d5963935df7a0d646b2d50d2"
 dependencies = [
  "parity-scale-codec",
  "serde",
@@ -6359,7 +6328,7 @@ dependencies = [
 [[package]]
 name = "sp-finality-tracker"
 version = "2.0.0"
-source = "git+https://github.com/ProChain/substrate.git#39db16e213d92db4f0bffc9dae715ad9c59d2a0c"
+source = "git+https://github.com/ProChain/substrate.git?rev=6688c3be1ff71803d5963935df7a0d646b2d50d2#6688c3be1ff71803d5963935df7a0d646b2d50d2"
 dependencies = [
  "parity-scale-codec",
  "sp-inherents",
@@ -6369,7 +6338,7 @@ dependencies = [
 [[package]]
 name = "sp-inherents"
 version = "2.0.0"
-source = "git+https://github.com/ProChain/substrate.git#39db16e213d92db4f0bffc9dae715ad9c59d2a0c"
+source = "git+https://github.com/ProChain/substrate.git?rev=6688c3be1ff71803d5963935df7a0d646b2d50d2#6688c3be1ff71803d5963935df7a0d646b2d50d2"
 dependencies = [
  "derive_more",
  "parity-scale-codec",
@@ -6381,7 +6350,7 @@ dependencies = [
 [[package]]
 name = "sp-io"
 version = "2.0.0"
-source = "git+https://github.com/ProChain/substrate.git#39db16e213d92db4f0bffc9dae715ad9c59d2a0c"
+source = "git+https://github.com/ProChain/substrate.git?rev=6688c3be1ff71803d5963935df7a0d646b2d50d2#6688c3be1ff71803d5963935df7a0d646b2d50d2"
 dependencies = [
  "hash-db",
  "libsecp256k1",
@@ -6398,7 +6367,7 @@ dependencies = [
 [[package]]
 name = "sp-keyring"
 version = "2.0.0"
-source = "git+https://github.com/ProChain/substrate.git#39db16e213d92db4f0bffc9dae715ad9c59d2a0c"
+source = "git+https://github.com/ProChain/substrate.git?rev=6688c3be1ff71803d5963935df7a0d646b2d50d2#6688c3be1ff71803d5963935df7a0d646b2d50d2"
 dependencies = [
  "lazy_static",
  "sp-core",
@@ -6409,7 +6378,7 @@ dependencies = [
 [[package]]
 name = "sp-offchain"
 version = "2.0.0"
-source = "git+https://github.com/ProChain/substrate.git#39db16e213d92db4f0bffc9dae715ad9c59d2a0c"
+source = "git+https://github.com/ProChain/substrate.git?rev=6688c3be1ff71803d5963935df7a0d646b2d50d2#6688c3be1ff71803d5963935df7a0d646b2d50d2"
 dependencies = [
  "sp-api",
  "sp-runtime",
@@ -6418,7 +6387,7 @@ dependencies = [
 [[package]]
 name = "sp-panic-handler"
 version = "2.0.0"
-source = "git+https://github.com/ProChain/substrate.git#39db16e213d92db4f0bffc9dae715ad9c59d2a0c"
+source = "git+https://github.com/ProChain/substrate.git?rev=6688c3be1ff71803d5963935df7a0d646b2d50d2#6688c3be1ff71803d5963935df7a0d646b2d50d2"
 dependencies = [
  "backtrace",
  "log 0.4.8",
@@ -6427,7 +6396,7 @@ dependencies = [
 [[package]]
 name = "sp-phragmen"
 version = "2.0.0"
-source = "git+https://github.com/ProChain/substrate.git#39db16e213d92db4f0bffc9dae715ad9c59d2a0c"
+source = "git+https://github.com/ProChain/substrate.git?rev=6688c3be1ff71803d5963935df7a0d646b2d50d2#6688c3be1ff71803d5963935df7a0d646b2d50d2"
 dependencies = [
  "serde",
  "sp-runtime",
@@ -6437,7 +6406,7 @@ dependencies = [
 [[package]]
 name = "sp-rpc"
 version = "2.0.0"
-source = "git+https://github.com/ProChain/substrate.git#39db16e213d92db4f0bffc9dae715ad9c59d2a0c"
+source = "git+https://github.com/ProChain/substrate.git?rev=6688c3be1ff71803d5963935df7a0d646b2d50d2#6688c3be1ff71803d5963935df7a0d646b2d50d2"
 dependencies = [
  "serde",
  "sp-core",
@@ -6446,7 +6415,7 @@ dependencies = [
 [[package]]
 name = "sp-runtime"
 version = "2.0.0"
-source = "git+https://github.com/ProChain/substrate.git#39db16e213d92db4f0bffc9dae715ad9c59d2a0c"
+source = "git+https://github.com/ProChain/substrate.git?rev=6688c3be1ff71803d5963935df7a0d646b2d50d2#6688c3be1ff71803d5963935df7a0d646b2d50d2"
 dependencies = [
  "impl-trait-for-tuples",
  "log 0.4.8",
@@ -6465,7 +6434,7 @@ dependencies = [
 [[package]]
 name = "sp-runtime-interface"
 version = "2.0.0"
-source = "git+https://github.com/ProChain/substrate.git#39db16e213d92db4f0bffc9dae715ad9c59d2a0c"
+source = "git+https://github.com/ProChain/substrate.git?rev=6688c3be1ff71803d5963935df7a0d646b2d50d2#6688c3be1ff71803d5963935df7a0d646b2d50d2"
 dependencies = [
  "environmental",
  "parity-scale-codec",
@@ -6480,19 +6449,19 @@ dependencies = [
 [[package]]
 name = "sp-runtime-interface-proc-macro"
 version = "2.0.0"
-source = "git+https://github.com/ProChain/substrate.git#39db16e213d92db4f0bffc9dae715ad9c59d2a0c"
+source = "git+https://github.com/ProChain/substrate.git?rev=6688c3be1ff71803d5963935df7a0d646b2d50d2#6688c3be1ff71803d5963935df7a0d646b2d50d2"
 dependencies = [
  "Inflector",
  "proc-macro-crate",
- "proc-macro2 1.0.7",
+ "proc-macro2 1.0.8",
  "quote 1.0.2",
  "syn 1.0.13",
 ]
 
 [[package]]
 name = "sp-sandbox"
-version = "0.8.0"
-source = "git+https://github.com/ProChain/substrate.git#39db16e213d92db4f0bffc9dae715ad9c59d2a0c"
+version = "2.0.0"
+source = "git+https://github.com/ProChain/substrate.git?rev=6688c3be1ff71803d5963935df7a0d646b2d50d2#6688c3be1ff71803d5963935df7a0d646b2d50d2"
 dependencies = [
  "parity-scale-codec",
  "sp-core",
@@ -6504,7 +6473,7 @@ dependencies = [
 [[package]]
 name = "sp-serializer"
 version = "2.0.0"
-source = "git+https://github.com/ProChain/substrate.git#39db16e213d92db4f0bffc9dae715ad9c59d2a0c"
+source = "git+https://github.com/ProChain/substrate.git?rev=6688c3be1ff71803d5963935df7a0d646b2d50d2#6688c3be1ff71803d5963935df7a0d646b2d50d2"
 dependencies = [
  "serde",
  "serde_json",
@@ -6513,7 +6482,7 @@ dependencies = [
 [[package]]
 name = "sp-session"
 version = "2.0.0"
-source = "git+https://github.com/ProChain/substrate.git#39db16e213d92db4f0bffc9dae715ad9c59d2a0c"
+source = "git+https://github.com/ProChain/substrate.git?rev=6688c3be1ff71803d5963935df7a0d646b2d50d2#6688c3be1ff71803d5963935df7a0d646b2d50d2"
 dependencies = [
  "sp-api",
  "sp-runtime",
@@ -6523,7 +6492,7 @@ dependencies = [
 [[package]]
 name = "sp-staking"
 version = "2.0.0"
-source = "git+https://github.com/ProChain/substrate.git#39db16e213d92db4f0bffc9dae715ad9c59d2a0c"
+source = "git+https://github.com/ProChain/substrate.git?rev=6688c3be1ff71803d5963935df7a0d646b2d50d2#6688c3be1ff71803d5963935df7a0d646b2d50d2"
 dependencies = [
  "parity-scale-codec",
  "sp-runtime",
@@ -6532,8 +6501,8 @@ dependencies = [
 
 [[package]]
 name = "sp-state-machine"
-version = "0.8.0"
-source = "git+https://github.com/ProChain/substrate.git#39db16e213d92db4f0bffc9dae715ad9c59d2a0c"
+version = "2.0.0"
+source = "git+https://github.com/ProChain/substrate.git?rev=6688c3be1ff71803d5963935df7a0d646b2d50d2#6688c3be1ff71803d5963935df7a0d646b2d50d2"
 dependencies = [
  "hash-db",
  "log 0.4.8",
@@ -6552,12 +6521,12 @@ dependencies = [
 [[package]]
 name = "sp-std"
 version = "2.0.0"
-source = "git+https://github.com/ProChain/substrate.git#39db16e213d92db4f0bffc9dae715ad9c59d2a0c"
+source = "git+https://github.com/ProChain/substrate.git?rev=6688c3be1ff71803d5963935df7a0d646b2d50d2#6688c3be1ff71803d5963935df7a0d646b2d50d2"
 
 [[package]]
 name = "sp-storage"
 version = "2.0.0"
-source = "git+https://github.com/ProChain/substrate.git#39db16e213d92db4f0bffc9dae715ad9c59d2a0c"
+source = "git+https://github.com/ProChain/substrate.git?rev=6688c3be1ff71803d5963935df7a0d646b2d50d2#6688c3be1ff71803d5963935df7a0d646b2d50d2"
 dependencies = [
  "impl-serde 0.2.3",
  "serde",
@@ -6568,7 +6537,7 @@ dependencies = [
 [[package]]
 name = "sp-timestamp"
 version = "2.0.0"
-source = "git+https://github.com/ProChain/substrate.git#39db16e213d92db4f0bffc9dae715ad9c59d2a0c"
+source = "git+https://github.com/ProChain/substrate.git?rev=6688c3be1ff71803d5963935df7a0d646b2d50d2#6688c3be1ff71803d5963935df7a0d646b2d50d2"
 dependencies = [
  "impl-trait-for-tuples",
  "parity-scale-codec",
@@ -6581,7 +6550,7 @@ dependencies = [
 [[package]]
 name = "sp-transaction-pool"
 version = "2.0.0"
-source = "git+https://github.com/ProChain/substrate.git#39db16e213d92db4f0bffc9dae715ad9c59d2a0c"
+source = "git+https://github.com/ProChain/substrate.git?rev=6688c3be1ff71803d5963935df7a0d646b2d50d2#6688c3be1ff71803d5963935df7a0d646b2d50d2"
 dependencies = [
  "derive_more",
  "futures 0.3.1",
@@ -6595,7 +6564,7 @@ dependencies = [
 [[package]]
 name = "sp-trie"
 version = "2.0.0"
-source = "git+https://github.com/ProChain/substrate.git#39db16e213d92db4f0bffc9dae715ad9c59d2a0c"
+source = "git+https://github.com/ProChain/substrate.git?rev=6688c3be1ff71803d5963935df7a0d646b2d50d2#6688c3be1ff71803d5963935df7a0d646b2d50d2"
 dependencies = [
  "hash-db",
  "memory-db",
@@ -6609,7 +6578,7 @@ dependencies = [
 [[package]]
 name = "sp-version"
 version = "2.0.0"
-source = "git+https://github.com/ProChain/substrate.git#39db16e213d92db4f0bffc9dae715ad9c59d2a0c"
+source = "git+https://github.com/ProChain/substrate.git?rev=6688c3be1ff71803d5963935df7a0d646b2d50d2#6688c3be1ff71803d5963935df7a0d646b2d50d2"
 dependencies = [
  "impl-serde 0.2.3",
  "parity-scale-codec",
@@ -6621,7 +6590,7 @@ dependencies = [
 [[package]]
 name = "sp-wasm-interface"
 version = "2.0.0"
-source = "git+https://github.com/ProChain/substrate.git#39db16e213d92db4f0bffc9dae715ad9c59d2a0c"
+source = "git+https://github.com/ProChain/substrate.git?rev=6688c3be1ff71803d5963935df7a0d646b2d50d2#6688c3be1ff71803d5963935df7a0d646b2d50d2"
 dependencies = [
  "impl-trait-for-tuples",
  "wasmi",
@@ -6696,7 +6665,7 @@ checksum = "0a97f829a34a0a9d5b353a881025a23b8c9fd09d46be6045df6b22920dbd7a93"
 dependencies = [
  "heck",
  "proc-macro-error",
- "proc-macro2 1.0.7",
+ "proc-macro2 1.0.8",
  "quote 1.0.2",
  "syn 1.0.13",
 ]
@@ -6717,7 +6686,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "0054a7df764039a6cd8592b9de84be4bec368ff081d203a7d5371cbfa8e65c81"
 dependencies = [
  "heck",
- "proc-macro2 1.0.7",
+ "proc-macro2 1.0.8",
  "quote 1.0.2",
  "syn 1.0.13",
 ]
@@ -6737,12 +6706,12 @@ dependencies = [
 [[package]]
 name = "substrate-build-script-utils"
 version = "2.0.0"
-source = "git+https://github.com/ProChain/substrate.git#39db16e213d92db4f0bffc9dae715ad9c59d2a0c"
+source = "git+https://github.com/ProChain/substrate.git?rev=6688c3be1ff71803d5963935df7a0d646b2d50d2#6688c3be1ff71803d5963935df7a0d646b2d50d2"
 
 [[package]]
 name = "substrate-frame-rpc-system"
 version = "2.0.0"
-source = "git+https://github.com/ProChain/substrate.git#39db16e213d92db4f0bffc9dae715ad9c59d2a0c"
+source = "git+https://github.com/ProChain/substrate.git?rev=6688c3be1ff71803d5963935df7a0d646b2d50d2#6688c3be1ff71803d5963935df7a0d646b2d50d2"
 dependencies = [
  "frame-system-rpc-runtime-api",
  "futures 0.3.1",
@@ -6763,7 +6732,7 @@ dependencies = [
 [[package]]
 name = "substrate-test-client"
 version = "2.0.0"
-source = "git+https://github.com/ProChain/substrate.git#39db16e213d92db4f0bffc9dae715ad9c59d2a0c"
+source = "git+https://github.com/ProChain/substrate.git?rev=6688c3be1ff71803d5963935df7a0d646b2d50d2#6688c3be1ff71803d5963935df7a0d646b2d50d2"
 dependencies = [
  "futures 0.3.1",
  "hash-db",
@@ -6783,7 +6752,7 @@ dependencies = [
 [[package]]
 name = "substrate-wasm-builder-runner"
 version = "1.0.4"
-source = "git+https://github.com/ProChain/substrate.git#39db16e213d92db4f0bffc9dae715ad9c59d2a0c"
+source = "git+https://github.com/ProChain/substrate.git?rev=6688c3be1ff71803d5963935df7a0d646b2d50d2#6688c3be1ff71803d5963935df7a0d646b2d50d2"
 
 [[package]]
 name = "subtle"
@@ -6814,7 +6783,7 @@ version = "1.0.13"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "1e4ff033220a41d1a57d8125eab57bf5263783dfdcc18688b1dacc6ce9651ef8"
 dependencies = [
- "proc-macro2 1.0.7",
+ "proc-macro2 1.0.8",
  "quote 1.0.2",
  "unicode-xid 0.2.0",
 ]
@@ -6825,7 +6794,7 @@ version = "0.4.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "9fd3937748a7eccff61ba5b90af1a20dbf610858923a9192ea0ecb0cb77db1d0"
 dependencies = [
- "proc-macro2 1.0.7",
+ "proc-macro2 1.0.8",
  "quote 1.0.2",
  "syn 1.0.13",
 ]
@@ -6836,7 +6805,7 @@ version = "0.12.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "67656ea1dc1b41b1451851562ea232ec2e5a80242139f7e679ceccfb5d61f545"
 dependencies = [
- "proc-macro2 1.0.7",
+ "proc-macro2 1.0.8",
  "quote 1.0.2",
  "syn 1.0.13",
  "unicode-xid 0.2.0",
@@ -6920,7 +6889,7 @@ version = "1.0.9"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "eb2e25d25307eb8436894f727aba8f65d07adf02e5b35a13cebed48bd282bfef"
 dependencies = [
- "proc-macro2 1.0.7",
+ "proc-macro2 1.0.8",
  "quote 1.0.2",
  "syn 1.0.13",
 ]
@@ -7021,7 +6990,6 @@ dependencies = [
  "bytes 0.5.3",
  "fnv",
  "memchr",
- "num_cpus",
  "pin-project-lite",
 ]
 
@@ -7257,9 +7225,9 @@ dependencies = [
 
 [[package]]
 name = "toml"
-version = "0.5.5"
+version = "0.5.6"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "01d1404644c8b12b16bfcffa4322403a91a451584daaaa7c28d3152e6cbc98cf"
+checksum = "ffc92d160b1eef40665be3a05630d003936a3bc7da7421277846c2613e92c71a"
 dependencies = [
  "serde",
 ]
@@ -7620,7 +7588,7 @@ dependencies = [
  "bumpalo",
  "lazy_static",
  "log 0.4.8",
- "proc-macro2 1.0.7",
+ "proc-macro2 1.0.8",
  "quote 1.0.2",
  "syn 1.0.13",
  "wasm-bindgen-shared",
@@ -7654,7 +7622,7 @@ version = "0.2.58"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "e85031354f25eaebe78bb7db1c3d86140312a911a106b2e29f9cc440ce3e7668"
 dependencies = [
- "proc-macro2 1.0.7",
+ "proc-macro2 1.0.8",
  "quote 1.0.2",
  "syn 1.0.13",
  "wasm-bindgen-backend",
@@ -7676,7 +7644,7 @@ dependencies = [
  "anyhow",
  "heck",
  "log 0.4.8",
- "proc-macro2 1.0.7",
+ "proc-macro2 1.0.8",
  "quote 1.0.2",
  "syn 1.0.13",
  "wasm-bindgen-backend",
@@ -8046,7 +8014,7 @@ version = "1.0.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "de251eec69fc7c1bc3923403d18ececb929380e016afe103da75f396704f8ca2"
 dependencies = [
- "proc-macro2 1.0.7",
+ "proc-macro2 1.0.8",
  "quote 1.0.2",
  "syn 1.0.13",
  "synstructure",
