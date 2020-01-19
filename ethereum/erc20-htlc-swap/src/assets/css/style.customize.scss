@@ -1,0 +1,83 @@
+@import './variables.scss';
+.mt-0 {
+	margin-top: 0;
+}
+.mb-0 {
+	margin-bottom: 0;
+}
+.mp-0 {
+	padding-bottom: 0;
+}
+.mt-medium {
+	margin-top: $mediumGutter;
+}
+.page-bg {
+	background: $background;
+}
+.grey {
+  -webkit-filter: grayscale(100%);
+  -moz-filter: grayscale(100%);
+  -ms-filter: grayscale(100%);
+  -o-filter: grayscale(100%);
+  filter: grayscale(100%);
+  filter: gray;
+}
+.van-overlay {
+	.wrapper {
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		height: 100%;
+	}
+}
+.van-tag {
+	&::after {
+		content: '，';
+		display: inline-block;
+		width: 0;
+		overflow: hidden;
+		user-select: none;
+		opacity: 0;
+	}
+}
+.van-panel {
+	&::after {
+		display: none;
+	}
+}
+.no-content {
+	text-align: center;
+	padding: 100px 30px;
+	font-size: $baseFontSize;
+	color: $grey;
+}
+.van-cell:not(:last-child)::after {
+	background: repeat-x top left url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='1' height='1'><rect fill='#ebedf0' x='0' y='0' width='1' height='1'/></svg>");
+	height: 2PX;
+	border-bottom: none;
+}
+@media screen and (min-width: 750px) {
+  html {
+    font-size: 120px !important;
+  }
+  .router-view {
+	  background-color: #888!important;
+  }
+  .htlc-component {
+	  background-color: #fff;
+	  .van-row {
+		  position: absolute;
+		  width: 700PX;
+		  border-radius: 10PX;
+		  background-color: #f8f8f8;
+		  padding: 20PX 30PX 50PX;
+		  max-width: 750PX;
+		  left: 50%;
+		  top: 50%;
+		  transform: translate3d(-50%, -50%, 0);
+		 .van-panel {
+			 margin-top: 30PX;
+		 }
+	  }
+  }
+}

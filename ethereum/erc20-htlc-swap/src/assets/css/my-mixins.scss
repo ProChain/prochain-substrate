@@ -1,0 +1,27 @@
+@mixin setEleProps ($props, $values) {
+  @each $prop in $props {
+    $i: index($props, $prop);
+    $value: nth($values, $i);
+    #{$prop}: setSize($value);
+  }
+}
+@mixin setClassProps ($obj, $width:1, $size:1) {
+  @each $ele in $obj {
+    $i: index($obj, $ele);
+    .#{$ele} {
+      @if $width > 1 {
+        width: setWidth($width);
+      }
+      @if $size > 15 {
+        font-size: setSize($size);
+      }
+    }
+  }
+}
+@function setWidth ($width) {
+  @return $width * 0.7
+}
+
+@function setSize ($size) {
+  @return $size * 0.7
+}
