@@ -18,6 +18,7 @@
 #### 3. deputy监控
 
 - 中心化服务
+- 监听eth event，如有swap事件，则请求off-chain worker发起fetch job
 - 监控合约状态，锁仓地址余额
 - 清算对账，不一致则告警
 - 查询失败的swap，告警
@@ -36,15 +37,15 @@
 - eth用户acc1，向Pro-ERC20合约调用approve()，授权合约可扣款金额
 - eth用户acc1，调用HTLC合约函数htlc()，参数randomNumberHash, timestamp, heightSpan, praReceiverAddr, erc20Amount, praAmount等, 发起HTLC
 - HTLC合约向用户acc1账号扣款erc20Amount，存在合约账号内
-- PRA主链通过off-chain worker监听eth，接收新的HTLC Event
-- PRA主链创建新的HTLC，两边的SwapID对应相同
+- PRA主链通过deputy监听eth，通知off-chain worker接收新的HTLC Event
+- PRA主链创建新的HTLC，两边的SwapID对应一致
 - eth用户acc1，调用函数claim()，参数swapID和randomNumber，声明swap，资产由合约账号转向锁仓地址acc2
-- PRA主链通过off-chain worker监听eth，接收Claimed Event，从acc4账号向收款人acc3付款主链币
-- 若HTLC超时，任何eth用户可以调用refund()结束交易，参数swapID，资产由合约账号退回用户acc1
+- PRA主链通过off-chain worker接收Claimed Event，从acc4账号向收款人acc3付款主链币
+- 若HTLC超时未claim，任何eth用户可以调用refund()结束交易，参数swapID，资产由合约账号退回用户acc1
 
 ##### 配置项
 - erc20 PRA和主链PRA汇率为 1:1
-- heightSpan高度跨度
+- heightSpan指eth高度，默认100个块，若平均每个出块时间为20秒，则claim有效时间为2000秒
 
 ##### 优点
 - 合约跨链，无中心化信任节点
