@@ -2,7 +2,7 @@
 	<div class="htlc-component">
 		<van-row>
 			<van-col span="24">
-				<div class="htlc" v-if="!historySwapId">
+				<div class="htlc" v-if="!history">
 					<ValidationObserver v-slot="{ invalid }">
 						<van-cell-group title="数量" :border="false">
 							<ValidationProvider v-slot="{ errors }" name="amount" rules="required|min_value:0.01">
@@ -80,9 +80,9 @@
 				})
 			},
 			checkSwap() {
-				const swapId = localStorage.getItem('swapId')
-				if (swapId) {
-					this.historySwapId = swapId
+				const history = localStorage.getItem('history')
+				if (history) {
+					this.history = JSON.parse(history)
 				} else {
 					this.approve()
 				}
@@ -105,7 +105,10 @@
 					function(result) {
 						if (result.receipt.status == 1) {
 							console.log('status success!!')
-							localStorage.setItem('swapId', swapID)
+							localStorage.setItem('history', JSON.stringify({
+								...this.htlcForm,
+								swapId
+							}))
 						} else {
 							console.log('status fail!!')
 						}
@@ -119,7 +122,7 @@
 				this.showPicker = false
 			},
 			handleClaim() {
-				const randomNum = this.htlcForm.randomNum
+				const { randomNum } = this.history
 				if (App.swapID == null || App.swapID === '') {
 					return this.$toast('提示 Swap Id 无效，请先发起一笔htlc兑换')
 				}
@@ -137,11 +140,12 @@
 				})
 			},
 			handleRefund() {
-				if (App.swapID == null || App.swapID === '') {
+				const { swapID } = this.history
+				if (swapID == null || swapID === '') {
 					return this.$toast('提示 Swap Id 无效，请先发起一笔htlc兑换')
 				}
 
-				App.htlcIntance.refund(App.swapID).then(result => {
+				App.htlcIntance.refund(swapID).then(result => {
 					if (result.receipt.status == 1) {
 						console.log('status success!!')
 					} else {
