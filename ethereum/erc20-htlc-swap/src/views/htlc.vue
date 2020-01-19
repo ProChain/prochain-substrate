@@ -51,7 +51,7 @@
 				},
 				showRandom: false,
 				status: '进行中',
-				historySwapId: '',
+				history: null,
 				timer: null
 			}
 		},
@@ -107,11 +107,12 @@
 					if (result.receipt.status == 1) {
 						console.log('status success!!')
 						this.checkTransactionStatus(result.tx)
-						localStorage.setItem('history', JSON.stringify({
+						this.history = {
 							...this.htlcForm,
 							swapId,
 							tx
-						}))
+						}
+						localStorage.setItem('history', JSON.stringify(this.history))
 					} else {
 						console.log('status fail!!')
 					}
