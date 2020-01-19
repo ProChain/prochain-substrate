@@ -31,7 +31,7 @@ const router = new VueRouter({
 			meta: {
 				index: 3,
 				title: 'meta.htlc',
-				keepAlive: true,
+				keepAlive: false,
 				requireAuth: false
 			}
 		}

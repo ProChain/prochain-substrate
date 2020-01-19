@@ -38,7 +38,7 @@
 <script>
 	import { ValidationObserver, ValidationProvider } from 'vee-validate'
 	import { generateMixed } from '@/util/common'
-	import { getRandomNumberHash } from '@/util/api'
+	import { getRandomNumberHash, getTransactionByHash } from '@/util/api'
 	import App from '@/util/app'
 	export default {
 		name: 'htlc',
@@ -51,7 +51,8 @@
 				},
 				showRandom: false,
 				status: '进行中',
-				historySwapId: ''
+				historySwapId: '',
+				timer: null
 			}
 		},
 		components: {
@@ -83,6 +84,7 @@
 				const history = localStorage.getItem('history')
 				if (history) {
 					this.history = JSON.parse(history)
+					this.checkTransactionStatus(this.history.tx)
 				} else {
 					this.approve()
 				}
@@ -101,19 +103,19 @@
 				const { data: { timestamp, randomNumberHash, swapID } } = data
 				App.swapID = swapID
 
-				App.htlcIntance.htlc(randomNumberHash, timestamp, App.heightSpan, App.recipientAddr, amount, amount, did).then(
-					function(result) {
-						if (result.receipt.status == 1) {
-							console.log('status success!!')
-							localStorage.setItem('history', JSON.stringify({
-								...this.htlcForm,
-								swapId
-							}))
-						} else {
-							console.log('status fail!!')
-						}
+				App.htlcIntance.htlc(randomNumberHash, timestamp, App.heightSpan, App.recipientAddr, amount, amount, did).then(result => {
+					if (result.receipt.status == 1) {
+						console.log('status success!!')
+						this.checkTransactionStatus(result.tx)
+						localStorage.setItem('history', JSON.stringify({
+							...this.htlcForm,
+							swapId,
+							tx
+						}))
+					} else {
+						console.log('status fail!!')
 					}
-				).catch(function(err) {
+				}).catch(function(err) {
 					console.log(err.message)
 				})
 			},
@@ -132,6 +134,7 @@
 				App.htlcIntance.claim(App.swapID, randomNum).then(result => {
 					if (result.receipt.status == 1) {
 						console.log('status success!!')
+						this.status = 'Waiting to receive PRA'
 					} else {
 						console.log('status fail!!')
 					}
@@ -154,7 +157,20 @@
 				}).catch(function(err) {
 					console.log(err.message)
 				})
+			},
+			checkTransactionStatus(hash) {
+				this.timer = setInterval(async() => {
+					const { result } = await getTransactionByHash(hash)
+					console.log(result.blockNumber, '---data---')
+					if (result.blockNumber) {
+						this.status = 'Waiting to claim'
+						clearInterval(this.timer)
+					}
+				}, 3000)
 			}
+		},
+		destroyed() {
+			clearInterval(this.timer)
 		}
 	}
 </script>

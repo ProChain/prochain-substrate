@@ -4,7 +4,7 @@ import { getLanguage } from './common'
 import vm from '../main'
 
 const WHITELIST = [
-	'get_team_logo_by_symbol',
+	'infura',
 	'dana.prabox.net'
 ]
 let needLoadingRequestCount = 0
