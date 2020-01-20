@@ -5,7 +5,7 @@ import vm from '../main'
 
 const WHITELIST = [
 	'infura',
-	'dana.prabox.net'
+	'random_number_hash'
 ]
 let needLoadingRequestCount = 0
 

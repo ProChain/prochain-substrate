@@ -2,11 +2,12 @@
 	<div class="htlc-component">
 		<van-row>
 			<van-col span="24">
-				<div class="htlc" v-if="!history">
-					<ValidationObserver v-slot="{ invalid }">
+				<div class="htlc" v-if="status !== 1">
+					<ValidationObserver v-slot="{ invalid }" ref="form">
 						<van-cell-group title="数量" :border="false">
 							<ValidationProvider v-slot="{ errors }" name="amount" rules="required|min_value:0.01">
 								<van-field v-model="htlcForm.amount" type="number" :error-message="errors[0]" placeholder="请输入您想要兑换的PRA数量" />
+								<van-cell title="ERC20 PRA余额" :value="balance" />
 							</ValidationProvider>
 						</van-cell-group>
 						<van-cell-group v-if="showRandom" title="随机数" :border="false">
@@ -22,10 +23,13 @@
 						<van-button type="primary" square class="btn-submit request" size="large" :disabled="invalid" @click="handleSubmit">发起兑换</van-button>
 					</ValidationObserver>
 				</div>
-				<van-panel v-else title="兑换状态" :status="status" desc="您的PRA兑换状态在这里显示">
+				<van-panel v-else title="兑换状态" :status="statusText">
+					<van-loading v-if="status === 0">等待进行下一步操作...</van-loading>
+					<span v-else-if="status === 1">请点击“确认兑换”按钮完成兑换</span>
+					<span v-else>等待收款</span>
 					<div slot="footer" class="btns">
-						<van-button type="primary" square class="btn-submit" size="small" @click="handleClaim">确认兑换</van-button>
-						<van-button type="primary" square class="btn-submit" size="small" @click="handleRefund">撤销兑换</van-button>
+						<van-button type="primary" square class="btn-submit" size="small" :disabled="status !== 1" @click="handleClaim">确认兑换</van-button>
+						<van-button type="primary" square class="btn-submit" size="small" :disabled="status === 2" @click="handleRefund">撤销兑换</van-button>
 					</div>
 				</van-panel>
 				<van-popup v-model="showPicker" position="bottom">
@@ -40,53 +44,75 @@
 	import { generateMixed } from '@/util/common'
 	import { getRandomNumberHash, getTransactionByHash } from '@/util/api'
 	import App from '@/util/app'
+	const initiaState = {
+		amount: null,
+		did: '',
+		randomNum: ''
+	}
 	export default {
 		name: 'htlc',
 		data() {
 			return {
-				htlcForm: {
-					amount: null,
-					did: '',
-					randomNum: ''
-				},
+				htlcForm: { ...initiaState },
 				showRandom: false,
-				status: '进行中',
-				history: null,
-				timer: null
+				status: 0, // 0 未开始, 1 htlc, 2 claimed
+				history: {},
+				timer: null,
+				balance: 0
 			}
 		},
 		components: {
 			ValidationProvider,
 			ValidationObserver
 		},
+		computed: {
+			statusText() {
+				let text = '未开始'
+				switch (this.status) {
+				case 1:
+					text = '等待确认兑换'
+					break
+				case 2:
+					text = '兑换中'
+					break
+				case 3:
+					text = '已撤销兑换'
+					break
+				}
+				return text
+			}
+		},
 		async mounted() {
 			this.htlcForm.randomNum = '0x' + generateMixed(64)
 
 			await App.init()
-			this.checkSwap()
+			await this.checkSwap()
+			// get pra balance
+			App.praIntance.balanceOf(App.account).then(balance => {
+				this.balance = (balance.toNumber() / 10 ** 18).toFixed(3)
+			})
 		},
 		methods: {
 			approve() {
 				const amount = 500000 * 1000000000000000000
-				App.praIntance.approve(App.contracts.htlcContract.address, amount).then(
-					function(result) {
-						if (result.receipt.status == 1) {
-							console.log('status success!!')
-						} else {
-							console.log('status fail!!')
-						}
+				App.praIntance.approve(App.contracts.htlcContract.address, amount).then(result => {
+					if (result.receipt.status == 1) {
+						console.log('status success!!')
+					} else {
+						console.log('status fail!!')
 					}
-				).catch(function(err) {
+				}).catch(function(err) {
 					console.log(err.message)
 				})
 			},
-			checkSwap() {
+			async checkSwap() {
 				const history = localStorage.getItem('history')
 				if (history) {
 					this.history = JSON.parse(history)
 					this.checkTransactionStatus(this.history.tx)
 				} else {
-					this.approve()
+					const allowance = await App.praIntance.allowance(App.account, App.contracts.htlcContract.address)
+					if (allowance <= 0) this.approve()
 				}
 			},
 			async handleSubmit() {
@@ -102,72 +128,99 @@
 
 				const { data: { timestamp, randomNumberHash, swapID } } = data
 				App.swapID = swapID
-
-				App.htlcIntance.htlc(randomNumberHash, timestamp, App.heightSpan, App.recipientAddr, amount, amount, did).then(result => {
+				this.$notify({
+					message: '正在为您发起兑换，可能会花几分钟时间，请不要关闭页面',
+					duration: 0
+				})
+				this.$store.commit('showLoading')
+				try {
+					const result = await App.htlcIntance.htlc(randomNumberHash, timestamp, App.heightSpan, App.recipientAddr, amount, amount, did)
+					this.$store.commit('hideLoading')
+					this.$notify.clear()
 					if (result.receipt.status == 1) {
 						console.log('status success!!')
-						this.checkTransactionStatus(result.tx)
 						this.history = {
 							...this.htlcForm,
-							swapId,
-							tx
+							swapID,
+							tx: result.tx,
+							status: 1
 						}
+						this.status = 1
 						localStorage.setItem('history', JSON.stringify(this.history))
-					} else {
-						console.log('status fail!!')
+						this.htlcForm = { ...initiaState }
+						this.timer = setInterval(() => {
+							this.checkTransactionStatus(result.tx)
+						}, 2000)
 					}
-				}).catch(function(err) {
-					console.log(err.message)
-				})
+				} catch (e) {
+					this.$store.commit('hideLoading')
+					console.log(e)
+				}
 			},
-			onConfirm(value) {
-				this.htlcForm.type = value
-				this.showPicker = false
-			},
-			handleClaim() {
-				const { randomNum } = this.history
-				if (App.swapID == null || App.swapID === '') {
+			async handleClaim() {
+				const { randomNum, swapID } = this.history
+				console.log(swapID, App.swapID, '---swap')
+				if (swapID == null || swapID === '') {
 					return this.$toast('提示 Swap Id 无效，请先发起一笔htlc兑换')
 				}
 
-				console.log('App.swapID:', App.swapID)
-
-				App.htlcIntance.claim(App.swapID, randomNum).then(result => {
+				console.log('App swapID:', swapID)
+				this.$notify({
+					message: '正在确认兑换，请不要关闭页面',
+					duration: 0
+				})
+				this.$store.commit('showLoading')
+				try {
+					const result = await App.htlcIntance.claim(swapID, randomNum)
+					this.$store.commit('hideLoading')
+					this.$notify.clear()
 					if (result.receipt.status == 1) {
 						console.log('status success!!')
-						this.status = 'Waiting to receive PRA'
-					} else {
-						console.log('status fail!!')
+						this.$toast('已确认兑换，等待钱包收款')
+						// remove swap history
+						this.status = 2
+						this.history = {}
+						localStorage.removeItem('history')
 					}
-				}).catch(function(err) {
-					console.log(err.message)
-				})
+				} catch (e) {
+					this.$store.commit('hideLoading')
+					console.log(e)
+				}
 			},
-			handleRefund() {
+			async handleRefund() {
 				const { swapID } = this.history
 				if (swapID == null || swapID === '') {
 					return this.$toast('提示 Swap Id 无效，请先发起一笔htlc兑换')
 				}
 
-				App.htlcIntance.refund(swapID).then(result => {
+				this.$notify({
+					message: '正在撤销兑换，请不要关闭页面',
+					duration: 0
+				})
+				this.$store.commit('showLoading')
+				try {
+					const result = await App.htlcIntance.refund(swapID)
+					this.$store.commit('hideLoading')
+					this.$notify.clear()
 					if (result.receipt.status == 1) {
 						console.log('status success!!')
-					} else {
-						console.log('status fail!!')
+						// remove swap history
+						this.status = 0
+						this.history = {}
+						localStorage.removeItem('history')
 					}
-				}).catch(function(err) {
-					console.log(err.message)
-				})
+				} catch  (e) {
+					this.$store.commit('hideLoading')
+					console.log(e)
+				}
 			},
-			checkTransactionStatus(hash) {
-				this.timer = setInterval(async() => {
-					const { result } = await getTransactionByHash(hash)
-					console.log(result.blockNumber, '---data---')
-					if (result.blockNumber) {
-						this.status = 'Waiting to claim'
-						clearInterval(this.timer)
-					}
-				}, 3000)
+			async checkTransactionStatus(hash) {
+				const { result } = await getTransactionByHash(hash)
+				console.log(result.blockNumber, '---data---')
+				if (result.blockNumber) {
+					this.status = 1
+					clearInterval(this.timer)
+				}
 			}
 		},
 		destroyed() {
@@ -179,13 +232,18 @@
 	@import '../assets/css/variables.scss';
 
 	.htlc-component {
+		font-size: $smallFontSize;
 		.request {
 			margin-top: $largeGutter * 2;
 		}
 
 		.van-panel {
+			.van-panel__content {
+				padding: $largeGutter $mediumGutter;
+			}
 			.btns {
 				text-align: right;
+
 				.van-button {
 					margin-left: $mediumGutter;
 				}
