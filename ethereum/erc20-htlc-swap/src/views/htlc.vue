@@ -123,7 +123,7 @@
 				const data = await getRandomNumberHash(randomNum, did, amount)
 				console.log(data, 'data-----')
 				if (data == null || data == 'Error' || data.code != 0) {
-					return
+					return this.$toast('提示 http 500 错误，请重新发起兑换')
 				}
 
 				const { data: { timestamp, randomNumberHash, swapID } } = data
