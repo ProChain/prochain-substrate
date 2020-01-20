@@ -154,6 +154,7 @@
 					}
 				} catch (e) {
 					this.$store.commit('hideLoading')
+					this.$notify.clear()
 					console.log(e)
 				}
 			},
@@ -184,6 +185,7 @@
 					}
 				} catch (e) {
 					this.$store.commit('hideLoading')
+					this.$notify.clear()
 					console.log(e)
 				}
 			},
@@ -211,6 +213,7 @@
 					}
 				} catch  (e) {
 					this.$store.commit('hideLoading')
+					this.$notify.clear()
 					console.log(e)
 				}
 			},
