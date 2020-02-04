@@ -8,15 +8,19 @@
 
 ## 守护进程supervisor
 
-生产环务必开启守进程
+生产环境务必开启守护进程
 
 ### 安装
 
 `yum install supervisor`
 
-#### 设置开机自启
+#### 设置开机自启，并启动Supervisor服务
 
-`systemctl enable supervisord.service`
+设置自启 `systemctl enable supervisord.service`
+
+启动 `systemctl start supervisord.service`
+
+查看服务状态 `systemctl status supervisord.service`
 
 #### 配置文件
 
@@ -26,13 +30,13 @@
 
 ```
 [unix_http_server]
-file=/var/run/supervisor.sock   ; (the path to the socket file)
+file=/tmp/supervisor.sock   ; (the path to the socket file)
 
 [rpcinterface:supervisor]
 supervisor.rpcinterface_factory = supervisor.rpcinterface:make_main_rpcinterface
 
 [supervisorctl]
-serverurl=unix:///var/run/supervisor.sock ;
+serverurl=unix:///tmp/supervisor.sock ;
 
 [supervisord]
 logfile=/tmp/supervisord.log ; (main log file;default $CWD/supervisord.log)
