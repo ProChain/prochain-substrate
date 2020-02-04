@@ -4,7 +4,7 @@
 
 路径 `/data/mainnet/prochain-substrate/ethereum/erc20-htlc-swap`
 
-`node index.js`
+命令 `node index.js`
 
 ## 守护进程supervisor
 
@@ -20,7 +20,9 @@
 
 #### 配置文件
 
-位置 `/etc/supervisord.d/deputy.conf`，若不存在，则新建一个 `echo_supervisord_conf > /etc/supervisord.d/deputy.conf`
+位置 `/etc/supervisord.d/deputy.conf`
+
+若不存在，则新建一个 `echo_supervisord_conf > /etc/supervisord.d/deputy.conf`
 
 ```
 [unix_http_server]
