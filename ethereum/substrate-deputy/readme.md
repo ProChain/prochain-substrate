@@ -2,7 +2,7 @@
 
 ## 启动
 
-路径 `/data/mainnet/prochain-substrate/ethereum/erc20-htlc-swap`
+路径 `/data/mainnet/prochain-substrate/ethereum/substrate-deputy`
 
 命令 `node index.js`
 
@@ -66,8 +66,8 @@ stderr_logfile_backups=10     ; # of stderr logfile backups (default 10)
 #### 日志文件
 
 ```
-/data/mainnet/prochain-substrate/ethereum/erc20-htlc-swap/deputy.info.log
-/data/mainnet/prochain-substrate/ethereum/erc20-htlc-swap/deputy.err.log
+/data/mainnet/prochain-substrate/ethereum/substrate-deputy/deputy.info.log
+/data/mainnet/prochain-substrate/ethereum/substrate-deputy/deputy.err.log
 /tmp/supervisord.log
 ```
 
