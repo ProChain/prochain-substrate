@@ -101,6 +101,7 @@ instance.interceptors.response.use(response => {
 	return response.data
 }, error => {
 	tryHideFullScreenLoading()
+	console.log(response.config.url, 'url-----')
 	if (error && error.response) {
 		switch (error.response.status) {
 		case 400:
@@ -149,8 +150,6 @@ instance.interceptors.response.use(response => {
 		}
 		console.log(errorData, 'error msg-----------')
 		vm.$toast(errorData.message)
-	} else {
-		vm.$toast('请求出错,请刷新页面重试')
 	}
 	return Promise.reject(error)
 })
