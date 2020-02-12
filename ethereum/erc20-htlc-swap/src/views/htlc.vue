@@ -2,7 +2,7 @@
 	<div class="htlc-component">
 		<van-row>
 			<van-col span="24">
-				<div class="htlc" v-if="status !== 1">
+				<div class="htlc">
 					<ValidationObserver v-slot="{ invalid }" ref="form">
 						<van-cell-group title="数量" :border="false">
 							<ValidationProvider v-slot="{ errors }" name="amount" rules="required|min_value:0.01">
@@ -23,18 +23,11 @@
 						<van-button type="primary" square class="btn-submit request" size="large" :disabled="invalid" @click="handleSubmit">发起兑换</van-button>
 					</ValidationObserver>
 				</div>
-				<van-panel v-else title="兑换状态" :status="statusText">
-					<van-loading v-if="status === 0">等待进行下一步操作...</van-loading>
-					<span v-else-if="status === 1">请点击“确认兑换”按钮完成兑换</span>
-					<span v-else>等待收款</span>
-					<div slot="footer" class="btns">
-						<van-button type="primary" square class="btn-submit" size="small" :disabled="status !== 1" @click="handleClaim">确认兑换</van-button>
-						<van-button type="primary" square class="btn-submit" size="small" :disabled="status === 2" @click="handleRefund">撤销兑换</van-button>
-					</div>
+				<van-panel v-if="history.tx" title="兑换状态" desc="需等待18个区块确认" :status="statusText">
+					<div>数量：<span>{{ history.amount || 100 }} </span>PRA</div>
+					<div>DID：<span>{{ 'did:pra:LsbTGSzqn1FtmTQTUwRxh7gUCZBSVev7cL' | clip(18, -10) }}</span></div>
+					<div>区块确认：<span>{{ txBlocknumber && currentBlocknumber ? currentBlocknumber - txBlocknumber : 0 }} </span>个</div>
 				</van-panel>
-				<van-popup v-model="showPicker" position="bottom">
-					<van-picker show-toolbar :columns="columns" @cancel="showPicker = false" @confirm="onConfirm" />
-				</van-popup>
 			</van-col>
 		</van-row>
 	</div>
@@ -42,7 +35,7 @@
 <script>
 	import { ValidationObserver, ValidationProvider } from 'vee-validate'
 	import { generateMixed } from '@/util/common'
-	import { getRandomNumberHash, getTransactionByHash } from '@/util/api'
+	import { getRandomNumberHash, getTransactionByHash, getBlockNumber } from '@/util/api'
 	import App from '@/util/app'
 	const initiaState = {
 		amount: null,
@@ -55,10 +48,15 @@
 			return {
 				htlcForm: { ...initiaState },
 				showRandom: false,
-				status: 0, // 0 未开始, 1 htlc, 2 claimed
-				history: {},
+				history: {
+					status: 0 // 0 pending, 1 success, 2 complete
+				},
 				timer: null,
-				balance: 0
+				timer1: null,
+				balance: 0,
+				txHash: '',
+				currentBlocknumber: null,
+				txBlocknumber: null
 			}
 		},
 		components: {
@@ -67,16 +65,16 @@
 		},
 		computed: {
 			statusText() {
-				let text = '未开始'
-				switch (this.status) {
+				let text = ''
+				switch (this.history.status) {
+				case 0:
+					text = 'Pending'
+					break
 				case 1:
-					text = '等待确认兑换'
+					text = 'Success'
 					break
 				case 2:
-					text = '兑换中'
-					break
-				case 3:
-					text = '已撤销兑换'
+					text = 'Complete'
 					break
 				}
 				return text
@@ -84,26 +82,37 @@
 		},
 		async mounted() {
 			this.htlcForm.randomNum = '0x' + generateMixed(64)
-
-			await App.init()
-			await this.checkSwap()
+			try {
+				await App.init()
+				await this.checkSwap()
+			} catch (e) {
+				console.log(e)
+			}
 			// get pra balance
 			App.praIntance.balanceOf(App.account).then(balance => {
 				this.balance = (balance.toNumber() / 10 ** 18).toFixed(3)
 			})
+			this.updateConfirmations()
+			this.timer1 = setInterval(this.updateConfirmations, 10000)
 		},
 		methods: {
 			approve() {
-				const amount = 500000 * 1000000000000000000
-				App.praIntance.approve(App.contracts.htlcContract.address, amount).then(result => {
-					if (result.receipt.status == 1) {
-						console.log('status success!!')
-					} else {
-						console.log('status fail!!')
-					}
-				}).catch(function(err) {
-					console.log(err.message)
-				})
+				this.$dialog.confirm({
+					title: '温馨提示',
+					message: '首次兑换需要获得您的授权，该操作不会扣除您的ETH，只会消耗少量gas费',
+					messageAlign: 'left'
+				}).then(() => {
+					const amount = 500000 * 1000000000000000000
+					App.praIntance.approve(App.contracts.htlcContract.address, amount).then(result => {
+						if (result.receipt.status == 1) {
+							console.log('status success!!')
+						} else {
+							console.log('status fail!!')
+						}
+					}).catch(function(err) {
+						console.log(err.message)
+					})
+				}).catch(console.log)
 			},
 			async checkSwap() {
 				const history = localStorage.getItem('history')
@@ -134,7 +143,7 @@
 				})
 				this.$store.commit('showLoading')
 				try {
-					const result = await App.htlcIntance.htlc(randomNumberHash, timestamp, App.heightSpan, App.recipientAddr, amount, amount, did)
+					const result = await App.htlcIntance.htlc(randomNumberHash, timestamp, App.heightSpan, amount, amount, did)
 					this.$store.commit('hideLoading')
 					this.$notify.clear()
 					if (result.receipt.status == 1) {
@@ -145,12 +154,12 @@
 							tx: result.tx,
 							status: 1
 						}
-						this.status = 1
 						localStorage.setItem('history', JSON.stringify(this.history))
+						// reset form
 						this.htlcForm = { ...initiaState }
-						this.timer = setInterval(() => {
-							this.checkTransactionStatus(result.tx)
-						}, 2000)
+						this.$refs.form.reset()
+						// check transaction
+						this.checkTransactionStatus(result.tx)
 					}
 				} catch (e) {
 					this.$store.commit('hideLoading')
@@ -217,13 +226,23 @@
 					console.log(e)
 				}
 			},
-			async checkTransactionStatus(hash) {
-				const { result } = await getTransactionByHash(hash)
-				console.log(result.blockNumber, '---data---')
-				if (result.blockNumber) {
-					this.status = 1
-					clearInterval(this.timer)
-				}
+			checkTransactionStatus(hash) {
+				clearInterval(this.timer)
+				this.timer = setInterval(async() => {
+					const { result } = await getTransactionByHash(hash)
+					console.log(result.blockNumber, '---data---')
+					if (result.blockNumber) {
+						this.txBlocknumber = web3.toDecimal(result.blockNumber)
+						console.log(this.txBlocknumber, '0000')
+						this.status = 2
+						this.history.block
+						clearInterval(this.timer)
+					}
+				}, 1000)
+			},
+			async updateConfirmations() {
+				const { result } = await getBlockNumber()
+				this.currentBlocknumber = web3.toDecimal(result)
 			}
 		},
 		destroyed() {
@@ -241,8 +260,17 @@
 		}
 
 		.van-panel {
+			margin-top: $largeGutter*2;
 			.van-panel__content {
-				padding: $largeGutter $mediumGutter;
+				font-size: $mediumFontSize;
+				padding: $mediumGutter $largeGutter $largeGutter;
+				line-height: $largeGutter*1.3;
+				div {
+					span {
+						color: #3498db;
+						font-weight: bold;
+					}
+				}
 			}
 			.btns {
 				text-align: right;

@@ -25,3 +25,12 @@ export async function getTransactionByHash(hash) {
 		id: 1
 	})
 }
+
+export async function getBlockNumber() {
+	return axios.post(infura, {
+		jsonrpc: '2.0',
+		method: 'eth_blockNumber',
+		params: [],
+		id: 1
+	})
+}

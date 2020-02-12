@@ -51,11 +51,6 @@
 	font-size: $baseFontSize;
 	color: $grey;
 }
-.van-cell:not(:last-child)::after {
-	background: repeat-x top left url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='1' height='1'><rect fill='#ebedf0' x='0' y='0' width='1' height='1'/></svg>");
-	height: 2PX;
-	border-bottom: none;
-}
 @media screen and (min-width: 750px) {
   html {
     font-size: 120px !important;
