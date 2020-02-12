@@ -24,9 +24,9 @@
 					</ValidationObserver>
 				</div>
 				<van-panel v-if="history.tx" title="兑换状态" desc="需等待18个区块确认" :status="statusText">
-					<div>数量：<span>{{ history.amount || 100 }} </span>PRA</div>
-					<div>DID：<span>{{ 'did:pra:LsbTGSzqn1FtmTQTUwRxh7gUCZBSVev7cL' | clip(18, -10) }}</span></div>
-					<div>区块确认：<span>{{ txBlocknumber && currentBlocknumber ? currentBlocknumber - txBlocknumber : 0 }} </span>个</div>
+					<div>数量：<span>{{ history.amount }} </span>PRA</div>
+					<div>DID：<span>{{ history.did | clip(18, -10) }}</span></div>
+					<div>区块确认：<span>{{ confirmations }} </span>个</div>
 				</van-panel>
 			</van-col>
 		</van-row>
@@ -78,6 +78,12 @@
 					break
 				}
 				return text
+			},
+			confirmations() {
+				if (this.currentBlocknumber > 0 && this.txBlocknumber > 0 && this.currentBlocknumber >= this.txBlocknumber) {
+					return this.currentBlocknumber - this.txBlocknumber
+				}
+				return 0
 			}
 		},
 		async mounted() {
