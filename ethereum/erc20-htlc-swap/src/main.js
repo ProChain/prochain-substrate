@@ -6,6 +6,7 @@ import i18n from '@/i18n'
 import 'amfe-flexible'
 import '@/assets/css/style.customize.scss'
 import '@/assets/css/reset.css'
+import * as filters from '@/filters'
 
 import '@vant/touch-emulator'
 import './vee-validate'
@@ -20,6 +21,8 @@ FastClick.prototype.onTouchEnd = function(event) {
 	}
 }
 FastClick.attach(document.body)
+
+Object.keys(filters).forEach(k => Vue.filter(k, filters[k]))
 
 export default new Vue({
 	el: '#app',

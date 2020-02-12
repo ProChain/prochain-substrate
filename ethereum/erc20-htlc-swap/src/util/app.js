@@ -29,7 +29,7 @@ const App = {
 		} else { // If no injected web3 instance is detected, fall back to Ganache
 			App.web3Provider = new Web3.providers.HttpProvider('http://localhost:9545')
 		}
-		web3 = new Web3(App.web3Provider)
+		App.web3 = new Web3(App.web3Provider)
 
 		var account = App.getAccountParam()
 
@@ -51,7 +51,7 @@ const App = {
 	},
 
 	async initContract() {
-		const data = await getJSONByName('ERC20HTLC')
+		const data = await getJSONByName('ERC20HTLCLite')
 		App.contracts.htlcContract = TruffleContract(data)
 		App.contracts.htlcContract.setProvider(App.web3Provider)
 
