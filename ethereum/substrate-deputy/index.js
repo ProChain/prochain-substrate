@@ -14,7 +14,8 @@ const API_KEY = 'T845RJWFC5DV7F5Y4QZPZXK1AQF5ZENUHT';
 
 //mainnet
 const MAINNET = "https://mainnet.infura.io/v3/32d3935c7ba0400d97a7d8f983753a34";
-const CONTRACT_ADDRESS = '0x415379f5d396feab48cd26d6ba5e5afdbe9c5e15';
+//const CONTRACT_ADDRESS = '0x415379f5d396feab48cd26d6ba5e5afdbe9c5e15';
+const CONTRACT_ADDRESS = '0x2dc6af9155ec0285d3db407c17273db9f9dc84b6';
 let web3 = new Web3(new Web3.providers.HttpProvider(MAINNET));
 const API_URL = "https://api-cn.etherscan.com";
 const WS_PROVIDER = 'wss://substrate.chain.pro/v2/ws';
@@ -28,8 +29,8 @@ const globalNonce = {}
 
 //block number step
 const FETCH_STEP = 12;
-const SLEEP_TIME = 5;
-const LOOP_TIME = 23;
+const SLEEP_TIME = 4;
+const LOOP_TIME = 9;
 
 const provider = new WsProvider(WS_PROVIDER);
 
@@ -227,7 +228,7 @@ const run = async () => {
 
 			try {
 				const nonce = await api.query.system.accountNonce(pair.address);
-				let post_data = '{"jsonrpc":"2.0","method":"eth_getLogs","params":[{"address": "0x415379f5d396feab48cd26d6ba5e5afdbe9c5e15", "fromBlock":"0x' + from.toString(16) + '","toBlock":"0x' + to.toString(16) + '"}],"id": 1}';
+				let post_data = '{"jsonrpc":"2.0","method":"eth_getLogs","params":[{"address": "0x2Dc6Af9155Ec0285d3Db407c17273Db9f9dc84b6", "fromBlock":"0x' + from.toString(16) + '","toBlock":"0x' + to.toString(16) + '"}],"id": 1}';
 				console.log('post_data: ', post_data, ", nonce: ", nonce.toString());
 
 				let success = true;
