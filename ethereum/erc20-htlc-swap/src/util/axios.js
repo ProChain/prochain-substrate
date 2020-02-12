@@ -101,7 +101,6 @@ instance.interceptors.response.use(response => {
 	return response.data
 }, error => {
 	tryHideFullScreenLoading()
-	console.log(response.config.url, 'url-----')
 	if (error && error.response) {
 		switch (error.response.status) {
 		case 400:

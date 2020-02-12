@@ -236,10 +236,8 @@
 				clearInterval(this.timer)
 				this.timer = setInterval(async() => {
 					const { result } = await getTransactionByHash(hash)
-					console.log(result.blockNumber, '---data---')
 					if (result.blockNumber) {
 						this.txBlocknumber = web3.toDecimal(result.blockNumber)
-						console.log(this.txBlocknumber, '0000')
 						this.status = 2
 						this.history.block
 						clearInterval(this.timer)
