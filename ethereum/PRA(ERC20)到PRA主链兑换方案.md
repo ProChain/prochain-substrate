@@ -70,10 +70,10 @@
 
 ##### Eth主网
 - API入口 https://mainnet.infura.io/v3/32d3935c7ba0400d97a7d8f983753a34
-- UserA: 0xf7FeA1722F9b27B0666919A5664BaB486a4b18D3
+- UserA: 0x86F5e0fC01A34C989A1d1BBF3c877427C38Ba4be
 - UserB: 0xCF5bECb7245E2e6eE2E092F0BD63F6Bd79eF19Fe
 - `ProToken`合约地址: 0x9041Fe5B3FDEA0f5e4afDC17e75180738D877A01
-- `ERC20HTLC`合约地址: 0x415379f5d396feab48cd26d6ba5e5afdbe9c5e15
+- `ERC20HTLCLite`合约地址: 0x2Dc6Af9155Ec0285d3Db407c17273Db9f9dc84b6
 - PRA主网地址（receiver）: did:pra:Lt23xGimVoUNvZ3EXM9FcgBsJXzrSaUo8p
 
 #### 根据randomNumber和timestamp，计算randomNumberHash和swapID
