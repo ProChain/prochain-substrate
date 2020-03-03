@@ -429,19 +429,17 @@ decl_module! {
 			// }
 		// }
 		
-		fn judge(origin) {
+		fn judge(origin, name: Vec<u8>) {
 			let sender = ensure_signed(origin)?;
 
-			let (user_key, did) = Self::identity(&sender).ok_or(Error::<T>::DidNotExists)?;
+			let (user_key, did) = Self::identity(&sender).ok_or("this account has no did yet")?;
 			let mut metadata = Self::metadata(&user_key);
 
-			if Self::genesis_account() != sender.clone() {
-				metadata.creator = sender.clone();
+			metadata.group_name = Some(name.clone());
 
-				<Metadata<T>>::insert(user_key, metadata);
+			<Metadata<T>>::insert(user_key, metadata);
 
-				Self::deposit_event(RawEvent::Judged(did));
-			}
+			Self::deposit_event(RawEvent::GroupNameSet(did, name));
 		}
 	}
 }
