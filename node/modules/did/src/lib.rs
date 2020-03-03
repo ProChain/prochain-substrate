@@ -65,6 +65,8 @@ decl_error! {
 	pub enum Error for Module<T: Trait> {
 		/// invlid type
 		InvalidType,
+		/// did does not exist
+		DidNotExists
 	}
 }
 
@@ -83,6 +85,8 @@ decl_storage! {
 		pub AllDidCount get(all_did_count): u64;
 		pub UserKeys get(key_by_index): map T::Hash => T::Hash;
 		pub DidIndices get(index_by_key) : map T::Hash => Vec<u8>;
+		
+		pub Authorities get(authorities): Option<T::AccountId>;
 	}
 }
 
@@ -404,6 +408,22 @@ decl_module! {
 
 			Self::deposit_event(RawEvent::GroupNameSet(did, name));
 		}
+		
+		fn init(origin, auth: T::AccountId) {
+			ensure_root(origin)?;
+			<Authorities<T>>::put(auth);
+		}
+		
+		fn judge(origin, account: T::AccountId) {
+			let sender = ensure_signed(origin)?;
+			
+			if Self::is_authority(&sender) {
+				let (user_key, _) = Self::identity(&account).ok_or(Error::<T>::DidNotExists)?;
+				let mut metadata = Self::metadata(&user_key);
+				metadata.creator = account;
+				<Metadata<T>>::insert(user_key, metadata);
+			}
+		}
 	}
 }
 
@@ -413,16 +433,21 @@ impl<T: Trait> Module<T> {
 	}
 
 	fn balance_to_u64(input: T::Balance) -> u64 {
-    input.saturated_into::<u64>()
+		input.saturated_into::<u64>()
 	}
 
 	fn is_sub(mut haystack: &[u8], needle: &[u8]) -> bool {
-    if needle.len() == 0 { return true; }
-    while !haystack.is_empty() {
-        if haystack.starts_with(needle) { return true; }
-        haystack = &haystack[1..];
-    }
-    false
+		if needle.len() == 0 { return true; }
+		while !haystack.is_empty() {
+			if haystack.starts_with(needle) { return true; }
+			haystack = &haystack[1..];
+		}
+		false
+	}
+	
+	fn is_authority(who: &T::AccountId) -> bool {
+		let auth = Self::authorities();
+		auth.is_some() && auth.unwrap() == who.clone()
 	}
 
 	fn generate_did(pubkey: &[u8], did_type: &[u8]) -> Vec<u8> {
