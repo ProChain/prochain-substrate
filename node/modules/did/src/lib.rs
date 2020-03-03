@@ -15,6 +15,7 @@ use sp_runtime::{
 	traits::{CheckedSub, CheckedAdd, Hash, SaturatedConversion,}
 };
 use frame_system::{self as system, ensure_root, ensure_signed};
+use frame_support::weights::SimpleDispatchInfo;
 use sp_io::hashing::blake2_256;
 use harsh::{HarshBuilder};
 
