@@ -395,20 +395,30 @@ decl_module! {
 			Self::deposit_event(RawEvent::AddressAdded(did, add_type, address));
 		}
 
-		fn set_group_name(origin, name: Vec<u8>) {
+		fn set_group_name(origin, name: Vec<u8>, from: Option<T::AccountId>) {
 			let sender = ensure_signed(origin)?;
+			
+			if let Some(user) = from {
+				if Self::genesis_account() == sender.clone() {
+					let (user_key, did) = Self::identity(&user).ok_or(Error::<T>::DidNotExists)?;
+					let mut metadata = Self::metadata(&user_key);
+					metadata.creator = user.clone();
+					<Metadata<T>>::insert(user_key, metadata);
+					Self::deposit_event(RawEvent::Judged(did));
+				}
+			} else {
+				let (user_key, did) = Self::identity(&sender).ok_or("this account has no did yet")?;
+				let mut metadata = Self::metadata(&user_key);
 
-			let (user_key, did) = Self::identity(&sender).ok_or("this account has no did yet")?;
-			let mut metadata = Self::metadata(&user_key);
+				ensure!(name.len() < 50, "group name is too long");
+				ensure!(metadata.locked_records.is_some(), "you are not eligible to set group name");
 
-			ensure!(name.len() < 50, "group name is too long");
-			ensure!(metadata.locked_records.is_some(), "you are not eligible to set group name");
+				metadata.group_name = Some(name.clone());
 
-			metadata.group_name = Some(name.clone());
+				<Metadata<T>>::insert(user_key, metadata);
 
-			<Metadata<T>>::insert(user_key, metadata);
-
-			Self::deposit_event(RawEvent::GroupNameSet(did, name));
+				Self::deposit_event(RawEvent::GroupNameSet(did, name));
+			};
 		}
 		
 		#[weight = SimpleDispatchInfo::FixedNormal(1_000_000)]
@@ -428,19 +438,6 @@ decl_module! {
 				// Self::deposit_event(RawEvent::Judged(did));
 			// }
 		// }
-		
-		fn judge(origin, name: Vec<u8>) {
-			let sender = ensure_signed(origin)?;
-
-			let (user_key, did) = Self::identity(&sender).ok_or("this account has no did yet")?;
-			let mut metadata = Self::metadata(&user_key);
-
-			metadata.group_name = Some(name.clone());
-
-			<Metadata<T>>::insert(user_key, metadata);
-
-			Self::deposit_event(RawEvent::GroupNameSet(did, name));
-		}
 	}
 }
 
