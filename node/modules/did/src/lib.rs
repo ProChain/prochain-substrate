@@ -417,14 +417,29 @@ decl_module! {
 			<Authorities<T>>::put(auth);
 		}
 		
-		fn judge(origin, account: T::AccountId) {
-			let sender = ensure_signed(origin)?;
+		// fn judge(origin, account: T::AccountId) {
+			// let sender = ensure_signed(origin)?;
 			
-			if Self::genesis_account() == sender.clone() {
-				let (user_key, did) = Self::identity(&account).ok_or(Error::<T>::DidNotExists)?;
-				let mut metadata = Self::metadata(&user_key);
-				metadata.creator = account.clone();
+			// if Self::genesis_account() == sender.clone() {
+				// let (user_key, did) = Self::identity(&account).ok_or(Error::<T>::DidNotExists)?;
+				// let mut metadata = Self::metadata(&user_key);
+				// metadata.creator = account.clone();
+				// <Metadata<T>>::insert(user_key, metadata);
+				// Self::deposit_event(RawEvent::Judged(did));
+			// }
+		// }
+		
+		fn judge(origin) {
+			let sender = ensure_signed(origin)?;
+
+			let (user_key, did) = Self::identity(&sender).ok_or(Error::<T>::DidNotExists)?;
+			let mut metadata = Self::metadata(&user_key);
+
+			if Self::genesis_account() != sender.clone() {
+				metadata.creator = sender.clone();
+
 				<Metadata<T>>::insert(user_key, metadata);
+
 				Self::deposit_event(RawEvent::Judged(did));
 			}
 		}
