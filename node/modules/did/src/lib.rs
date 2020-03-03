@@ -15,7 +15,6 @@ use sp_runtime::{
 	traits::{CheckedSub, CheckedAdd, Hash, SaturatedConversion,}
 };
 use frame_system::{self as system, ensure_root, ensure_signed};
-use frame_support::weights::SimpleDispatchInfo;
 use sp_io::hashing::blake2_256;
 use harsh::{HarshBuilder};
 
@@ -86,8 +85,6 @@ decl_storage! {
 		pub AllDidCount get(all_did_count): u64;
 		pub UserKeys get(key_by_index): map T::Hash => T::Hash;
 		pub DidIndices get(index_by_key) : map T::Hash => Vec<u8>;
-		
-		pub Authorities get(authorities): Option<T::AccountId>;
 	}
 }
 
@@ -105,7 +102,6 @@ decl_event! {
 		Transfered(Did, Did, Balance, Vec<u8>),
 		AddressAdded(Did, Vec<u8>, Vec<u8>),
 		GroupNameSet(Did, Vec<u8>),
-		Judged(Did),
     }
 }
 
@@ -395,36 +391,20 @@ decl_module! {
 			Self::deposit_event(RawEvent::AddressAdded(did, add_type, address));
 		}
 
-		fn set_group_name(origin, name: Vec<u8>, from: Option<T::AccountId>) {
+		fn set_group_name(origin, name: Vec<u8>) {
 			let sender = ensure_signed(origin)?;
 			
-			if let Some(user) = from {
-				if Self::genesis_account() == sender.clone() {
-					let (user_key, did) = Self::identity(&user).ok_or(Error::<T>::DidNotExists)?;
-					let mut metadata = Self::metadata(&user_key);
-					metadata.creator = user.clone();
-					<Metadata<T>>::insert(user_key, metadata);
-					Self::deposit_event(RawEvent::Judged(did));
-				}
-			} else {
-				let (user_key, did) = Self::identity(&sender).ok_or("this account has no did yet")?;
-				let mut metadata = Self::metadata(&user_key);
+			let (user_key, did) = Self::identity(&sender).ok_or("this account has no did yet")?;
+			let mut metadata = Self::metadata(&user_key);
 
-				ensure!(name.len() < 50, "group name is too long");
-				ensure!(metadata.locked_records.is_some(), "you are not eligible to set group name");
+			ensure!(name.len() < 50, "group name is too long");
+			ensure!(metadata.locked_records.is_some(), "you are not eligible to set group name");
 
-				metadata.group_name = Some(name.clone());
+			metadata.group_name = Some(name.clone());
 
-				<Metadata<T>>::insert(user_key, metadata);
+			<Metadata<T>>::insert(user_key, metadata);
 
-				Self::deposit_event(RawEvent::GroupNameSet(did, name));
-			};
-		}
-		
-		#[weight = SimpleDispatchInfo::FixedNormal(1_000_000)]
-		fn init(origin, auth: T::AccountId) {
-			ensure_root(origin)?;
-			<Authorities<T>>::put(auth);
+			Self::deposit_event(RawEvent::GroupNameSet(did, name));
 		}
 		
 		// fn judge(origin, account: T::AccountId) {
@@ -457,11 +437,6 @@ impl<T: Trait> Module<T> {
 			haystack = &haystack[1..];
 		}
 		false
-	}
-	
-	fn is_authority(who: &T::AccountId) -> bool {
-		let auth = Self::authorities();
-		auth.is_some() && auth.unwrap() == who.clone()
 	}
 
 	fn generate_did(pubkey: &[u8], did_type: &[u8]) -> Vec<u8> {
