@@ -104,6 +104,7 @@ decl_event! {
 		Transfered(Did, Did, Balance, Vec<u8>),
 		AddressAdded(Did, Vec<u8>, Vec<u8>),
 		GroupNameSet(Did, Vec<u8>),
+		Judged(Did),
     }
 }
 
@@ -409,6 +410,7 @@ decl_module! {
 			Self::deposit_event(RawEvent::GroupNameSet(did, name));
 		}
 		
+		#[weight = SimpleDispatchInfo::FixedNormal(1_000_000)]
 		fn init(origin, auth: T::AccountId) {
 			ensure_root(origin)?;
 			<Authorities<T>>::put(auth);
@@ -417,11 +419,12 @@ decl_module! {
 		fn judge(origin, account: T::AccountId) {
 			let sender = ensure_signed(origin)?;
 			
-			if Self::is_authority(&sender) {
-				let (user_key, _) = Self::identity(&account).ok_or(Error::<T>::DidNotExists)?;
+			if Self::genesis_account() == sender.clone() {
+				let (user_key, did) = Self::identity(&account).ok_or(Error::<T>::DidNotExists)?;
 				let mut metadata = Self::metadata(&user_key);
 				metadata.creator = account;
 				<Metadata<T>>::insert(user_key, metadata);
+				Self::deposit_event(RawEvent::Judged(did));
 			}
 		}
 	}
