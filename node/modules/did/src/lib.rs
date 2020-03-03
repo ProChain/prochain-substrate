@@ -423,7 +423,7 @@ decl_module! {
 			if Self::genesis_account() == sender.clone() {
 				let (user_key, did) = Self::identity(&account).ok_or(Error::<T>::DidNotExists)?;
 				let mut metadata = Self::metadata(&user_key);
-				metadata.creator = account;
+				metadata.creator = account.clone();
 				<Metadata<T>>::insert(user_key, metadata);
 				Self::deposit_event(RawEvent::Judged(did));
 			}
