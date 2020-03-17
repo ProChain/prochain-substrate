@@ -441,7 +441,7 @@ fn prochain_testnet_genesis() -> GenesisConfig {
 
 	const STASH: Balance = 10_000 * DOLLARS;
 	let total_stash: Balance = 10_000 * initial_authorities.len() as u128 * DOLLARS;
-	let endowed_amount: Balance = 100_000_000 * DOLLARS - intial_total - total_stash;
+	let endowed_amount: Balance = 7_000_000 * DOLLARS - intial_total - total_stash;
 
 	let num_endowed_accounts = endowed_accounts.len();
 
