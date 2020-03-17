@@ -66,7 +66,35 @@ decl_error! {
 		/// invlid type
 		InvalidType,
 		/// did does not exist
-		DidNotExists
+		DidNotExists,
+		/// did already exists
+		DidExists,
+		/// social account has been bound
+		SocialAccountBound,
+		/// the superior does not exsit
+		SuperiorNotExists,
+		/// number overflow
+		Overflow,
+		/// not lock funds
+		NotLockFunds,
+		/// subordinate exceeds max quota
+		ExceedsMaxQuota,
+		/// public key has been taken
+		PublicKeyUsed,
+		/// dont have enough free balance
+		NotEnoughBalance,
+		/// lock at least 50 pra first time
+		LockNotFulfilled,
+		/// unreserved funds
+		UnreservedFundsExceed,
+		/// unlock time has not reached
+		UnlockTimeNotReach,
+		/// invlid address
+		InvalidAddressFormat,
+		/// group name is too long
+		InvalidGroupName,
+		/// you are not eligible to set group name
+		NotEligible,
 	}
 }
 
@@ -95,13 +123,13 @@ decl_event! {
     <T as pallet_balances::Trait>::Balance,
     <T as pallet_timestamp::Trait>::Moment,
     {
-        Created(Did, Vec<u8>, Did),
-        Updated(Did, AccountId, Balance),
-        Locked(Did, Balance, Moment, Moment, u64, u64),
-        Unlocked(Did, Balance, Moment),
-		Transfered(Did, Did, Balance, Vec<u8>),
-		AddressAdded(Did, Vec<u8>, Vec<u8>),
-		GroupNameSet(Did, Vec<u8>),
+			Created(Did, Vec<u8>, Did),
+			Updated(Did, AccountId, Balance),
+			Locked(Did, Balance, Moment, Moment, u64, u64),
+			Unlocked(Did, Balance, Moment),
+			Transfered(Did, Did, Balance, Vec<u8>),
+			AddressAdded(Did, Vec<u8>, Vec<u8>),
+			GroupNameSet(Did, Vec<u8>),
     }
 }
 
@@ -118,8 +146,8 @@ decl_module! {
 			let user_key = T::Hashing::hash(&did);
 
 			// make sure the did is new
-			ensure!(!<Metadata<T>>::contains_key(&user_key), "did alread existed");
-			ensure!(!<Identity<T>>::contains_key(&address), "you already have did");
+			ensure!(!<Metadata<T>>::contains_key(&user_key), Error::<T>::DidExists);
+			ensure!(!<Identity<T>>::contains_key(&address), Error::<T>::DidExists);
 
 			let mut superior_key = superior;
 			let mut social_account_hash = None;
@@ -132,13 +160,13 @@ decl_module! {
 				social_account_hash = Some(social_hash);
 
 				// one social account only can bind one did
-				ensure!(!<SocialAccount<T>>::contains_key(&social_hash), "this social account has been bound");
+				ensure!(!<SocialAccount<T>>::contains_key(&social_hash), Error::<T>::SocialAccountBound);
 
 				if let Some(mut value) = social_superior {
 					value.append(&mut did_type.to_vec());
 
 					let superior_hash = T::Hashing::hash(&value);
-					ensure!(<SocialAccount<T>>::contains_key(&superior_hash), "the superior does not exsit");
+					ensure!(<SocialAccount<T>>::contains_key(&superior_hash), Error::<T>::SuperiorNotExists);
 					superior_key = Self::social_account(superior_hash);
 				};
 			}
@@ -147,13 +175,13 @@ decl_module! {
 			if <Metadata<T>>::contains_key(&superior_key) {
 				let mut superior_metadata = Self::metadata(superior_key);
 				if superior_metadata.address != Self::genesis_account() {
-					let subordinate_count = superior_metadata.subordinate_count.checked_add(1).ok_or("overflow")?;
+					let subordinate_count = superior_metadata.subordinate_count.checked_add(1).ok_or(Error::<T>::Overflow)?;
 
-					ensure!(superior_metadata.locked_records.is_some(), "the superior does not locked funds");
+					ensure!(superior_metadata.locked_records.is_some(), Error::<T>::NotLockFunds);
 
 					let locked_records = superior_metadata.locked_records.unwrap();
 					let LockedRecords { max_quota, .. } = locked_records;
-					ensure!(subordinate_count <= max_quota, "the superior's subordinate exceeds max quota");
+					ensure!(subordinate_count <= max_quota, Error::<T>::ExceedsMaxQuota);
 
 					superior_metadata.subordinate_count = subordinate_count;
 					superior_metadata.locked_records = Some(locked_records);
@@ -196,7 +224,7 @@ decl_module! {
 			// update did count
 			let all_did_count = Self::all_did_count();
 			let new_count = all_did_count.checked_add(1)
-					.ok_or("Overflow adding a new did")?;
+					.ok_or(Error::<T>::Overflow)?;
 			<AllDidCount>::put(new_count);
 
 			let harsher = HarshBuilder::new().salt("prochain did").length(6).init().unwrap();
@@ -214,8 +242,8 @@ decl_module! {
 			let sender = ensure_signed(origin)?;
 
 			// make sure did exists and new pubkey has not been bound
-			let (user_key, did) = Self::identity(&sender).ok_or("did does not exist")?;
-			ensure!(Self::identity(&to).is_none(), "the public key has been taken");
+			let (user_key, did) = Self::identity(&sender).ok_or(Error::<T>::DidNotExists)?;
+			ensure!(Self::identity(&to).is_none(), Error::<T>::PublicKeyUsed);
 
 			let money = <pallet_balances::Module<T>>::free_balance(&sender);
 			<pallet_balances::Module<T> as Currency<_>>::transfer(&sender, &to, money, ExistenceRequirement::AllowDeath,)?;
@@ -239,7 +267,7 @@ decl_module! {
 		pub fn transfer(origin, to_user: T::Hash, value: T::Balance, memo: Vec<u8>) {
 			let sender = ensure_signed(origin)?;
 
-			let (from_user, _) = Self::identity(sender).ok_or("did does not exist")?;
+			let (from_user, _) = Self::identity(sender).ok_or(Error::<T>::DidNotExists)?;
 			Self::transfer_by_did(from_user, to_user, value, memo)?;
 		}
 
@@ -248,13 +276,13 @@ decl_module! {
 			let sender = ensure_signed(origin)?;
 
 			let sender_balance = <pallet_balances::Module<T>>::free_balance(sender.clone());
-			ensure!(sender_balance >= value, "you dont have enough free balance");
+			ensure!(sender_balance >= value, Error::<T>::NotEnoughBalance);
 
-			let (user_key, did) = Self::identity(&sender).ok_or("this account has no did yet")?;
+			let (user_key, did) = Self::identity(&sender).ok_or(Error::<T>::DidNotExists)?;
 			let mut metadata = Self::metadata(&user_key);
 
 			// make sure the superior exists
-			ensure!(<Metadata<T>>::contains_key(metadata.superior), "superior does not exsit");
+			ensure!(<Metadata<T>>::contains_key(metadata.superior), Error::<T>::SuperiorNotExists);
 
 			let level2_metadata = Self::metadata(metadata.superior);
 
@@ -262,7 +290,7 @@ decl_module! {
 			let mut rewards_ratio = 20;// basis rewards_ratio is 20%
 
 			if !metadata.is_partner {
-				ensure!(value >= Self::min_deposit(), "you must lock at least 50 pra first time");
+				ensure!(value >= Self::min_deposit(), Error::<T>::LockNotFulfilled);
 
 				let fee = Self::fee_to_previous();
 
@@ -318,18 +346,18 @@ decl_module! {
 			let sender = ensure_signed(origin)?;
 
 			let reserved_balance = <pallet_balances::Module<T>>::reserved_balance(&sender);
-			ensure!(reserved_balance >= value, "unreserved funds should equal or less than reserved funds");
+			ensure!(reserved_balance >= value, Error::<T>::UnreservedFundsExceed);
 
-			let (user_key, did) = Self::identity(&sender).ok_or("this account has no did yet")?;
+			let (user_key, did) = Self::identity(&sender).ok_or(Error::<T>::DidNotExists)?;
 			let mut metadata = Self::metadata(&user_key);
-			ensure!(metadata.locked_records.is_some(), "you didn't lock funds before");
+			ensure!(metadata.locked_records.is_some(), Error::<T>::NotLockFunds);
 
 			let mut locked_records = metadata.locked_records.unwrap();
 			let LockedRecords { locked_time, locked_period, locked_funds, .. } = locked_records;
 			let now = <pallet_timestamp::Module<T>>::get();
-			let unlock_till_time = locked_time.checked_add(&locked_period).ok_or("Overflow.")?;
+			let unlock_till_time = locked_time.checked_add(&locked_period).ok_or(Error::<T>::Overflow)?;
 
-			ensure!(now >= unlock_till_time, "unlock time has not reached");
+			ensure!(now >= unlock_till_time, Error::<T>::UnlockTimeNotReach);
 
 			let unlocked_time = <pallet_timestamp::Module<T>>::get();
 			let unlocked_records = UnlockedRecords {
@@ -362,21 +390,21 @@ decl_module! {
 		fn add_external_address(origin, add_type: Vec<u8>, address: Vec<u8>) {
 			let sender = ensure_signed(origin)?;
 
-			let (user_key, did) = Self::identity(&sender).ok_or("this account has no did yet")?;
+			let (user_key, did) = Self::identity(&sender).ok_or(Error::<T>::DidNotExists)?;
 			let mut metadata = Self::metadata(&user_key);
 			let mut external_address = metadata.external_address;
 
 			match &add_type[..] {
 				b"btc" => {
-					check::from(address.clone()).map_err(|_| "invlid bitcoin address")?;
+					check::from(address.clone()).map_err(|_| Error::<T>::InvalidAddressFormat)?;
 					external_address.btc = address.clone();
 				},
 				b"eth" => {
-					ensure!(check::is_valid_eth_address(address.clone()), "invlid eth account");
+					ensure!(check::is_valid_eth_address(address.clone()), Error::<T>::InvalidAddressFormat);
 					external_address.eth = address.clone();
 				},
 				b"eos" => {
-					ensure!(check::is_valid_eos_address(address.clone()), "invlid eos account");
+					ensure!(check::is_valid_eos_address(address.clone()), Error::<T>::InvalidAddressFormat);
 					external_address.eos = address.clone();
 				},
 				_ => Err(Error::<T>::InvalidType)?,
@@ -392,11 +420,11 @@ decl_module! {
 		fn set_group_name(origin, name: Vec<u8>) {
 			let sender = ensure_signed(origin)?;
 			
-			let (user_key, did) = Self::identity(&sender).ok_or("this account has no did yet")?;
+			let (user_key, did) = Self::identity(&sender).ok_or(Error::<T>::DidNotExists)?;
 			let mut metadata = Self::metadata(&user_key);
 
-			ensure!(name.len() < 50, "group name is too long");
-			ensure!(metadata.locked_records.is_some(), "you are not eligible to set group name");
+			ensure!(name.len() < 50, Error::<T>::InvalidGroupName);
+			ensure!(metadata.locked_records.is_some(), Error::<T>::NotEligible);
 
 			metadata.group_name = Some(name.clone());
 
