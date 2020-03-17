@@ -13,7 +13,7 @@ curl https://sh.rustup.rs -sSf | sh
 Install required tools:
 
 ```bash
-./scripts/init.sh
+.maintain/init.sh
 ```
 
 Build Prochain:
@@ -30,9 +30,10 @@ Ensure you have a fresh start if updating from another version:
 To start up the Prochain node, run:
 ```
 ./target/release/prochain \
-  --chain ./testnet/v0.9.0.raw.json \
+  --chain ./testnet/v1.0.0.raw.json \
   --name NodeName \
   --telemetry-url ws://telemetry.polkadot.io:1024 \
+  --bootnodes /ip4/39.106.220.238/tcp/30333/p2p/QmXigZJExTmAaXcRfX5gXobei1PDsmhGKuKH98GGciz5qW \
   --validator
 ```
 
