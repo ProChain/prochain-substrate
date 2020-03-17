@@ -22,3 +22,4 @@ pub mod client;
 pub mod genesis;
 pub mod keyring;
 
+pub mod bench;

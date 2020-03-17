@@ -7,7 +7,6 @@ members = [
 	"node/rpc",
 	"node/modules/did",
 	"node/modules/ads",
-	"node/modules/prices",
 	"node/runtime",
 	"node/testing",
 	"node/transaction-factory",

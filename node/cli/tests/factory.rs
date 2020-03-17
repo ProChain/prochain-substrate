@@ -1,4 +1,4 @@
-// Copyright 2019-2020 Parity Technologies (UK) Ltd.
+// Copyright 2020 Parity Technologies (UK) Ltd.
 // This file is part of Substrate.
 
 // Substrate is free software: you can redistribute it and/or modify
@@ -14,27 +14,27 @@
 // You should have received a copy of the GNU General Public License
 // along with Substrate.  If not, see <http://www.gnu.org/licenses/>.
 
-//! The transaction factory can operate in different modes. See
-//! the `simple_mode` and `complex_mode` modules for details.
+#![cfg(unix)]
 
-use std::str::FromStr;
+use assert_cmd::cargo::cargo_bin;
+use std::process::{Command, Stdio};
+use tempfile::tempdir;
 
-/// Token distribution modes.
-#[derive(Debug, Clone, PartialEq)]
-pub enum Mode {
-	MasterToN,
-	MasterTo1,
-	MasterToNToM
-}
+mod common;
 
-impl FromStr for Mode {
-	type Err = String;
-	fn from_str(mode: &str) -> Result<Self, Self::Err> {
-		match mode {
-			"MasterToN" => Ok(Mode::MasterToN),
-			"MasterTo1" => Ok(Mode::MasterTo1),
-			"MasterToNToM" => Ok(Mode::MasterToNToM),
-			_ => Err(format!("Invalid mode: {}", mode)),
-		}
-	}
+#[test]
+fn factory_works() {
+	let base_path = tempdir().expect("could not create a temp dir");
+
+	let status = Command::new(cargo_bin("substrate"))
+		.stdout(Stdio::null())
+		.args(&["factory", "--dev", "-d"])
+		.arg(base_path.path())
+		.status()
+		.unwrap();
+	assert!(status.success());
+
+	// Make sure that the `dev` chain folder exists & `db`
+	assert!(base_path.path().join("chains/dev/").exists());
+	assert!(base_path.path().join("chains/dev/db").exists());
 }

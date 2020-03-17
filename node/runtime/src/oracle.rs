@@ -167,22 +167,22 @@ decl_error! {
 decl_storage! {
 	trait Store for Module<T: Trait> as OracleSwap {
 		/// Stores the locked pra tokens
-		pub PraTokenAddr get(pra_token_addr): Option<T::AccountId>;
+		pub PraTokenAddr get(fn pra_token_addr): Option<T::AccountId>;
 
 		/// The current set of keys that may call update
-		pub Authorities get(authorities) config(): Option<T::AccountId>;
+		pub Authorities get(fn authorities) config(): Option<T::AccountId>;
 
 		/// Stores offchain request jobs
-		pub OcRequests get(oc_requests): Option<EventLogSource>;
+		pub OcRequests get(fn oc_requests): Option<EventLogSource>;
 
 		/// Key is swap_id, value is EventHTLC, should be removed after completed
-		pub SwapData get(swap_data): map T::Hash => Option<EventHTLC<T::BlockNumber, T::Balance, T::Hash>>;
+		pub SwapData get(fn swap_data): map hasher(blake2_256) T::Hash => Option<EventHTLC<T::BlockNumber, T::Balance, T::Hash>>;
 
 		/// Key is swap_id, Value is HTLCStates, Note: should never be removed
-		pub SwapStates get(swap_states): map T::Hash => Option<HTLCStates>;
+		pub SwapStates get(fn swap_states): map hasher(blake2_256) T::Hash => Option<HTLCStates>;
 
 		/// Total count in SwapStates, Note: should always be larger
-		pub SwapStatesCount get(swap_states_count): u64;
+		pub SwapStatesCount get(fn swap_states_count): u64;
 	}
 }
 
@@ -304,7 +304,7 @@ decl_module! {
 			for htlc in htlcs {
 				match htlc.event_type {
 					HTLCType::HTLC => {
-						if !<SwapData<T>>::exists(htlc.swap_id) && !<SwapStates<T>>::exists(htlc.swap_id) {
+						if !<SwapData<T>>::contains_key(htlc.swap_id) && !<SwapStates<T>>::contains_key(htlc.swap_id) {
 							<SwapData<T>>::insert(htlc.swap_id, &htlc);
 							<SwapStates<T>>::insert(htlc.swap_id, HTLCStates::OPEN);
 
@@ -319,7 +319,7 @@ decl_module! {
 						}
 					},
 					HTLCType::Claimed => {
-						if <SwapData<T>>::exists(htlc.swap_id) && <SwapStates<T>>::exists(htlc.swap_id) {
+						if <SwapData<T>>::contains_key(htlc.swap_id) && <SwapStates<T>>::contains_key(htlc.swap_id) {
 							let swap_id = htlc.swap_id;
 							let htlc = <SwapData<T>>::get(&swap_id).unwrap();
 
@@ -334,7 +334,7 @@ decl_module! {
 						}
 					},
 					HTLCType::Refunded => {
-						if <SwapData<T>>::exists(htlc.swap_id) && <SwapStates<T>>::exists(htlc.swap_id) {
+						if <SwapData<T>>::contains_key(htlc.swap_id) && <SwapStates<T>>::contains_key(htlc.swap_id) {
 							let swap_id = htlc.swap_id;
 							<SwapData<T>>::remove(&swap_id);
 							<SwapStates<T>>::insert(htlc.swap_id, HTLCStates::EXPIRED);

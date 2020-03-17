@@ -29,11 +29,11 @@ pub struct AdsMetadata<Balance, Moment> {
 
 decl_storage! {
     trait Store for Module<T: Trait> as AdsModule {
-        Contract get(contract) config(): T::AccountId;
-        MinDeposit get(min_deposit) config(): T::Balance;
+        Contract get(fn contract) config(): T::AccountId;
+        MinDeposit get(fn min_deposit) config(): T::Balance;
 
-        AdsRecords get(ads_records): map T::Hash => AdsMetadata<T::Balance, T::Moment>;
-        AllAdsCount get(all_ads_count): u64;
+        AdsRecords get(fn ads_records): map hasher(blake2_256) T::Hash => AdsMetadata<T::Balance, T::Moment>;
+        AllAdsCount get(fn all_ads_count): u64;
     }
 }
 
@@ -94,9 +94,9 @@ decl_module! {
 
             let (user_key, _) = <did::Module<T>>::identity(&sender).ok_or("from did does not exist")?;
 
-            ensure!(<did::Identity<T>>::exists(sender), "did does not exists");
+            ensure!(<did::Identity<T>>::contains_key(sender), "did does not exists");
             ensure!(value >= Self::min_deposit(), "min deposit 100 pra");
-            ensure!(<AdsRecords<T>>::exists(user_key), "you haven't published ads");
+            ensure!(<AdsRecords<T>>::contains_key(user_key), "you haven't published ads");
 
             let (contract_key, _) = <did::Module<T>>::identity(Self::contract()).ok_or("contract did does not find")?;
 
@@ -117,8 +117,8 @@ decl_module! {
 
             let (from_key, _) = <did::Module<T>>::identity(&sender).ok_or("from did cant find")?;
 
-            ensure!(<did::Identity<T>>::exists(sender), "did does not exists");
-            ensure!(<AdsRecords<T>>::exists(from_key), "you haven't published ads");
+            ensure!(<did::Identity<T>>::contains_key(sender), "did does not exists");
+            ensure!(<AdsRecords<T>>::contains_key(from_key), "you haven't published ads");
 
             let mut ads_metadata = Self::ads_records(from_key);
 
@@ -144,8 +144,8 @@ decl_module! {
 
 			let (contract_key, _) = <did::Module<T>>::identity(Self::contract()).ok_or("contract did not found")?;
 
-			ensure!(<AdsRecords<T>>::exists(publisher), "the account hadn't published ads yet");
-            ensure!(<did::Metadata<T>>::exists(user), "the user does not have did yet");
+			ensure!(<AdsRecords<T>>::contains_key(publisher), "the account hadn't published ads yet");
+            ensure!(<did::Metadata<T>>::contains_key(user), "the user does not have did yet");
 			
 			let mut ads_metadata = Self::ads_records(publisher);
 
@@ -166,7 +166,7 @@ decl_module! {
 
 			let (from_key, _) = <did::Module<T>>::identity(sender).ok_or("from did cant find")?;
 
-			ensure!(<AdsRecords<T>>::exists(from_key), "you haven't published ads");
+			ensure!(<AdsRecords<T>>::contains_key(from_key), "you haven't published ads");
 
 			// update ads records
 			let mut ads_metadata = Self::ads_records(from_key);

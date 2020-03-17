@@ -72,19 +72,19 @@ decl_error! {
 
 decl_storage! {
 	trait Store for Module<T: Trait> as DidModule {
-		pub GenesisAccount get(genesis_account) config(): T::AccountId;
-		pub BaseQuota get(base_quota) config(): u64;
-		pub MinDeposit get(min_deposit) config(): T::Balance;
-		pub FeeToPrevious get(fee_to_previous) config(): T::Balance;
+		pub GenesisAccount get(fn genesis_account) config(): T::AccountId;
+		pub BaseQuota get(fn base_quota) config(): u64;
+		pub MinDeposit get(fn min_deposit) config(): T::Balance;
+		pub FeeToPrevious get(fn fee_to_previous) config(): T::Balance;
 
-		pub Identity get(identity): map T::AccountId => Option<(T::Hash, Did)>;
-		pub IdentityOf get(identity_of): map T::Hash => Option<T::AccountId>;
-		pub SocialAccount get(social_account): map T::Hash => T::Hash;
-		pub Metadata get(metadata): map T::Hash => MetadataRecord<T::AccountId, T::Hash, T::Balance, T::Moment>;
+		pub Identity get(fn identity): map hasher(blake2_256) T::AccountId => Option<(T::Hash, Did)>;
+		pub IdentityOf get(fn identity_of): map hasher(blake2_256) T::Hash => Option<T::AccountId>;
+		pub SocialAccount get(fn social_account): map hasher(blake2_256) T::Hash => T::Hash;
+		pub Metadata get(fn metadata): map hasher(blake2_256) T::Hash => MetadataRecord<T::AccountId, T::Hash, T::Balance, T::Moment>;
 
-		pub AllDidCount get(all_did_count): u64;
-		pub UserKeys get(key_by_index): map T::Hash => T::Hash;
-		pub DidIndices get(index_by_key) : map T::Hash => Vec<u8>;
+		pub AllDidCount get(fn all_did_count): u64;
+		pub UserKeys get(fn key_by_index): map hasher(blake2_256) T::Hash => T::Hash;
+		pub DidIndices get(fn index_by_key) : map hasher(blake2_256) T::Hash => Vec<u8>;
 	}
 }
 
@@ -118,8 +118,8 @@ decl_module! {
 			let user_key = T::Hashing::hash(&did);
 
 			// make sure the did is new
-			ensure!(!<Metadata<T>>::exists(&user_key), "did alread existed");
-			ensure!(!<Identity<T>>::exists(&address), "you already have did");
+			ensure!(!<Metadata<T>>::contains_key(&user_key), "did alread existed");
+			ensure!(!<Identity<T>>::contains_key(&address), "you already have did");
 
 			let mut superior_key = superior;
 			let mut social_account_hash = None;
@@ -132,19 +132,19 @@ decl_module! {
 				social_account_hash = Some(social_hash);
 
 				// one social account only can bind one did
-				ensure!(!<SocialAccount<T>>::exists(&social_hash), "this social account has been bound");
+				ensure!(!<SocialAccount<T>>::contains_key(&social_hash), "this social account has been bound");
 
 				if let Some(mut value) = social_superior {
 					value.append(&mut did_type.to_vec());
 
 					let superior_hash = T::Hashing::hash(&value);
-					ensure!(<SocialAccount<T>>::exists(&superior_hash), "the superior does not exsit");
+					ensure!(<SocialAccount<T>>::contains_key(&superior_hash), "the superior does not exsit");
 					superior_key = Self::social_account(superior_hash);
 				};
 			}
 
 			let mut superior_did = Vec::new();
-			if <Metadata<T>>::exists(&superior_key) {
+			if <Metadata<T>>::contains_key(&superior_key) {
 				let mut superior_metadata = Self::metadata(superior_key);
 				if superior_metadata.address != Self::genesis_account() {
 					let subordinate_count = superior_metadata.subordinate_count.checked_add(1).ok_or("overflow")?;
@@ -217,9 +217,7 @@ decl_module! {
 			let (user_key, did) = Self::identity(&sender).ok_or("did does not exist")?;
 			ensure!(Self::identity(&to).is_none(), "the public key has been taken");
 
-			let money = <pallet_balances::Module<T>>::free_balance(&sender)
-					- T::TransferFee::get()
-					- T::CreationFee::get();
+			let money = <pallet_balances::Module<T>>::free_balance(&sender);
 			<pallet_balances::Module<T> as Currency<_>>::transfer(&sender, &to, money, ExistenceRequirement::AllowDeath,)?;
 
 			// update address => did map
@@ -250,13 +248,13 @@ decl_module! {
 			let sender = ensure_signed(origin)?;
 
 			let sender_balance = <pallet_balances::Module<T>>::free_balance(sender.clone());
-			ensure!(sender_balance >= value + T::TransferFee::get(), "you dont have enough free balance");
+			ensure!(sender_balance >= value, "you dont have enough free balance");
 
 			let (user_key, did) = Self::identity(&sender).ok_or("this account has no did yet")?;
 			let mut metadata = Self::metadata(&user_key);
 
 			// make sure the superior exists
-			ensure!(<Metadata<T>>::exists(metadata.superior), "superior does not exsit");
+			ensure!(<Metadata<T>>::contains_key(metadata.superior), "superior does not exsit");
 
 			let level2_metadata = Self::metadata(metadata.superior);
 
@@ -462,7 +460,7 @@ impl<T: Trait> Module<T> {
 
 impl<T: Trait> Module<T> {
 	pub fn transfer_by_did(from_user: T::Hash, to_user: T::Hash, value: T::Balance, memo: Vec<u8>) -> DispatchResult {
-		ensure!(<Metadata<T>>::exists(&to_user), "dest did does not exist");
+		ensure!(<Metadata<T>>::contains_key(&to_user), "dest did does not exist");
 		ensure!(from_user != to_user, "you can not send money to yourself");
 
 		// get sender balance and check
