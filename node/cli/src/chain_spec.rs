@@ -232,6 +232,9 @@ pub fn testnet_genesis(
 			get_account_id_from_seed::<sr25519::Public>("Dave//stash"),
 			get_account_id_from_seed::<sr25519::Public>("Eve//stash"),
 			get_account_id_from_seed::<sr25519::Public>("Ferdie//stash"),
+			hex!["22df4b685df33f070ae6e5ee27f745de078adff099d3a803ec67afe1168acd4f"].into(),
+			hex!["0c98c49f1861d5f6ed9ea27230796a76878abbfbfb9716c64b2c7479a2197435"].into(),
+			hex!["74a27632efacf7bbc58a2e9f8d27a46a9f3de7d17bbd9b69da5d26b5f4b84133"].into(),
 		]
 	});
 
@@ -322,11 +325,15 @@ pub fn testnet_genesis(
 }
 
 fn development_config_genesis() -> GenesisConfig {
+	let root_key: AccountId = hex![
+		// 5CrRpNbQBTiBmTjpUgJ6mH9YRmopVweLsjffVz7muskYEo2r
+		"22df4b685df33f070ae6e5ee27f745de078adff099d3a803ec67afe1168acd4f"
+	].into();
 	testnet_genesis(
 		vec![
 			get_authority_keys_from_seed("Alice"),
 		],
-		get_account_id_from_seed::<sr25519::Public>("Alice"),
+		root_key,
 		None,
 		true,
 	)
@@ -529,11 +536,10 @@ fn prochain_testnet_genesis() -> GenesisConfig {
 
 	/// prochain testnet config
 	pub fn prochain_testnet_config() -> ChainSpec {
-		// let boot_nodes = vec![
-		// 	"/ip4/39.106.220.238/tcp/30333/p2p/QmdcynTigKkriECrcE48DW5hdd45cmnQwiZfBGW6AoQ8EA".to_string(),
-		// 	"/ip4/123.206.52.244/tcp/30333/p2p/QmVwKhj4XjcjTfBCUpN7QUHpWvniwPVQvoSGsgJn8Y5BAH".to_string(),
-		// ];
-		let boot_nodes = vec![];
+		let boot_nodes = vec![
+			"/ip4/123.207.140.69/tcp/30333/p2p/QmaSMt4WafkcuYQNiTts3XfhmZymVVytfJaNfBYfjDMa2q".into(),
+		];
+		// let boot_nodes = vec![];
 		let properties = serde_json::from_str(PRA_PROPERTIES).unwrap();
 		ChainSpec::from_genesis(
 			"Prochain Testnet",
