@@ -95,6 +95,8 @@ decl_error! {
 		InvalidGroupName,
 		/// you are not eligible to set group name
 		NotEligible,
+		/// Can't send money to yourself
+		SentToSelf,
 	}
 }
 
@@ -488,26 +490,26 @@ impl<T: Trait> Module<T> {
 
 impl<T: Trait> Module<T> {
 	pub fn transfer_by_did(from_user: T::Hash, to_user: T::Hash, value: T::Balance, memo: Vec<u8>) -> DispatchResult {
-		ensure!(<Metadata<T>>::contains_key(&to_user), "dest did does not exist");
-		ensure!(from_user != to_user, "you can not send money to yourself");
+		ensure!(<Metadata<T>>::contains_key(&to_user), Error::<T>::DidNotExists);
+		ensure!(from_user != to_user, Error::<T>::SentToSelf);
 
 		// get sender balance and check
 		let MetadataRecord { address: from_address, did: from_did, .. } = Self::metadata(&from_user);
 		let sender_balance = <pallet_balances::Module<T>>::free_balance(&from_address);
-		ensure!(sender_balance > value, "you dont have enough free balance");
+		ensure!(sender_balance > value, Error::<T>::NotEnoughBalance);
 
 		// get receiver balance
 		let MetadataRecord { address: to_address, did: to_did, superior, .. } = Self::metadata(&to_user);
 		let receiver_balance = <pallet_balances::Module<T>>::free_balance(&to_address);
 
 		// check overflow
-		sender_balance.checked_sub(&value).ok_or("overflow in calculating balance")?;
-		receiver_balance.checked_add(&value).ok_or("overflow in calculating balance")?;
+		sender_balance.checked_sub(&value).ok_or(Error::<T>::Overflow)?;
+		receiver_balance.checked_add(&value).ok_or(Error::<T>::Overflow)?;
 
 		// proceeds split
 		let fee_type = b"ads";
 		if Self::is_sub(&memo, fee_type) {
-			let superior_address = Self::identity_of(superior).ok_or("superior does not find")?;
+			let superior_address = Self::identity_of(superior).ok_or(Error::<T>::SuperiorNotExists)?;
 			
 			let MetadataRecord { locked_records, ..} = Self::metadata(superior);
 			let rewards_ratio = if locked_records.is_some() { locked_records.unwrap().rewards_ratio } else { 0 };
