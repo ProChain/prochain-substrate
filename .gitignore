@@ -6,7 +6,7 @@ pwasm-alloc/target/
 pwasm-libc/target/
 pwasm-alloc/Cargo.lock
 pwasm-libc/Cargo.lock
-node/runtime/wasm/target/
+runtime/wasm/target/
 **/._*
 **/.criterion/
 .vscode
@@ -24,3 +24,4 @@ yarn.lock
 keys
 creation.log
 nedb
+*.wasm

@@ -1,0 +1,26 @@
+[package]
+name = "node-transaction-factory"
+version = "0.8.0-alpha.5"
+authors = ["Parity Technologies <admin@parity.io>"]
+edition = "2018"
+license = "GPL-3.0"
+homepage = "https://substrate.dev"
+repository = "https://github.com/paritytech/substrate/"
+
+[dependencies]
+sp-block-builder = { version = "2.0.0-alpha.5", git = "https://github.com/ProChain/substrate.git" }
+sc-cli = { version = "0.8.0-alpha.5", git = "https://github.com/ProChain/substrate.git" }
+sc-client-api = { version = "2.0.0-alpha.5", git = "https://github.com/ProChain/substrate.git" }
+sc-block-builder = { version = "0.8.0-alpha.5", git = "https://github.com/ProChain/substrate.git" }
+sc-client = { version = "0.8.0-alpha.5", git = "https://github.com/ProChain/substrate.git" }
+codec = { package = "parity-scale-codec", version = "1.2.0", features = ["derive"] }
+sp-consensus = { version = "0.8.0-alpha.5", git = "https://github.com/ProChain/substrate.git" }
+log = "0.4.8"
+sp-core = { version = "2.0.0-alpha.5", git = "https://github.com/ProChain/substrate.git" }
+sp-api = { version = "2.0.0-alpha.5", git = "https://github.com/ProChain/substrate.git" }
+sp-runtime = { version = "2.0.0-alpha.5", git = "https://github.com/ProChain/substrate.git" }
+sc-service = { version = "0.8.0-alpha.5", default-features = false, git = "https://github.com/ProChain/substrate.git" }
+sp-blockchain = { version = "2.0.0-alpha.5", git = "https://github.com/ProChain/substrate.git" }
+
+[package.metadata.docs.rs]
+targets = ["x86_64-unknown-linux-gnu"]

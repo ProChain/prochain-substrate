@@ -104,7 +104,7 @@ To start up the Prochain node, run:
   "HTLCChain": {
     "_enum": [
       "ETHMain",
-      "PRA"
+      "PRM"
     ]
   },
   "HTLCStates": {
@@ -135,7 +135,7 @@ Welcome to the official, in-depth Prochain guide to validating. We're happy that
 This document contains all the information one should need to start validating on Prochain using the polkadot-js/apps user interface. We will start with how to setup one's node and proceed to how to key management. To start, we will use the following terminology of keys for the guide:
 
 * stash - the stash keypair is where most of your funds should be located. It can be kept in cold storage if necessary.
-* controller - the controller is the keypair that will control your validator settings. It should have a smaller balance, e.g. 10-100 PRA
+* controller - the controller is the keypair that will control your validator settings. It should have a smaller balance, e.g. 10-100 PRM
 * session - the 4 session keypairs are hot keys that are stored on your validator node. They do not need to have balances.
 
 ## Requirements
@@ -146,9 +146,9 @@ This document contains all the information one should need to start validating o
 ## Create a stake
 Go to the Staking tab, and select Account actions at the top. Click on New stake.
 
-Select your controller and stash accounts. Enter how much of your stash balance you would like to stake. Leave a few PRA free, or you will be unable to send transactions from the account.
+Select your controller and stash accounts. Enter how much of your stash balance you would like to stake. Leave a few PRM free, or you will be unable to send transactions from the account.
 
-You can also choose where your validator rewards are deposited (to the stash or the controller) and whether rewarded PRA should be automatically re-staked.
+You can also choose where your validator rewards are deposited (to the stash or the controller) and whether rewarded PRM should be automatically re-staked.
 
 Sign and send the transaction
 

@@ -5,7 +5,7 @@ ROOT=`dirname "$0"`
 # A list of directories which contain wasm projects.
 SRCS=(
 	"core/executor/wasm"
-	"node/runtime/wasm"
+	"runtime/wasm"
 	"node-template/runtime/wasm"
 	"core/test-runtime/wasm"
 )

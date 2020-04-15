@@ -24,7 +24,7 @@
 					</ValidationObserver>
 				</div>
 				<van-panel v-if="history.tx" title="兑换状态" desc="需等待18个区块确认" :status="statusText">
-					<div>数量：<span>{{ history.amount }} </span>PRA</div>
+					<div>数量：<span>{{ history.amount }} </span>PRM</div>
 					<div>DID：<span>{{ history.did | clip(18, -10) }}</span></div>
 					<div>区块确认：<span>{{ confirmations }} </span>个</div>
 				</van-panel>
@@ -94,7 +94,7 @@
 			} catch (e) {
 				console.log(e)
 			}
-			// get pra balance
+			// get prm balance
 			App.praIntance.balanceOf(App.account).then(balance => {
 				this.balance = (balance.toNumber() / 10 ** 18).toFixed(3)
 			})

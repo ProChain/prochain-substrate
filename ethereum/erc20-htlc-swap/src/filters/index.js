@@ -3,9 +3,9 @@ import moment from 'moment'
 export function money(amount) {
 	if (amount) {
 		const newAmount = amount > 10 ** 8 ? Number(amount / 10 ** 15) : Number(amount)
-		return newAmount.toFixed(2) + ' PRA'
+		return newAmount.toFixed(2) + ' PRM'
 	} else {
-		return '0 PRA'
+		return '0 PRM'
 	}
 }
 

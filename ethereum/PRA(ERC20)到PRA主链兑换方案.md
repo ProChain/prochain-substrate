@@ -1,4 +1,4 @@
-### PRA(ERC20) 到 PRA主链兑换方案（单向原子交换）
+### PRM(ERC20) 到 PRA主链兑换方案（单向原子交换）
 ---
 
 #### 1. Eth合约 (代码见 https://github.com/ProChain/prochain-substrate/tree/v2.0/ethereum/erc20-htlc-swap/contracts )
@@ -66,7 +66,7 @@
 - UserB: 0xCF5bECb7245E2e6eE2E092F0BD63F6Bd79eF19Fe
 - `ProToken`合约地址: 0xd2bc5bf7563c6d308ecb36f46f9848bb054223d1
 - `ERC20HTLC`合约地址: 0x49e532fa0d95195d6a07be152e481c67715149eb
-- PRA主网地址（receiver）: did:pra:iSsn2ZV65sGY2g1xdkqe2CT5pc5B6oMhS
+- PRA主网地址（receiver）: did:prm:iSsn2ZV65sGY2g1xdkqe2CT5pc5B6oMhS
 
 ##### Eth主网
 - API入口 https://mainnet.infura.io/v3/32d3935c7ba0400d97a7d8f983753a34
@@ -74,7 +74,7 @@
 - UserB: 0xCF5bECb7245E2e6eE2E092F0BD63F6Bd79eF19Fe
 - `ProToken`合约地址: 0x9041Fe5B3FDEA0f5e4afDC17e75180738D877A01
 - `ERC20HTLCLite`合约地址: 0x2Dc6Af9155Ec0285d3Db407c17273Db9f9dc84b6
-- PRA主网地址（receiver）: did:pra:Lt23xGimVoUNvZ3EXM9FcgBsJXzrSaUo8p
+- PRA主网地址（receiver）: did:prm:Lt23xGimVoUNvZ3EXM9FcgBsJXzrSaUo8p
 
 #### 根据randomNumber和timestamp，计算randomNumberHash和swapID
 - 使用当前目录下的calculate-ids模块

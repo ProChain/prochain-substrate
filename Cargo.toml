@@ -1,16 +1,13 @@
 [workspace]
 members = [
-	"node/cli",
-	"node/executor",
-	"node/primitives",
-	"node/rpc-client",
-	"node/rpc",
-	"node/modules/did",
-	"node/modules/ads",
-	"node/runtime",
-	"node/testing",
-	"node/transaction-factory",
-	"utils/chain-spec-builder",
+	"cli",
+	"executor",
+	"primitives",
+	"rpc",
+	"modules/did",
+	"modules/ads",
+	"runtime",
+	"transaction-factory",
 ]
 
 [profile.release]

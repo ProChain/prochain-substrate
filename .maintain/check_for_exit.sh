@@ -5,7 +5,7 @@
 set -e
 
 cargo build --release
-./target/release/substrate --dev &
+./target/release/prochain --dev &
 PID=$!
 
 # Let the chain running for 60 seconds

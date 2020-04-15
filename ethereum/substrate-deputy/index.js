@@ -138,7 +138,7 @@ const run = async () => {
             "HTLCChain": {
                 "_enum": [
                     "ETHMain",
-                    "PRA"
+                    "PRM"
                 ]
             },
             "HTLCStates": {

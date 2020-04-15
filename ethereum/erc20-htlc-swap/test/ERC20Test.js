@@ -24,8 +24,8 @@ function calculateSwapID(randomNumberHash, sender) {
 	return "0x" + hash.digest('hex');
 }
 
-contract('Verify PRA Token and ERC20 Atomic Swap', (accounts) => {
-	it('Check init state for PRA Token and ERC20 Atomic Swap', async () => {
+contract('Verify PRM Token and ERC20 Atomic Swap', (accounts) => {
+	it('Check init state for PRM Token and ERC20 Atomic Swap', async () => {
 		const initSupply = 10000000000000000;
 
 		let instance = await PraToken.deployed();
@@ -33,10 +33,10 @@ contract('Verify PRA Token and ERC20 Atomic Swap', (accounts) => {
 		assert.equal(Number(balance.toString()), initSupply, "10000000000000000 wasn't in the first account");
 
 		const name = await instance.name.call();
-		assert.equal(name, "PRA Token", "Contract name should be PRA Token");
+		assert.equal(name, "PRM Token", "Contract name should be PRM Token");
 
 		const symbol = await instance.symbol.call();
-		assert.equal(symbol, "PRA", "Token symbol should be PRA");
+		assert.equal(symbol, "PRM", "Token symbol should be PRM");
 
 		const decimals = await instance.decimals.call();
 		assert.equal(decimals, 8, "Token decimals should be 8");
@@ -48,7 +48,7 @@ contract('Verify PRA Token and ERC20 Atomic Swap', (accounts) => {
 		const praContractAddr = await swapInstance.PraContractAddr.call();
 		assert.equal(praContractAddr, PraToken.address, "swap contract should have erc20 contract address");
 	});
-	it('Test transfer, approve and transferFrom for PRA token', async () => {
+	it('Test transfer, approve and transferFrom for PRM token', async () => {
 		const instance = await PraToken.deployed();
 		const acc0 = accounts[0];
 		const acc1 = accounts[1];
@@ -88,7 +88,7 @@ contract('Verify PRA Token and ERC20 Atomic Swap', (accounts) => {
 		const randomNumberHash = calculateRandomNumberHash(randomNumber, timestamp);
 		const heightSpan = 1000;
 		const recipientAddr = swapB;
-		const praDIDAddr = "did:pra:Lt23xGimVoUNvZ3EXM9FcgBsJXzrSaUo8p";
+		const praDIDAddr = "did:prm:Lt23xGimVoUNvZ3EXM9FcgBsJXzrSaUo8p";
 		const erc20Amount = 100000000;
 		const praAmount = 100000000;
 		const swapID = calculateSwapID(randomNumberHash, swapA);
@@ -177,7 +177,7 @@ contract('Verify PRA Token and ERC20 Atomic Swap', (accounts) => {
 		const randomNumberHash = calculateRandomNumberHash(randomNumber, timestamp);
 		const heightSpan = 100;
 		const recipientAddr = swapB;
-		const praDIDAddr = "did:pra:Lt23xGimVoUNvZ3EXM9FcgBsJXzrSaUo8p";
+		const praDIDAddr = "did:prm:Lt23xGimVoUNvZ3EXM9FcgBsJXzrSaUo8p";
 		const erc20Amount = 100000000;
 		const praAmount = 100000000;
 		const swapID = calculateSwapID(randomNumberHash, swapA);

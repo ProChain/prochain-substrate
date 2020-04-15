@@ -19,12 +19,12 @@ contract ERC20HTLC {
 		uint256 senderChainType;
 		uint256 receiverChainType;
 		address recipientAddr; //The ethereum address to lock swapped assets, counter-party of senderAddr
-		string receiverAddr; //The PRA address (DID) to swap out
+		string receiverAddr; //The PRM address (DID) to swap out
 	}
 
 	enum States {INVALID, OPEN, COMPLETED, EXPIRED}
 
-	enum ChainTypes {ETH, PRA}
+	enum ChainTypes {ETH, PRM}
 
 	// Events
 	event HTLC(
@@ -91,7 +91,7 @@ contract ERC20HTLC {
 		_;
 	}
 
-	/// @param _praContract The PRA contract address
+	/// @param _praContract The PRM contract address
 	constructor(address _praContract) public {
 		praContractAddr = _praContract;
 		owner = msg.sender;
@@ -133,9 +133,9 @@ contract ERC20HTLC {
 		admin = _new_admin;
 	}
 
-	/// @notice setPraAddress set new PRA-ERC20 contract address.
+	/// @notice setPraAddress set new PRM-ERC20 contract address.
 	///
-	/// @param _praContract The new PRA-ERC20 contract address.
+	/// @param _praContract The new PRM-ERC20 contract address.
 	function setPraAddress(address _praContract) public onlyAdmin {
 		praContractAddr = _praContract;
 	}
@@ -151,9 +151,9 @@ contract ERC20HTLC {
 	/// @param _timestamp Counted by second
 	/// @param _heightSpan The number of blocks to wait before the asset can be returned to sender
 	/// @param _recipientAddr The ethereum address to lock swapped assets.
-	/// @param _outAmount PRA ERC20 asset to swap out, precision is 18
-	/// @param _praAmount PRA asset to swap in, precision is 18
-	/// @param _receiverAddr PRA DID to swap in.
+	/// @param _outAmount PRM ERC20 asset to swap out, precision is 18
+	/// @param _praAmount PRM asset to swap in, precision is 18
+	/// @param _receiverAddr PRM DID to swap in.
 	function htlc(
 		bytes32 _randomNumberHash,
 		uint64 _timestamp,
@@ -187,14 +187,14 @@ contract ERC20HTLC {
 			senderAddr: msg.sender,
 			senderChainType: uint256(ChainTypes.ETH),
 			receiverAddr: _receiverAddr,
-			receiverChainType: uint256(ChainTypes.PRA),
+			receiverChainType: uint256(ChainTypes.PRM),
 			recipientAddr: _recipientAddr
 		});
 
 		swaps[swapID] = swap;
 		swapStates[swapID] = States.OPEN;
 
-		// Transfer pra token to the swap contract
+		// Transfer prm token to the swap contract
 		require(
 			ERC20(praContractAddr).transferFrom(msg.sender, address(this), _outAmount),
 			"failed to transfer client asset to swap contract"
@@ -331,7 +331,7 @@ contract ERC20HTLC {
 	/// @notice Calculate the swapID from randomNumberHash and swapCreator
 	///
 	/// @param _randomNumberHash The hash of random number and timestamp.
-	/// @param receiverAddr The PRA address (DID) to swap out
+	/// @param receiverAddr The PRM address (DID) to swap out
 	function calSwapID(bytes32 _randomNumberHash, string memory receiverAddr) public pure returns (bytes32) {
 		return sha256(abi.encodePacked(_randomNumberHash, receiverAddr));
 	}
