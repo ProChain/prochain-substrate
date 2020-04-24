@@ -12,7 +12,7 @@ use frame_support::{
 };
 use sp_runtime::{
 	RuntimeDebug, DispatchResult, Permill,
-	traits::{CheckedSub, CheckedAdd, Hash, SaturatedConversion,}
+	traits::{CheckedSub, CheckedAdd, CheckedDiv, CheckedMul, Hash, SaturatedConversion,}
 };
 use frame_system::{self as system, ensure_root, ensure_signed};
 use sp_io::hashing::blake2_256;
@@ -83,7 +83,7 @@ decl_error! {
 		PublicKeyUsed,
 		/// dont have enough free balance
 		NotEnoughBalance,
-		/// lock at least 50 prm first time
+		/// lock at least 10 prm first time
 		LockNotFulfilled,
 		/// unreserved funds
 		UnreservedFundsExceed,
@@ -291,37 +291,65 @@ decl_module! {
 			let level2_metadata = Self::metadata(metadata.superior);
 
 			let locked_funds;
+			let memo = "抵押分成".as_bytes().to_vec();
 			let mut rewards_ratio = 20;// basis rewards_ratio is 20%
 
 			if !metadata.is_partner {
 				ensure!(value >= Self::min_deposit(), Error::<T>::LockNotFulfilled);
 
-				let fee = Self::fee_to_previous();
+				let mut rebate = value.checked_div(&2.into()).ok_or(Error::<T>::Overflow)?;
+				if rebate > Self::fee_to_previous() {
+					rebate = Self::fee_to_previous();
+				}
 
-				locked_funds = value - fee;
 
-				let memo = "抵押分成".as_bytes().to_vec();
+				locked_funds = value - rebate;
+
 
 
 				if level2_metadata.superior != Default::default() {
-					let fee1 = Permill::from_percent(80) * fee;
-					let fee2 = Permill::from_percent(20) * fee;
+					let fee1 = Permill::from_percent(80) * rebate;
+					let fee2 = Permill::from_percent(20) * rebate;
 
 					Self::transfer_by_did(user_key, metadata.superior, fee1, memo.clone())?;
 					Self::transfer_by_did(user_key, level2_metadata.superior, fee2, memo.clone())?;
 				} else {
-					Self::transfer_by_did(user_key, metadata.superior, fee, memo)?;
+					Self::transfer_by_did(user_key, metadata.superior, rebate, memo)?;
 				}
 
 				<pallet_balances::Module<T>>::reserve(&sender, locked_funds)?;
 				metadata.is_partner = true;
 			} else {
 				let locked_records = metadata.locked_records.unwrap();
-
 				let old_locked_funds = locked_records.locked_funds;
-				locked_funds = old_locked_funds + value;
+				let mut new_locked_funds = value;
 
-				<pallet_balances::Module<T>>::reserve(&sender, value)?;
+				if old_locked_funds >= Self::fee_to_previous() { // without rebate
+					locked_funds = old_locked_funds + new_locked_funds;
+				} else { // keeping rebate
+					let lack = Self::fee_to_previous()
+						.checked_sub(&old_locked_funds)
+						.and_then(|n| n.checked_mul(&2.into()))
+						.ok_or(Error::<T>::Overflow)?;
+					let mut rebate = lack / 2.into();
+					if new_locked_funds < lack {
+						rebate = new_locked_funds / 2.into();
+					}
+
+					new_locked_funds = new_locked_funds.checked_sub(&rebate).ok_or(Error::<T>::Overflow)?;
+					locked_funds = old_locked_funds.checked_add(&new_locked_funds).ok_or(Error::<T>::Overflow)?;
+
+					if level2_metadata.superior != Default::default() {
+						let part1 = Permill::from_percent(80) * rebate;
+						let part2 = Permill::from_percent(20) * rebate;
+
+						Self::transfer_by_did(user_key, metadata.superior, part1, memo.clone())?;
+						Self::transfer_by_did(user_key, level2_metadata.superior, part2, memo.clone())?;
+					} else {
+						Self::transfer_by_did(user_key, metadata.superior, rebate, memo)?;
+					}
+				}
+				<pallet_balances::Module<T>>::reserve(&sender, new_locked_funds)?;
 			}
 
 			let max_quota = Self::balance_to_u64(locked_funds) * 10;
@@ -423,7 +451,7 @@ decl_module! {
 		#[weight = frame_support::weights::SimpleDispatchInfo::default()]
 		pub fn set_group_name(origin, name: Vec<u8>) {
 			let sender = ensure_signed(origin)?;
-			
+
 			let (user_key, did) = Self::identity(&sender).ok_or(Error::<T>::DidNotExists)?;
 			let mut metadata = Self::metadata(&user_key);
 
@@ -436,11 +464,11 @@ decl_module! {
 
 			Self::deposit_event(RawEvent::GroupNameSet(did, name));
 		}
-		
+
 		#[weight = frame_support::weights::SimpleDispatchInfo::default()]
 		fn judge(origin, account: T::AccountId) {
 			let sender = ensure_signed(origin)?;
-			
+
 			if Self::genesis_account() == sender.clone() {
 				let (user_key, did) = Self::identity(&account).ok_or(Error::<T>::DidNotExists)?;
 				let mut metadata = Self::metadata(&user_key);
@@ -512,10 +540,10 @@ impl<T: Trait> Module<T> {
 		let fee_type = b"ads";
 		if Self::is_sub(&memo, fee_type) {
 			let superior_address = Self::identity_of(superior).ok_or(Error::<T>::SuperiorNotExists)?;
-			
+
 			let MetadataRecord { locked_records, ..} = Self::metadata(superior);
 			let rewards_ratio = if locked_records.is_some() { locked_records.unwrap().rewards_ratio } else { 0 };
-			
+
 			let fee_to_superior = value.clone() * Self::u128_to_balance(rewards_ratio.into()) / Self::u128_to_balance(100);
 			let fee_to_user = value.clone() * Self::u128_to_balance((100 - rewards_ratio).into()) / Self::u128_to_balance(100);
 

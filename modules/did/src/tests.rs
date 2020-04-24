@@ -11,6 +11,10 @@ use sp_runtime::{
 };
 use frame_system::{self as system, EventRecord, Phase};
 
+pub type AccountId = u64;
+pub type BlockNumber = u64;
+pub type Balance = u64;
+
 impl_outer_origin! {
   pub enum Origin for Test {}
 }
@@ -20,8 +24,10 @@ mod did {
 }
 
 impl_outer_event! {
-  pub enum Event for Test {
-    did<T>, pallet_balances<T>,
+  pub enum TestEvent for Test {
+    did<T>,
+    pallet_balances<T>,
+    frame_system<T>,
   }
 }
 // For testing the module, we construct most of a mock runtime. This means
@@ -29,45 +35,47 @@ impl_outer_event! {
 // configuration traits of modules we want to use.
 #[derive(Clone, Eq, PartialEq)]
 pub struct Test;
+
 parameter_types! {
-  pub const BlockHashCount: u64 = 250;
-  pub const MaximumBlockWeight: u32 = 1024;
-  pub const MaximumBlockLength: u32 = 2 * 1024;
-  pub const AvailableBlockRatio: Perbill = Perbill::one();
+	pub const BlockHashCount: u64 = 250;
+	pub const MaximumBlockWeight: u32 = 1024;
+	pub const MaximumBlockLength: u32 = 2 * 1024;
+	pub const AvailableBlockRatio: Perbill = Perbill::one();
+	pub const CreationFee: u64 = 2;
 }
+
 impl frame_system::Trait for Test {
   type Origin = Origin;
   type Index = u64;
-  type BlockNumber = u64;
-  type Hash = H256;
+  type BlockNumber = BlockNumber;
   type Call = ();
-  type Hashing = BlakeTwo256;
-  type AccountId = u64;
+  type Hash = H256;
+  type Hashing = ::sp_runtime::traits::BlakeTwo256;
+  type AccountId = AccountId;
   type Lookup = IdentityLookup<Self::AccountId>;
   type Header = Header;
-  type Event = Event;
+  type Event = TestEvent;
   type BlockHashCount = BlockHashCount;
   type MaximumBlockWeight = MaximumBlockWeight;
   type MaximumBlockLength = MaximumBlockLength;
   type AvailableBlockRatio = AvailableBlockRatio;
   type Version = ();
   type ModuleToIndex = ();
+  type AccountData = pallet_balances::AccountData<Balance>;
+  type OnNewAccount = ();
+  type OnKilledAccount = ();
 }
+
 parameter_types! {
-  pub const ExistentialDeposit: u64 = 0;
-  pub const TransferFee: u64 = 0;
-  pub const CreationFee: u64 = 0;
+  pub const ExistentialDeposit: u64 = 1;
 }
+
 impl pallet_balances::Trait for Test {
   type Balance = u64;
-  type OnFreeBalanceZero = ();
-  type OnNewAccount = ();
-  type Event = Event;
-  type TransferPayment = ();
+  type Event = TestEvent;
   type DustRemoval = ();
   type ExistentialDeposit = ExistentialDeposit;
-  type TransferFee = TransferFee;
-  type CreationFee = CreationFee;
+  type AccountStore = frame_system::Module<Test>;
 }
 
 parameter_types! {
@@ -88,7 +96,7 @@ parameter_types! {
 }
 
 impl Trait for Test {
-  type Event = Event;
+  type Event = TestEvent;
 }
 
 const EOS_ADDRESS: &[u8; 12] = b"praqianchang";
@@ -113,12 +121,11 @@ fn new_test_ext() -> sp_io::TestExternalities {
       (4, 10000),
       (5, 10000),
     ],
-    vesting: vec![],
   }.assimilate_storage(&mut t).unwrap();
 
   GenesisConfig::<Test> {
     genesis_account: 1u64,
-    min_deposit: 50,
+    min_deposit: 10,
     base_quota: 250,
     fee_to_previous: 25,
   }.assimilate_storage(&mut t).unwrap();
@@ -206,7 +213,7 @@ fn same_pubkey_should_not_pass_create() {
       H256::zero(),
       Some("second".as_bytes().to_vec()),
       Some("first".as_bytes().to_vec())
-    ), "did alread existed");
+    ), Error::<Test>::DidExists);
 
   });
 }
@@ -234,7 +241,7 @@ fn same_social_account_should_not_pass_create() {
       H256::zero(),
       Some("first".as_bytes().to_vec()),
       None
-    ), "this social account has been bound");
+    ), Error::<Test>::SocialAccountBound);
 
   });
 }
@@ -262,7 +269,7 @@ fn superior_not_exists_should_not_pass_create() {
       H256::zero(),
       Some("second".as_bytes().to_vec()),
       Some("firsts".as_bytes().to_vec())
-    ), "the superior does not exsit");
+    ), Error::<Test>::SuperiorNotExists);
 
   });
 }
@@ -287,9 +294,9 @@ fn should_not_pass_update() {
 
     prepare_dids_for_test();
 
-    assert_noop!(DidModule::update(Origin::signed(4), 5u64), "did does not exist");
+    assert_noop!(DidModule::update(Origin::signed(4), 5u64), Error::<Test>::DidNotExists);
 
-    assert_noop!(DidModule::update(Origin::signed(2), 3u64), "the public key has been taken");
+    assert_noop!(DidModule::update(Origin::signed(2), 3u64), Error::<Test>::PublicKeyUsed);
 
   });
 }
@@ -338,7 +345,7 @@ fn without_did_should_not_pass_lock() {
   new_test_ext().execute_with(|| {
     System::set_block_number(0);
 
-    assert_noop!(DidModule::lock(Origin::signed(1), 100, 5), "this account has no did yet");
+    assert_noop!(DidModule::lock(Origin::signed(1), 100, 5), Error::<Test>::DidNotExists);
 
     prepare_dids_for_test();
 
@@ -352,7 +359,7 @@ fn without_did_should_not_pass_lock() {
       None
     ));
 
-    assert_noop!(DidModule::lock(Origin::signed(4), 100, 5), "superior does not exsit");
+    assert_noop!(DidModule::lock(Origin::signed(4), 100, 5), Error::<Test>::SuperiorNotExists);
 
   });
 }
@@ -379,19 +386,19 @@ fn should_not_pass_unlock() {
 
     prepare_dids_for_test();
 
-    assert_noop!(DidModule::unlock(Origin::signed(2), 2000), "unreserved funds should equal or less than reserved funds");
+    assert_noop!(DidModule::unlock(Origin::signed(2), 2000), Error::<Test>::UnreservedFundsExceed);
 
     assert_ok!(Balances::reserve(&3, 100));
 
-    assert_noop!(DidModule::unlock(Origin::signed(3), 10), "you didn't lock funds before");
+    assert_noop!(DidModule::unlock(Origin::signed(3), 10), Error::<Test>::NotLockFunds);
 
     assert_ok!(Balances::reserve(&4, 100));
 
-    assert_noop!(DidModule::unlock(Origin::signed(4), 10), "this account has no did yet");
+    assert_noop!(DidModule::unlock(Origin::signed(4), 10), Error::<Test>::DidNotExists);
 
     Timestamp::set_timestamp(45);
 
-    assert_noop!(DidModule::unlock(Origin::signed(2), 10), "unlock time has not reached");
+    assert_noop!(DidModule::unlock(Origin::signed(2), 10), Error::<Test>::UnlockTimeNotReach);
 
   });
 }
@@ -406,9 +413,9 @@ fn should_pass_transfer() {
     let memo =b"transfer test";
     let (user_key, _) = DidModule::identity(&1).unwrap();
     assert_ok!(DidModule::transfer(
-      Origin::signed(2), 
+      Origin::signed(2),
       user_key,
-      100, 
+      100,
       memo.to_vec()
     ));
 
@@ -419,8 +426,8 @@ fn should_pass_transfer() {
     assert_eq!(
       events[events.len() - 1],
       EventRecord {
-          phase: Phase::ApplyExtrinsic(0),
-          event: Event::did(RawEvent::Transfered(from_did, to_did, 100, memo.to_vec())),
+          phase: Phase::Initialization,
+          event: TestEvent::did(RawEvent::Transfered(from_did, to_did, 100, memo.to_vec())),
           topics: vec![],
       }
     );
@@ -431,9 +438,9 @@ fn should_pass_transfer() {
     // ads fee split
     let (user_key, _) = DidModule::identity(&3).unwrap();
     assert_ok!(DidModule::transfer(
-      Origin::signed(1), 
+      Origin::signed(1),
       user_key,
-      1000, 
+      1000,
       b"ads fee".to_vec()
     ));
     assert_eq!(Balances::free_balance(&3), 10800);
@@ -451,13 +458,13 @@ fn should_not_pass_transfer() {
 
     let (user_key_1, _) = DidModule::identity(&1).unwrap();
 
-    assert_noop!(DidModule::transfer(Origin::signed(4), user_key_1, 100, memo.to_vec()), "did does not exist");
+    assert_noop!(DidModule::transfer(Origin::signed(4), user_key_1, 100, memo.to_vec()), Error::<Test>::DidNotExists);
 
-    assert_noop!(DidModule::transfer(Origin::signed(2), H256::zero(), 100, memo.to_vec()), "dest did does not exist");
+    assert_noop!(DidModule::transfer(Origin::signed(2), H256::zero(), 100, memo.to_vec()), Error::<Test>::DidNotExists);
 
-    assert_noop!(DidModule::transfer(Origin::signed(1), user_key_1, 100, memo.to_vec()), "you can not send money to yourself");
+    assert_noop!(DidModule::transfer(Origin::signed(1), user_key_1, 100, memo.to_vec()), Error::<Test>::SentToSelf);
 
-    assert_noop!(DidModule::transfer(Origin::signed(3), user_key_1, 10001, memo.to_vec()), "you dont have enough free balance");
+    assert_noop!(DidModule::transfer(Origin::signed(3), user_key_1, 10001, memo.to_vec()), Error::<Test>::NotEnoughBalance);
 
     assert_ok!(DidModule::create(
       Origin::signed(1),
@@ -472,7 +479,7 @@ fn should_not_pass_transfer() {
     let memo =b"ads fee";
     let (user_key_4, _) = DidModule::identity(&4).unwrap();
 
-    assert_noop!(DidModule::transfer(Origin::signed(1), user_key_4, 1000, memo.to_vec()), "superior does not find");
+    assert_noop!(DidModule::transfer(Origin::signed(1), user_key_4, 1000, memo.to_vec()), Error::<Test>::SuperiorNotExists);
 
   });
 }
