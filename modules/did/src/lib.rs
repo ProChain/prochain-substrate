@@ -54,7 +54,7 @@ pub struct MetadataRecord<AccountId, Hash, Balance, Moment> {
 	did: Did,
 	locked_records: Option<LockedRecords<Balance, Moment>>,
 	unlocked_records: Option<UnlockedRecords<Balance, Moment>>,
-	is_partner: bool,
+	donate: Option<Balance>,
 	social_account: Option<Hash>,
 	subordinate_count: u64,
 	group_name: Option<Vec<u8>>,
@@ -207,7 +207,7 @@ decl_module! {
 				locked_records: None,
 				social_account: social_account_hash,
 				unlocked_records: None,
-				is_partner: false,
+				donate: None,
 				subordinate_count: 0,
 				group_name: None,
 				external_address: ExternalAddress {
@@ -294,7 +294,7 @@ decl_module! {
 			let memo = "抵押分成".as_bytes().to_vec();
 			let mut rewards_ratio = 20;// basis rewards_ratio is 20%
 
-			if !metadata.is_partner {
+			if metadata.donate.is_none() {
 				ensure!(value >= Self::min_deposit(), Error::<T>::LockNotFulfilled);
 
 				let mut rebate = value.checked_div(&2.into()).ok_or(Error::<T>::Overflow)?;
@@ -318,17 +318,18 @@ decl_module! {
 				}
 
 				<pallet_balances::Module<T>>::reserve(&sender, locked_funds)?;
-				metadata.is_partner = true;
+				metadata.donate = Some(rebate);
 			} else {
 				let locked_records = metadata.locked_records.unwrap();
+				let mut donate = metadata.donate.unwrap();
 				let old_locked_funds = locked_records.locked_funds;
 				let mut new_locked_funds = value;
 
-				if old_locked_funds >= Self::fee_to_previous() { // without rebate
+				if donate >= Self::fee_to_previous() { // without rebate
 					locked_funds = old_locked_funds + new_locked_funds;
 				} else { // keeping rebate
 					let lack = Self::fee_to_previous()
-						.checked_sub(&old_locked_funds)
+						.checked_sub(&donate)
 						.and_then(|n| n.checked_mul(&2.into()))
 						.ok_or(Error::<T>::Overflow)?;
 					let mut rebate = lack / 2.into();
@@ -348,8 +349,10 @@ decl_module! {
 					} else {
 						Self::transfer_by_did(user_key, metadata.superior, rebate, memo)?;
 					}
+					donate += rebate;
 				}
 				<pallet_balances::Module<T>>::reserve(&sender, new_locked_funds)?;
+				metadata.donate = Some(donate);
 			}
 
 			let max_quota = Self::balance_to_u64(locked_funds) * 10;
