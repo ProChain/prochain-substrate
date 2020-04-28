@@ -8,6 +8,7 @@ use codec::{Decode, Encode};
 use sp_std::vec::Vec;
 use frame_support::{
 	decl_event, decl_module, decl_storage, decl_error, ensure,
+	weights::{SimpleDispatchInfo, Weight, WeighData},
 	traits::{Currency, ReservableCurrency, ExistenceRequirement, Get},
 };
 use sp_runtime::{
@@ -55,6 +56,21 @@ pub struct MetadataRecord<AccountId, Hash, Balance, Moment> {
 	locked_records: Option<LockedRecords<Balance, Moment>>,
 	unlocked_records: Option<UnlockedRecords<Balance, Moment>>,
 	donate: Option<Balance>,
+	social_account: Option<Hash>,
+	subordinate_count: u64,
+	group_name: Option<Vec<u8>>,
+	external_address: ExternalAddress
+}
+
+#[derive(Encode, Decode, Default, Clone, PartialEq, RuntimeDebug)]
+pub struct OldMetadataRecord<AccountId, Hash, Balance, Moment> {
+	address: AccountId,
+	superior: Hash,
+	creator: AccountId,
+	did: Did,
+	locked_records: Option<LockedRecords<Balance, Moment>>,
+	unlocked_records: Option<UnlockedRecords<Balance, Moment>>,
+	is_partner: bool,
 	social_account: Option<Hash>,
 	subordinate_count: u64,
 	group_name: Option<Vec<u8>>,
@@ -141,7 +157,13 @@ decl_module! {
 
 		fn deposit_event() = default;
 
-		#[weight = frame_support::weights::SimpleDispatchInfo::default()]
+		fn on_runtime_upgrade() -> Weight {
+			Self::migrate();
+
+			SimpleDispatchInfo::default().weigh_data(())
+		}
+
+		#[weight = SimpleDispatchInfo::default()]
 		pub fn create(origin, pubkey: Vec<u8>, address: T::AccountId, did_type: Vec<u8>, superior: T::Hash, social_account: Option<Vec<u8>>, social_superior: Option<Vec<u8>>) {
 			let sender = ensure_signed(origin)?;
 
@@ -241,7 +263,7 @@ decl_module! {
 			Self::deposit_event(RawEvent::Created(did, pubkey, superior_did));
 		}
 
-		#[weight = frame_support::weights::SimpleDispatchInfo::default()]
+		#[weight = SimpleDispatchInfo::default()]
 		pub fn update(origin, to: T::AccountId) {
 			let sender = ensure_signed(origin)?;
 
@@ -267,7 +289,7 @@ decl_module! {
 			Self::deposit_event(RawEvent::Updated(did, to, money));
 		}
 
-		#[weight = frame_support::weights::SimpleDispatchInfo::default()]
+		#[weight = SimpleDispatchInfo::default()]
 		pub fn transfer(origin, to_user: T::Hash, value: T::Balance, memo: Vec<u8>) {
 			let sender = ensure_signed(origin)?;
 
@@ -275,7 +297,7 @@ decl_module! {
 			Self::transfer_by_did(from_user, to_user, value, memo)?;
 		}
 
-		#[weight = frame_support::weights::SimpleDispatchInfo::default()]
+		#[weight = SimpleDispatchInfo::default()]
 		pub fn lock(origin, value: T::Balance, period: T::Moment) {
 			let sender = ensure_signed(origin)?;
 
@@ -375,7 +397,7 @@ decl_module! {
 			Self::deposit_event(RawEvent::Locked(did, locked_funds, locked_time, period, rewards_ratio, max_quota));
 		}
 
-		#[weight = frame_support::weights::SimpleDispatchInfo::default()]
+		#[weight = SimpleDispatchInfo::default()]
 		pub fn unlock(origin, value: T::Balance) {
 			let sender = ensure_signed(origin)?;
 
@@ -420,7 +442,7 @@ decl_module! {
 			Self::deposit_event(RawEvent::Unlocked(did, value, unlocked_time));
 		}
 
-		#[weight = frame_support::weights::SimpleDispatchInfo::default()]
+		#[weight = SimpleDispatchInfo::default()]
 		pub fn add_external_address(origin, add_type: Vec<u8>, address: Vec<u8>) {
 			let sender = ensure_signed(origin)?;
 
@@ -451,7 +473,7 @@ decl_module! {
 			Self::deposit_event(RawEvent::AddressAdded(did, add_type, address));
 		}
 
-		#[weight = frame_support::weights::SimpleDispatchInfo::default()]
+		#[weight = SimpleDispatchInfo::default()]
 		pub fn set_group_name(origin, name: Vec<u8>) {
 			let sender = ensure_signed(origin)?;
 
@@ -468,7 +490,7 @@ decl_module! {
 			Self::deposit_event(RawEvent::GroupNameSet(did, name));
 		}
 
-		#[weight = frame_support::weights::SimpleDispatchInfo::default()]
+		#[weight = SimpleDispatchInfo::default()]
 		fn judge(origin, account: T::AccountId) {
 			let sender = ensure_signed(origin)?;
 
@@ -483,6 +505,49 @@ decl_module! {
 }
 
 impl<T: Trait> Module<T> {
+	fn migrate() {
+		use frame_support::{Twox64Concat, migration::{StorageKeyIterator}};
+		for (who,
+			OldMetadataRecord {
+				address,
+				superior,
+				creator,
+				did,
+				locked_records,
+				unlocked_records,
+				is_partner,
+				social_account,
+				subordinate_count,
+				group_name,
+				external_address
+			})
+		in StorageKeyIterator::<
+			T::Hash,
+			OldMetadataRecord<T::AccountId, T::Hash, T::Balance, T::Moment>,
+			Twox64Concat,>::new(b"Did", b"Metadata").drain()
+		{
+			let donate = if is_partner {
+				Some(Self::fee_to_previous())
+			} else {
+				None
+			};
+			let new_metadata = MetadataRecord {
+				address,
+				superior,
+				creator,
+				did,
+				locked_records,
+				unlocked_records,
+				donate,
+				social_account,
+				subordinate_count,
+				group_name,
+				external_address
+			};
+			Metadata::<T>::insert(who, new_metadata)
+		}
+	}
+
 	fn u128_to_balance(input: u128) -> T::Balance {
 		input.saturated_into()
 	}
