@@ -158,7 +158,7 @@ decl_module! {
 		fn deposit_event() = default;
 
 		fn on_runtime_upgrade() -> Weight {
-			Self::migrate();
+			// Self::migrate();
 
 			SimpleDispatchInfo::default().weigh_data(())
 		}
