@@ -1,12 +1,15 @@
 [package]
 name = "node-runtime"
-version = "2.0.0-alpha.5"
+version = "2.0.0-dev"
 authors = ["Parity Technologies <admin@parity.io>"]
 edition = "2018"
 build = "build.rs"
 license = "GPL-3.0"
 homepage = "https://substrate.dev"
 repository = "https://github.com/paritytech/substrate/"
+
+[package.metadata.docs.rs]
+targets = ["x86_64-unknown-linux-gnu"]
 
 [dependencies]
 # third-party dependencies
@@ -19,57 +22,61 @@ num-bigint-dig = { version = "0.6.0", default-features = false}
 num-traits = { version = "0.2.4", default-features = false}
 
 # primitives
-sp-authority-discovery = { version = "2.0.0-alpha.5", default-features = false, git = "https://github.com/ProChain/substrate.git" }
-sp-consensus-babe = { version = "0.8.0-alpha.5", default-features = false, git = "https://github.com/ProChain/substrate.git" }
-sp-block-builder = { version = "2.0.0-alpha.5", git = "https://github.com/ProChain/substrate.git", default-features = false}
-sp-inherents = { version = "2.0.0-alpha.5", default-features = false, git = "https://github.com/ProChain/substrate.git" }
-node-primitives = { version = "2.0.0-alpha.5", path = "../primitives", default-features = false }
-sp-offchain = { version = "2.0.0-alpha.5", default-features = false, git = "https://github.com/ProChain/substrate.git" }
-sp-core = { version = "2.0.0-alpha.5", default-features = false, git = "https://github.com/ProChain/substrate.git" }
-sp-std = { version = "2.0.0-alpha.5", default-features = false, git = "https://github.com/ProChain/substrate.git" }
-sp-api = { version = "2.0.0-alpha.5", default-features = false, git = "https://github.com/ProChain/substrate.git" }
-sp-runtime = { version = "2.0.0-alpha.5", default-features = false, git = "https://github.com/ProChain/substrate.git" }
-sp-staking = { version = "2.0.0-alpha.5", default-features = false, git = "https://github.com/ProChain/substrate.git" }
-sp-keyring = { version = "2.0.0-alpha.5", optional = true, git = "https://github.com/ProChain/substrate.git" }
-sp-session = { version = "2.0.0-alpha.5", default-features = false, git = "https://github.com/ProChain/substrate.git" }
-sp-transaction-pool = { version = "2.0.0-alpha.5", default-features = false, git = "https://github.com/ProChain/substrate.git" }
-sp-version = { version = "2.0.0-alpha.5", default-features = false, git = "https://github.com/ProChain/substrate.git" }
-sp-io = { version = "2.0.0-alpha.5", git = "https://github.com/ProChain/substrate.git", default-features = false }
+sp-authority-discovery = { version = "2.0.0-dev", default-features = false, git = "https://github.com/ProChain/substrate.git" }
+sp-consensus-babe = { version = "0.8.0-dev", default-features = false, git = "https://github.com/ProChain/substrate.git" }
+sp-block-builder = { git = "https://github.com/ProChain/substrate.git", default-features = false, version = "2.0.0-dev"}
+sp-inherents = { version = "2.0.0-dev", default-features = false, git = "https://github.com/ProChain/substrate.git" }
+node-primitives = { version = "2.0.0-dev", default-features = false, path = "../primitives" }
+sp-offchain = { version = "2.0.0-dev", default-features = false, git = "https://github.com/ProChain/substrate.git" }
+sp-core = { version = "2.0.0-dev", default-features = false, git = "https://github.com/ProChain/substrate.git" }
+sp-std = { version = "2.0.0-dev", default-features = false, git = "https://github.com/ProChain/substrate.git" }
+sp-api = { version = "2.0.0-dev", default-features = false, git = "https://github.com/ProChain/substrate.git" }
+sp-runtime = { version = "2.0.0-dev", default-features = false, git = "https://github.com/ProChain/substrate.git" }
+sp-staking = { version = "2.0.0-dev", default-features = false, git = "https://github.com/ProChain/substrate.git" }
+sp-keyring = { version = "2.0.0-dev", optional = true, git = "https://github.com/ProChain/substrate.git" }
+sp-session = { version = "2.0.0-dev", default-features = false, git = "https://github.com/ProChain/substrate.git" }
+sp-transaction-pool = { version = "2.0.0-dev", default-features = false, git = "https://github.com/ProChain/substrate.git" }
+sp-version = { version = "2.0.0-dev", default-features = false, git = "https://github.com/ProChain/substrate.git" }
+sp-io = { version = "2.0.0-dev", git = "https://github.com/ProChain/substrate.git", default-features = false }
 
 # frame dependencies
-frame-executive = { version = "2.0.0-alpha.5", default-features = false, git = "https://github.com/ProChain/substrate.git" }
-frame-benchmarking = { version = "2.0.0-alpha.5", default-features = false, git = "https://github.com/ProChain/substrate.git", optional = true }
-frame-support = { version = "2.0.0-alpha.5", default-features = false, git = "https://github.com/ProChain/substrate.git" }
-frame-system = { version = "2.0.0-alpha.5", default-features = false, git = "https://github.com/ProChain/substrate.git" }
-frame-system-rpc-runtime-api = { version = "2.0.0-alpha.5", default-features = false, git = "https://github.com/ProChain/substrate.git" }
-pallet-authority-discovery = { version = "2.0.0-alpha.5", default-features = false, git = "https://github.com/ProChain/substrate.git" }
-pallet-authorship = { version = "2.0.0-alpha.5", default-features = false, git = "https://github.com/ProChain/substrate.git" }
-pallet-babe = { version = "2.0.0-alpha.5", default-features = false, git = "https://github.com/ProChain/substrate.git" }
-pallet-balances = { version = "2.0.0-alpha.5", default-features = false, git = "https://github.com/ProChain/substrate.git" }
-pallet-collective = { version = "2.0.0-alpha.5", default-features = false, git = "https://github.com/ProChain/substrate.git" }
-pallet-contracts = { version = "2.0.0-alpha.5", default-features = false, git = "https://github.com/ProChain/substrate.git" }
-pallet-contracts-primitives = { version = "2.0.0-alpha.5", default-features = false, git = "https://github.com/ProChain/substrate.git" }
-pallet-contracts-rpc-runtime-api = { version = "0.8.0-alpha.5", default-features = false, git = "https://github.com/ProChain/substrate.git" }
-pallet-democracy = { version = "2.0.0-alpha.5", default-features = false, git = "https://github.com/ProChain/substrate.git" }
-pallet-elections-phragmen = { version = "2.0.0-alpha.5", default-features = false, git = "https://github.com/ProChain/substrate.git" }
-pallet-finality-tracker = { version = "2.0.0-alpha.5", default-features = false, git = "https://github.com/ProChain/substrate.git" }
-pallet-grandpa = { version = "2.0.0-alpha.5", default-features = false, git = "https://github.com/ProChain/substrate.git" }
-pallet-im-online = { version = "2.0.0-alpha.5", default-features = false, git = "https://github.com/ProChain/substrate.git" }
-pallet-indices = { version = "2.0.0-alpha.5", default-features = false, git = "https://github.com/ProChain/substrate.git" }
-pallet-identity = { version = "2.0.0-alpha.5", default-features = false, git = "https://github.com/ProChain/substrate.git" }
-pallet-membership = { version = "2.0.0-alpha.5", default-features = false, git = "https://github.com/ProChain/substrate.git" }
-pallet-offences = { version = "2.0.0-alpha.5", default-features = false, git = "https://github.com/ProChain/substrate.git" }
-pallet-randomness-collective-flip = { version = "2.0.0-alpha.5", default-features = false, git = "https://github.com/ProChain/substrate.git" }
-pallet-session = { version = "2.0.0-alpha.5", features = ["historical"], git = "https://github.com/ProChain/substrate.git", default-features = false }
-pallet-staking = { version = "2.0.0-alpha.5", git = "https://github.com/ProChain/substrate.git", default-features = false }
-pallet-staking-reward-curve = { version = "2.0.0-alpha.5",  git = "https://github.com/ProChain/substrate.git" }
-pallet-scheduler = { version = "2.0.0-alpha.5", default-features = false, git = "https://github.com/ProChain/substrate.git" }
-pallet-sudo = { version = "2.0.0-alpha.5", default-features = false, git = "https://github.com/ProChain/substrate.git" }
-pallet-timestamp = { version = "2.0.0-alpha.5", default-features = false, git = "https://github.com/ProChain/substrate.git" }
-pallet-treasury = { version = "2.0.0-alpha.5", default-features = false, git = "https://github.com/ProChain/substrate.git" }
-pallet-utility = { version = "2.0.0-alpha.5", default-features = false, git = "https://github.com/ProChain/substrate.git" }
-pallet-transaction-payment = { version = "2.0.0-alpha.5", default-features = false, git = "https://github.com/ProChain/substrate.git" }
-pallet-transaction-payment-rpc-runtime-api = { version = "2.0.0-alpha.5", default-features = false, git = "https://github.com/ProChain/substrate.git" }
+frame-executive = { version = "2.0.0-dev", default-features = false, git = "https://github.com/ProChain/substrate.git" }
+frame-benchmarking = { version = "2.0.0-dev", default-features = false, git = "https://github.com/ProChain/substrate.git", optional = true }
+frame-support = { version = "2.0.0-dev", default-features = false, git = "https://github.com/ProChain/substrate.git" }
+frame-system = { version = "2.0.0-dev", default-features = false, git = "https://github.com/ProChain/substrate.git" }
+frame-system-rpc-runtime-api = { version = "2.0.0-dev", default-features = false, git = "https://github.com/ProChain/substrate.git" }
+pallet-authority-discovery = { version = "2.0.0-dev", default-features = false, git = "https://github.com/ProChain/substrate.git" }
+pallet-authorship = { version = "2.0.0-dev", default-features = false, git = "https://github.com/ProChain/substrate.git" }
+pallet-babe = { version = "2.0.0-dev", default-features = false, git = "https://github.com/ProChain/substrate.git" }
+pallet-balances = { version = "2.0.0-dev", default-features = false, git = "https://github.com/ProChain/substrate.git" }
+pallet-collective = { version = "2.0.0-dev", default-features = false, git = "https://github.com/ProChain/substrate.git" }
+pallet-contracts = { version = "2.0.0-dev", default-features = false, git = "https://github.com/ProChain/substrate.git" }
+pallet-contracts-primitives = { version = "2.0.0-dev", default-features = false, git = "https://github.com/ProChain/substrate.git" }
+pallet-contracts-rpc-runtime-api = { version = "0.8.0-dev", default-features = false, git = "https://github.com/ProChain/substrate.git" }
+pallet-democracy = { version = "2.0.0-dev", default-features = false, git = "https://github.com/ProChain/substrate.git" }
+pallet-elections-phragmen = { version = "2.0.0-dev", default-features = false, git = "https://github.com/ProChain/substrate.git" }
+pallet-finality-tracker = { version = "2.0.0-dev", default-features = false, git = "https://github.com/ProChain/substrate.git" }
+pallet-grandpa = { version = "2.0.0-dev", default-features = false, git = "https://github.com/ProChain/substrate.git" }
+pallet-im-online = { version = "2.0.0-dev", default-features = false, git = "https://github.com/ProChain/substrate.git" }
+pallet-indices = { version = "2.0.0-dev", default-features = false, git = "https://github.com/ProChain/substrate.git" }
+pallet-identity = { version = "2.0.0-dev", default-features = false, git = "https://github.com/ProChain/substrate.git" }
+pallet-membership = { version = "2.0.0-dev", default-features = false, git = "https://github.com/ProChain/substrate.git" }
+pallet-offences = { version = "2.0.0-dev", default-features = false, git = "https://github.com/ProChain/substrate.git" }
+pallet-offences-benchmarking = { version = "2.0.0-dev", git = "https://github.com/ProChain/substrate.git", default-features = false, optional = true }
+pallet-randomness-collective-flip = { version = "2.0.0-dev", default-features = false, git = "https://github.com/ProChain/substrate.git" }
+pallet-recovery = { version = "2.0.0-dev", default-features = false, git = "https://github.com/ProChain/substrate.git" }
+pallet-session = { version = "2.0.0-dev", features = ["historical"], git = "https://github.com/ProChain/substrate.git", default-features = false }
+pallet-session-benchmarking = { version = "2.0.0-dev", git = "https://github.com/ProChain/substrate.git", default-features = false, optional = true }
+pallet-staking = { version = "2.0.0-dev", default-features = false, git = "https://github.com/ProChain/substrate.git" }
+pallet-staking-reward-curve = { version = "2.0.0-dev", default-features = false, git = "https://github.com/ProChain/substrate.git" }
+pallet-scheduler = { version = "2.0.0-dev", default-features = false, git = "https://github.com/ProChain/substrate.git" }
+pallet-society = { version = "2.0.0-dev", default-features = false, git = "https://github.com/ProChain/substrate.git" }
+pallet-sudo = { version = "2.0.0-dev", default-features = false, git = "https://github.com/ProChain/substrate.git" }
+pallet-timestamp = { version = "2.0.0-dev", default-features = false, git = "https://github.com/ProChain/substrate.git" }
+pallet-treasury = { version = "2.0.0-dev", default-features = false, git = "https://github.com/ProChain/substrate.git" }
+pallet-utility = { version = "2.0.0-dev", default-features = false, git = "https://github.com/ProChain/substrate.git" }
+pallet-transaction-payment = { version = "2.0.0-dev", default-features = false, git = "https://github.com/ProChain/substrate.git" }
+pallet-transaction-payment-rpc-runtime-api = { version = "2.0.0-dev", default-features = false, git = "https://github.com/ProChain/substrate.git" }
 
 # inner dependencies
 did = { path = "../modules/did", default-features = false }
@@ -81,7 +88,7 @@ ads = { path = "../modules/ads", default-features = false }
 wasm-builder-runner = { version = "1.0.5", package = "substrate-wasm-builder-runner", git = "https://github.com/ProChain/substrate.git" }
 
 [dev-dependencies]
-#sp-io = { version = "2.0.0-alpha.5", git = "https://github.com/ProChain/substrate.git" }
+#sp-io = { version = "2.0.0-dev", git = "https://github.com/ProChain/substrate.git" }
 
 [features]
 default = ["std"]
@@ -144,7 +151,6 @@ runtime-benchmarks = [
 	"frame-system/runtime-benchmarks",
 	"sp-runtime/runtime-benchmarks",
 	"pallet-balances/runtime-benchmarks",
-	"pallet-collective/runtime-benchmarks",
 	"pallet-democracy/runtime-benchmarks",
 	"pallet-elections-phragmen/runtime-benchmarks",
 	"pallet-identity/runtime-benchmarks",
@@ -155,6 +161,3 @@ runtime-benchmarks = [
 	"pallet-utility/runtime-benchmarks",
 	"pallet-collective/runtime-benchmarks",
 ]
-
-[package.metadata.docs.rs]
-targets = ["x86_64-unknown-linux-gnu"]

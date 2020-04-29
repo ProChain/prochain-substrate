@@ -5,11 +5,15 @@ use frame_support::{
 	debug::native,
 	decl_error, decl_event, decl_module, decl_storage, ensure,
 	traits::{Currency, ExistenceRequirement},
-	weights::{SimpleDispatchInfo, Weight, WeighData},
+	weights::{Weight, WeighData},
 	Parameter, StorageMap, StorageValue,
 };
 use frame_system::{
-	self as system, ensure_none, ensure_root, ensure_signed, offchain::SubmitUnsignedTransaction,
+	self as system, ensure_none, ensure_root, ensure_signed,
+	offchain::{
+		AppCrypto, CreateSignedTransaction, SendUnsignedTransaction,
+		SignedPayload, SigningTypes, Signer, SubmitTransaction,
+	}
 };
 use hex::FromHex;
 use simple_json::{self, json::JsonValue};
@@ -140,15 +144,13 @@ pub enum HTLCType {
 //  automates offchain fetching every certain blocks
 pub const BLOCK_DURATION: u64 = 5;
 
-pub trait Trait: pallet_balances::Trait + pallet_timestamp::Trait + did::Trait {
+pub trait Trait: pallet_balances::Trait + pallet_timestamp::Trait + did::Trait + CreateSignedTransaction<Call<Self>> {
 	/// The identifier type for an authority.
 	type AuthorityId: Member + Parameter + RuntimeAppPublic + Default + Ord;
 	/// The overarching event type.
 	type Event: From<Event<Self>> + Into<<Self as frame_system::Trait>::Event>;
 	/// A dispatchable call type.
 	type Call: From<Call<Self>>;
-	/// A transaction submitter.
-	type SubmitTransaction: SubmitUnsignedTransaction<Self, <Self as Trait>::Call>;
 }
 
 decl_error! {
@@ -225,11 +227,11 @@ decl_module! {
 
 		fn on_initialize(_now: T::BlockNumber) -> Weight {
 			<Self as Store>::OcRequests::take();
-			SimpleDispatchInfo::default().weigh_data(())
+			0
 		}
 
 		// Initializing event fetch jobs
-		#[weight = frame_support::weights::SimpleDispatchInfo::default()]
+		#[weight = 0]
 		fn kickoff(origin, event_src_type: Vec<u8>, event_url: Vec<u8>, event_data: Vec<u8>) -> dispatch_result {
 			let sender = ensure_signed(origin)?;
 			ensure!(Self::is_authority(&sender), "error not authority sender");
@@ -251,7 +253,7 @@ decl_module! {
 		}
 
 		// Kill all event fetch jobs
-		#[weight = frame_support::weights::SimpleDispatchInfo::default()]
+		#[weight = 0]
 		fn killall(origin) -> dispatch_result {
 			let sender = ensure_signed(origin)?;
 
@@ -263,7 +265,7 @@ decl_module! {
 		}
 
 		// Try parse did in hex str format
-		#[weight = frame_support::weights::SimpleDispatchInfo::default()]
+		#[weight = 0]
 		fn try_parse_did(origin, did_hex: Vec<u8>) -> dispatch_result {
 			let _ = ensure_signed(origin)?;
 
@@ -275,7 +277,7 @@ decl_module! {
 		}
 
 		// Add a new authority to the set of keys that are allowed to update.
-		#[weight = frame_support::weights::SimpleDispatchInfo::default()]
+		#[weight = 0]
 		fn init(origin, auth: T::AccountId, pra_token_addr: T::AccountId) -> dispatch_result {
 			ensure_root(origin)?;
 
@@ -299,7 +301,7 @@ decl_module! {
 		}
 
 		// Stores valid swap data and states
-		#[weight = frame_support::weights::SimpleDispatchInfo::default()]
+		#[weight = 0]
 		fn update_enevt_htlc(origin, htlcs: Vec<EventHTLC<T::BlockNumber, T::Balance, T::Hash>>) -> dispatch_result {
 			// TODO: add auth control
 			ensure_none(origin)?;
@@ -392,16 +394,18 @@ impl<T: Trait> Module<T> {
 				let htlcs = Self::parse_data(buf);
 
 				let call = Call::update_enevt_htlc(htlcs);
-				let result = T::SubmitTransaction::submit_unsigned(call);
-				match result {
-					Ok(_) => {
-						native::info!(target: "swap", "execute off-chain worker success EVENT_SRC_ETHERSCAN");
-					}
-					Err(_) => {
-						native::error!(target: "swap", "execute off-chain worker failed EVENT_SRC_ETHERSCAN");
-						return Err("error happens when submit unsigned transaction");
-					}
-				}
+				// let result = SubmitTransaction::<T, Call<T>>::submit_unsigned_transaction(call);
+				// match result {
+				// 	Ok(_) => {
+				// 		native::info!(targePt: "swap", "execute off-chain worker success EVENT_SRC_ETHERSCAN");
+				// 	}
+				// 	Err(_) => {
+				// 		native::error!(target: "swap", "execute off-chain worker failed EVENT_SRC_ETHERSCAN");
+				// 		return Err("error happens when submit unsigned transaction");
+				// 	}
+				// }
+				SubmitTransaction::<T, Call<T>>::submit_unsigned_transaction(call.into())
+					.map_err(|()| "Unable to submit unsigned transaction.")?;
 			} else {
 			}
 		} else if event.event_type == EVENT_SRC_INFURA {
@@ -410,16 +414,18 @@ impl<T: Trait> Module<T> {
 				let htlcs = Self::parse_infura_data(buf);
 
 				let call = Call::update_enevt_htlc(htlcs);
-				let result = T::SubmitTransaction::submit_unsigned(call);
-				match result {
-					Ok(_) => {
-						native::info!(target: "swap", "execute off-chain worker success EVENT_SRC_INFURA");
-					}
-					Err(_) => {
-						native::error!(target: "swap", "execute off-chain worker failed EVENT_SRC_INFURA");
-						return Err("error happens when submit unsigned transaction");
-					}
-				}
+				// let result = SubmitTransaction::<T, Call<T>>::submit_unsigned_transaction(call);
+				// match result {
+				// 	Ok(_) => {
+				// 		native::info!(target: "swap", "execute off-chain worker success EVENT_SRC_INFURA");
+				// 	}
+				// 	Err(_) => {
+				// 		native::error!(target: "swap", "execute off-chain worker failed EVENT_SRC_INFURA");
+				// 		return Err("error happens when submit unsigned transaction");
+				// 	}
+				// }
+				SubmitTransaction::<T, Call<T>>::submit_unsigned_transaction(call.into())
+					.map_err(|()| "Unable to submit unsigned transaction.")?;
 			}
 		}
 

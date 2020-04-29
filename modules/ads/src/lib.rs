@@ -56,7 +56,7 @@ decl_module! {
 	pub struct Module<T: Trait> for enum Call where origin: T::Origin {
 		fn deposit_event() = default;
 
-        #[weight = frame_support::weights::SimpleDispatchInfo::default()]
+        #[weight = 0]
         fn publish(origin, name: Vec<u8>, topic: Vec<u8>, total_amount: T::Balance, single_click_fee: T::Balance, period: T::Moment) {
             let sender = ensure_signed(origin)?;
 
@@ -90,7 +90,7 @@ decl_module! {
             Self::deposit_event(RawEvent::Published(from_key, contract, total_amount));
         }
 
-        #[weight = frame_support::weights::SimpleDispatchInfo::default()]
+        #[weight = 0]
         fn deposit(origin, value: T::Balance, memo: Vec<u8>) {
             let sender = ensure_signed(origin)?;
 
@@ -114,7 +114,7 @@ decl_module! {
             Self::deposit_event(RawEvent::Deposited(user_key, contract_key, value));
         }
 
-        #[weight = frame_support::weights::SimpleDispatchInfo::default()]
+        #[weight = 0]
         fn withdraw(origin, value: T::Balance, memo: Vec<u8>) {
             let sender = ensure_signed(origin)?;
 
@@ -140,7 +140,7 @@ decl_module! {
             Self::deposit_event(RawEvent::Withdrawl(from_key, value));
         }
 
-        #[weight = frame_support::weights::SimpleDispatchInfo::default()]
+        #[weight = 0]
 		fn distribute(origin, publisher: T::Hash, user: T::Hash, value: T::Balance) {
 			let sender = ensure_signed(origin)?;
 
@@ -150,7 +150,7 @@ decl_module! {
 
 			ensure!(<AdsRecords<T>>::contains_key(publisher), "the account hadn't published ads yet");
             ensure!(<did::Metadata<T>>::contains_key(user), "the user does not have did yet");
-			
+
 			let mut ads_metadata = Self::ads_records(publisher);
 
 			ensure!(ads_metadata.surplus >= value, "your surplus is not enough");
@@ -165,7 +165,7 @@ decl_module! {
 			Self::deposit_event(RawEvent::Distributed(publisher, user, value));
 		}
 
-        #[weight = frame_support::weights::SimpleDispatchInfo::default()]
+        #[weight = 0]
 		fn update_ads(origin, single_click_fee: T::Balance, period: T::Moment) {
 			let sender = ensure_signed(origin)?;
 

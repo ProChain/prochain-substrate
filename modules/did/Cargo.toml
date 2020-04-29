@@ -15,17 +15,17 @@ safe-mix = { version = "1.0", default-features = false }
 serde = { version = "1.0.102", optional = true }
 
 # primitives
-node-primitives = { version = "2.0.0-alpha.5", path = "../../primitives", default-features = false }
-sp-core = { version = "2.0.0-alpha.5", git = "https://github.com/ProChain/substrate.git", default-features = false }
-sp-std = { version = "2.0.0-alpha.5", git = "https://github.com/ProChain/substrate.git", default-features = false }
-sp-runtime = { version = "2.0.0-alpha.5", git = "https://github.com/ProChain/substrate.git", default-features = false }
-sp-io = { version = "2.0.0-alpha.5", git = "https://github.com/ProChain/substrate.git", default-features = false }
+node-primitives = { version = "2.0.0-dev", path = "../../primitives", default-features = false }
+sp-core = { version = "2.0.0-dev", git = "https://github.com/ProChain/substrate.git", default-features = false }
+sp-std = { version = "2.0.0-dev", git = "https://github.com/ProChain/substrate.git", default-features = false }
+sp-runtime = { version = "2.0.0-dev", git = "https://github.com/ProChain/substrate.git", default-features = false }
+sp-io = { version = "2.0.0-dev", git = "https://github.com/ProChain/substrate.git", default-features = false }
 
 # frame dependencies
-pallet-balances = { version = "2.0.0-alpha.5", git = "https://github.com/ProChain/substrate.git", default-features = false }
-frame-support = { version = "2.0.0-alpha.5", git = "https://github.com/ProChain/substrate.git", default-features = false }
-frame-system = { version = "2.0.0-alpha.5", git = "https://github.com/ProChain/substrate.git", default-features = false }
-pallet-timestamp = { version = "2.0.0-alpha.5", git = "https://github.com/ProChain/substrate.git", default-features = false }
+pallet-balances = { version = "2.0.0-dev", git = "https://github.com/ProChain/substrate.git", default-features = false }
+frame-support = { version = "2.0.0-dev", git = "https://github.com/ProChain/substrate.git", default-features = false }
+frame-system = { version = "2.0.0-dev", git = "https://github.com/ProChain/substrate.git", default-features = false }
+pallet-timestamp = { version = "2.0.0-dev", git = "https://github.com/ProChain/substrate.git", default-features = false }
 
 [dev-dependencies]
 

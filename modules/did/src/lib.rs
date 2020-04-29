@@ -8,7 +8,7 @@ use codec::{Decode, Encode};
 use sp_std::vec::Vec;
 use frame_support::{
 	decl_event, decl_module, decl_storage, decl_error, ensure,
-	weights::{SimpleDispatchInfo, Weight, WeighData},
+	weights::{Weight, WeighData},
 	traits::{Currency, ReservableCurrency, ExistenceRequirement, Get},
 };
 use sp_runtime::{
@@ -160,10 +160,10 @@ decl_module! {
 		fn on_runtime_upgrade() -> Weight {
 			// Self::migrate();
 
-			SimpleDispatchInfo::default().weigh_data(())
+			0
 		}
 
-		#[weight = SimpleDispatchInfo::default()]
+		#[weight = 0]
 		pub fn create(origin, pubkey: Vec<u8>, address: T::AccountId, did_type: Vec<u8>, superior: T::Hash, social_account: Option<Vec<u8>>, social_superior: Option<Vec<u8>>) {
 			let sender = ensure_signed(origin)?;
 
@@ -263,7 +263,7 @@ decl_module! {
 			Self::deposit_event(RawEvent::Created(did, pubkey, superior_did));
 		}
 
-		#[weight = SimpleDispatchInfo::default()]
+		#[weight = 0]
 		pub fn update(origin, to: T::AccountId) {
 			let sender = ensure_signed(origin)?;
 
@@ -289,7 +289,7 @@ decl_module! {
 			Self::deposit_event(RawEvent::Updated(did, to, money));
 		}
 
-		#[weight = SimpleDispatchInfo::default()]
+		#[weight = 0]
 		pub fn transfer(origin, to_user: T::Hash, value: T::Balance, memo: Vec<u8>) {
 			let sender = ensure_signed(origin)?;
 
@@ -297,7 +297,7 @@ decl_module! {
 			Self::transfer_by_did(from_user, to_user, value, memo)?;
 		}
 
-		#[weight = SimpleDispatchInfo::default()]
+		#[weight = 0]
 		pub fn lock(origin, value: T::Balance, period: T::Moment) {
 			let sender = ensure_signed(origin)?;
 
@@ -397,7 +397,7 @@ decl_module! {
 			Self::deposit_event(RawEvent::Locked(did, locked_funds, locked_time, period, rewards_ratio, max_quota));
 		}
 
-		#[weight = SimpleDispatchInfo::default()]
+		#[weight = 0]
 		pub fn unlock(origin, value: T::Balance) {
 			let sender = ensure_signed(origin)?;
 
@@ -442,7 +442,7 @@ decl_module! {
 			Self::deposit_event(RawEvent::Unlocked(did, value, unlocked_time));
 		}
 
-		#[weight = SimpleDispatchInfo::default()]
+		#[weight = 0]
 		pub fn add_external_address(origin, add_type: Vec<u8>, address: Vec<u8>) {
 			let sender = ensure_signed(origin)?;
 
@@ -473,7 +473,7 @@ decl_module! {
 			Self::deposit_event(RawEvent::AddressAdded(did, add_type, address));
 		}
 
-		#[weight = SimpleDispatchInfo::default()]
+		#[weight = 0]
 		pub fn set_group_name(origin, name: Vec<u8>) {
 			let sender = ensure_signed(origin)?;
 
@@ -490,7 +490,7 @@ decl_module! {
 			Self::deposit_event(RawEvent::GroupNameSet(did, name));
 		}
 
-		#[weight = SimpleDispatchInfo::default()]
+		#[weight = 0]
 		fn judge(origin, account: T::AccountId) {
 			let sender = ensure_signed(origin)?;
 

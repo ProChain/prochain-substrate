@@ -57,7 +57,6 @@ impl<Number> FactoryState<Number> {
 			frame_system::CheckNonce::from(index),
 			frame_system::CheckWeight::new(),
 			pallet_transaction_payment::ChargeTransactionPayment::from(0),
-			Default::default(),
 		)
 	}
 }
@@ -122,7 +121,7 @@ impl RuntimeAdapter for FactoryState<Number> {
 					(*amount).into()
 				)
 			)
-		}, key, (version, genesis_hash.clone(), prior_block_hash.clone(), (), (), (), ()))
+		}, key, (version, genesis_hash.clone(), prior_block_hash.clone(), (), (), ()))
 	}
 
 	fn inherent_extrinsics(&self) -> InherentData {
@@ -131,7 +130,7 @@ impl RuntimeAdapter for FactoryState<Number> {
 		let mut inherent = InherentData::new();
 		inherent.put_data(sp_timestamp::INHERENT_IDENTIFIER, &timestamp)
 			.expect("Failed putting timestamp inherent");
-			inherent.put_data(sp_finality_tracker::INHERENT_IDENTIFIER, &self.block_number)
+		inherent.put_data(sp_finality_tracker::INHERENT_IDENTIFIER, &self.block_number)
 			.expect("Failed putting finalized number inherent");
 		inherent
 	}
