@@ -1,19 +1,13 @@
 #![cfg_attr(not(feature = "std"), no_std)]
-
 mod tests;
-
-mod linked_item;
-
 mod array_list;
-
 use codec::{Decode, Encode};
 use sp_std::vec::Vec;
 use frame_support::{
-    decl_event, decl_module, decl_storage, decl_error,ensure
+    decl_event, decl_module, decl_storage, decl_error,ensure,debug
 };
 use sp_runtime::{DispatchResult, traits::{Zero, CheckedSub, CheckedAdd, Hash}};
 use frame_system::{self as system, ensure_signed};
-use linked_item::{LinkedItem, LinkedList};
 use array_list::ArrayList;
 
 pub trait Trait: pallet_balances::Trait + pallet_timestamp::Trait + did::Trait {
@@ -22,8 +16,6 @@ pub trait Trait: pallet_balances::Trait + pallet_timestamp::Trait + did::Trait {
 
 pub type AdIndex = u64;
 pub type ActiveIndex = u64;
-type AdsLinkedItem = LinkedItem<AdIndex>;
-type OwnedAdList<T> = LinkedList<OwnedAds<T>, <T as system::Trait>::Hash, AdIndex>;
 type AdsActiveList = ArrayList<AdsActives, AdIndex, AdsActiveCount>;
 
 #[cfg_attr(feature = "std", derive(Debug))]
@@ -60,6 +52,9 @@ decl_error! {
 		Active,
         /// ad status not active
 		NotActive,
+
+		///the did type is not ad
+		NotADAccount,
 	}
 }
 
@@ -72,8 +67,8 @@ decl_storage! {
         pub AdsActives get(fn ads_actives): map hasher(twox_64_concat) ActiveIndex => Option<AdIndex>;
         pub AdsActiveCount get(fn ads_active_count): Option<ActiveIndex>;
         pub AdsOwner get(fn ads_owner):map hasher(twox_64_concat) AdIndex => T::Hash;
-        pub OwnedAds get(fn owned_ads):map hasher(twox_64_concat) (T::Hash,Option<AdIndex>)=> Option<AdsLinkedItem>;
         pub AllAdsCount get(fn all_ads_count): AdIndex;
+        pub OwnedAds get(fn owned_ads):map hasher(twox_64_concat) T::Hash => Vec<AdIndex>;
     }
 }
 
@@ -102,8 +97,8 @@ decl_module! {
             let sender = ensure_signed(origin)?;
 
             ensure!(total_amount >= Self::min_deposit(), Error::<T>::MineDeposit);
-
-            let (from_key, _) = <did::Module<T>>::identity(sender).ok_or(<did::Error<T>>::DidNotExists)?;
+            let (from_key, did) = <did::Module<T>>::identity(sender).ok_or(<did::Error<T>>::DidNotExists)?;
+            ensure!(Self::is_sub(&did[..2] , "4".as_bytes()),Error::<T>::NotADAccount);
             let create_time = <pallet_timestamp::Module<T>>::get();
 
             let (contract, _) = <did::Module<T>>::identity(Self::contract()).ok_or(Error::<T>::ContractDidNotExists)?;
@@ -231,10 +226,13 @@ impl<T: Trait> Module<T> {
     fn create_ad(user_key: T::Hash, adid: &AdIndex, ad: AdsMetadata<T::Balance, T::Moment>) -> DispatchResult {
         <AdsRecords<T>>::insert(adid, ad);
         <AdsOwner<T>>::insert(adid, &user_key);
-        <OwnedAdList<T>>::append(&user_key, adid.clone());
+//        <OwnedAdList<T>>::append(&user_key, adid.clone());
+        let mut ads = Self::owned_ads(user_key);
+        ads.push(adid.clone());
         let new_count = Self::all_ads_count().checked_add(1)
             .ok_or(Error::<T>::Overflow)?;
         AllAdsCount::put(new_count);
+        <OwnedAds<T>>::insert(user_key,ads);
         Ok(())
     }
 
@@ -256,5 +254,14 @@ impl<T: Trait> Module<T> {
         ads_metadata.active = None;
         <AdsRecords<T>>::insert(adid,ads_metadata);
         Ok(())
+    }
+
+    fn is_sub(mut haystack: &[u8], needle: &[u8]) -> bool {
+        if needle.len() == 0 { return true; }
+        while !haystack.is_empty() {
+            if haystack.starts_with(needle) { return true; }
+            haystack = &haystack[1..];
+        }
+        false
     }
 }
