@@ -76,16 +76,23 @@ To start up the Prochain node, run:
     "group_name": "Option<Vec<u8>>",
     "external_address": "ExternalAddress"
   },
+  "AdsLinkedItem": {
+      "prev": "Option<AdIndex>",
+      "next": "Option<AdIndex>"
+   },
+  "ActiveIndex": "u64",
+  "AdIndex": "u64",
   "AdsMetadata": {
-    "advertiser": "Vec<u8>",
-    "topic": "Vec<u8>",
-    "total_amount": "Balance",
-    "surplus": "Balance",
-    "gas_fee_used": "Balance",
-    "single_click_fee": "Balance",
-    "create_time": "Moment",
-    "period": "Moment"
-  },
+      "advertiser": "Vec<u8>",
+      "topic": "Vec<u8>",
+      "total_amount": "Balance",
+      "spend_amount": "Balance",
+      "single_click_fee": "Balance",
+      "display_page":"Vec<u8>",
+      "landing_page":"Option<Vec<u8>>",
+      "create_time": "Moment",
+      "active": "Option<ActiveIndex>"
+   },
   "EventHTLC": {
     "eth_contract_addr": "Vec<u8>",
     "htlc_block_number": "BlockNumber",
