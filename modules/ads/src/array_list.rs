@@ -13,11 +13,9 @@ impl<Storage, Value, SizeStorage> ArrayList<Storage, Value, SizeStorage> where V
             Ok(i)=> i,
             Err(e)=>0u64
         };
-        print("arraylist add");
         if let Some(size) = index.checked_add(1) {
             Storage::insert(&index, value);
             SizeStorage::put(size);
-            print("add success");
             return true;
         }
         false

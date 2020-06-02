@@ -30,6 +30,17 @@ pub struct AdsMetadata<Balance, Moment> {
     landing_page: Option<Vec<u8>>,
     create_time: Moment,
     active: Option<ActiveIndex>,
+    distribute_type: DistributeType,
+}
+
+#[derive(Encode, Decode , PartialEq, Eq, Clone, Debug)]
+pub enum DistributeType{
+    ADVERTISER,
+    AGENT,
+}
+
+impl Default for DistributeType{
+    fn default()-> Self{DistributeType::AGENT}
 }
 
 decl_error! {
@@ -44,6 +55,8 @@ decl_error! {
 		InvalidGroupName,
 		/// you are not own the ad
 		NotOwner,
+        ///agent type ad need contract account signed
+		NeedAgentAccountSigned,
         /// create or deposit ad min balance
 		MineDeposit,
         /// ad contract did account
@@ -52,9 +65,10 @@ decl_error! {
 		Active,
         /// ad status not active
 		NotActive,
-
 		///the did type is not ad
 		NotADAccount,
+        ///withdraw balance time not reach
+        TimeNotReach,
 	}
 }
 
@@ -93,7 +107,7 @@ decl_module! {
 		fn deposit_event() = default;
 
         #[weight = 0]
-        fn publish(origin, name: Vec<u8>, topic: Vec<u8>, total_amount: T::Balance, single_click_fee: T::Balance,display_page:Vec<u8>,landing_page:Option<Vec<u8>>) {
+        fn publish(origin, name: Vec<u8>, topic: Vec<u8>, total_amount: T::Balance, single_click_fee: T::Balance,display_page:Vec<u8>,landing_page:Option<Vec<u8>>,distribute_type:DistributeType) {
             let sender = ensure_signed(origin)?;
 
             ensure!(total_amount >= Self::min_deposit(), Error::<T>::MineDeposit);
@@ -114,6 +128,7 @@ decl_module! {
                 landing_page,
                 create_time,
                 active: None,
+                distribute_type,
             };
             let adid = Self::all_ads_count();
             Self::create_ad(from_key,&adid,ads_metadata)?;
@@ -158,26 +173,33 @@ decl_module! {
             Self::check_ad_owner(&sender,&adid)?;
             let (from_key, _) = <did::Module<T>>::identity(sender).ok_or(<did::Error<T>>::DidNotExists)?;
             let mut ads_metadata = Self::ads_records(adid);
+            let now = <pallet_timestamp::Module<T>>::get();
+            let locked_period:T::Moment = (30*24*60*60*1000u32).into();
+            let lock_time = ads_metadata.create_time.checked_add(&locked_period).ok_or(Error::<T>::Overflow)?;
+            ensure!(now>=lock_time,Error::<T>::TimeNotReach);
             let total_amount = ads_metadata.total_amount.checked_sub(&value).ok_or(Error::<T>::Overflow)?;
             ensure!(ads_metadata.spend_amount <= total_amount , Error::<T>::NotEnoughBalance);
-
             let (contract_key, _) = <did::Module<T>>::identity(Self::contract()).ok_or(Error::<T>::ContractDidNotExists)?;
-
             <did::Module<T>>::transfer_by_did(contract_key, from_key, value, memo)?;
             // update ads metadata
             ads_metadata.total_amount = total_amount;
-
              <AdsRecords<T>>::insert(adid, ads_metadata);
-
             Self::deposit_event(RawEvent::Withdraw(from_key, value));
         }
 //
         #[weight = 0]
 		fn distribute(origin,adid: AdIndex,user: T::Hash) {
 			let sender = ensure_signed(origin)?;
-            Self::check_ad_owner(&sender,&adid)?;
-            let mut ads_metadata = <AdsRecords<T>>::get(adid);
-            ensure!(ads_metadata.active.is_some(),Error::<T>::NotActive);
+			let mut ads_metadata = <AdsRecords<T>>::get(adid);
+			ensure!(ads_metadata.active.is_some(),Error::<T>::NotActive);
+			match ads_metadata.distribute_type{
+			    DistributeType::ADVERTISER=>{
+                    Self::check_ad_owner(&sender,&adid)?;
+			    },
+			    DistributeType::AGENT=>{
+                    ensure!(sender == Self::contract(),Error::<T>::NeedAgentAccountSigned);
+			    }
+			}
             let value = ads_metadata.single_click_fee;
             let spend = ads_metadata.spend_amount.checked_add(&value).ok_or(Error::<T>::Overflow)?;
 			ensure!(spend <= ads_metadata.total_amount, Error::<T>::NotEnoughBalance);
@@ -238,9 +260,10 @@ impl<T: Trait> Module<T> {
 
     fn active_ad(adid: &AdIndex) -> DispatchResult {
         let mut ads_metadata = Self::ads_records(adid);
+        debug::info!("{:?}",ads_metadata.advertiser);
         ensure!(ads_metadata.active.is_none(),Error::<T>::Active);
         AdsActiveList::add(adid);
-        ads_metadata.active = Some(AdsActiveList::size());
+        ads_metadata.active = Some(AdsActiveList::size().checked_sub(1).ok_or(Error::<T>::Overflow)?);
         <AdsRecords<T>>::insert(adid, ads_metadata);
         Ok(())
     }
@@ -248,6 +271,7 @@ impl<T: Trait> Module<T> {
     fn pause_ad(adid: &AdIndex) -> DispatchResult {
         ensure!(<AdsRecords<T>>::contains_key(adid),<did::Error<T>>::DidNotExists);
         let mut ads_metadata = Self::ads_records(adid);
+        debug::info!("{:?}",ads_metadata.advertiser);
         ensure!(ads_metadata.active.is_some(),Error::<T>::NotActive);
         let index = ads_metadata.active.unwrap();
         AdsActiveList::remove(&index);
