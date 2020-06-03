@@ -2,7 +2,8 @@
 
 use super::*;
 
-use frame_support::{assert_ok, assert_noop, impl_outer_origin, impl_outer_event, parameter_types};
+use frame_support::{assert_ok, assert_noop, impl_outer_origin, parameter_types,
+  weights::Weight,};
 use sp_core::H256;
 // The testing primitives are very useful for avoiding having to work with signatures
 // or public keys. `u64` is used as the `AccountId` and no `Signature`s are required.
@@ -14,15 +15,6 @@ impl_outer_origin! {
   pub enum Origin for Test {}
 }
 
-mod ads {
-  pub use super::super::*;
-}
-
-impl_outer_event! {
-  pub enum Event for Test {
-    did<T>, ads<T>, pallet_balances<T>,
-  }
-}
 // For testing the module, we construct most of a mock runtime. This means
 // first constructing a configuration type (`Test`) which `impl`s each of the
 // configuration traits of modules we want to use.
@@ -30,44 +22,45 @@ impl_outer_event! {
 pub struct Test;
 
 parameter_types! {
-  pub const BlockHashCount: u64 = 250;
-  pub const MaximumBlockWeight: u32 = 1024;
-  pub const MaximumBlockLength: u32 = 2 * 1024;
-  pub const AvailableBlockRatio: Perbill = Perbill::one();
+	pub const BlockHashCount: u64 = 250;
+	pub const MaximumBlockWeight: Weight = 1024;
+	pub const MaximumBlockLength: u32 = 2 * 1024;
+	pub const AvailableBlockRatio: Perbill = Perbill::one();
 }
 impl frame_system::Trait for Test {
-  type Origin = Origin;
-  type Index = u64;
-  type BlockNumber = u64;
-  type Hash = H256;
-  type Call = ();
-  type Hashing = BlakeTwo256;
-  type AccountId = u64;
-  type Lookup = IdentityLookup<Self::AccountId>;
-  type Header = Header;
-  type Event = Event;
-  type BlockHashCount = BlockHashCount;
-  type MaximumBlockWeight = MaximumBlockWeight;
-  type MaximumBlockLength = MaximumBlockLength;
-  type AvailableBlockRatio = AvailableBlockRatio;
-  type Version = ();
-  type ModuleToIndex = ();
+	type Origin = Origin;
+	type Call = ();
+	type Index = u64;
+	type BlockNumber = u64;
+	type Hash = H256;
+	type Hashing = BlakeTwo256;
+	type AccountId = u64;
+	type Lookup = IdentityLookup<Self::AccountId>;
+	type Header = Header;
+	type Event = ();
+	type BlockHashCount = BlockHashCount;
+	type MaximumBlockWeight = MaximumBlockWeight;
+	type DbWeight = ();
+	type BlockExecutionWeight = ();
+	type ExtrinsicBaseWeight = ();
+	type MaximumBlockLength = MaximumBlockLength;
+	type AvailableBlockRatio = AvailableBlockRatio;
+	type Version = ();
+	type ModuleToIndex = ();
+	type AccountData = pallet_balances::AccountData<u64>;
+	type OnNewAccount = ();
+	type OnKilledAccount = ();
 }
+
 parameter_types! {
-  pub const ExistentialDeposit: u64 = 0;
-  pub const TransferFee: u64 = 0;
-  pub const CreationFee: u64 = 0;
+	pub const ExistentialDeposit: u64 = 1;
 }
 impl pallet_balances::Trait for Test {
-  type Balance = u64;
-  type OnFreeBalanceZero = ();
-  type OnNewAccount = ();
-  type Event = Event;
-  type TransferPayment = ();
-  type DustRemoval = ();
-  type ExistentialDeposit = ExistentialDeposit;
-  type TransferFee = TransferFee;
-  type CreationFee = CreationFee;
+	type Balance = u64;
+	type DustRemoval = ();
+	type Event = ();
+	type ExistentialDeposit = ExistentialDeposit;
+	type AccountStore = frame_system::Module<Test>;
 }
 
 parameter_types! {
@@ -88,11 +81,11 @@ parameter_types! {
 }
 
 impl did::Trait for Test {
-  type Event = Event;
+  type Event = ();
 }
 
 impl Trait for Test {
-  type Event = Event;
+  type Event = ();
 }
 
 type AdsModule = Module<Test>;
@@ -110,7 +103,6 @@ fn new_test_ext() -> sp_io::TestExternalities {
       (2, 10000),
       (3, 10000),
     ],
-    vesting: vec![],
   }.assimilate_storage(&mut t).unwrap();
 
   did::GenesisConfig::<Test> {

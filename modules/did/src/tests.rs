@@ -38,32 +38,34 @@ pub struct Test;
 
 parameter_types! {
 	pub const BlockHashCount: u64 = 250;
-	pub const MaximumBlockWeight: u32 = 1024;
+	pub const MaximumBlockWeight: Weight = 1024;
 	pub const MaximumBlockLength: u32 = 2 * 1024;
 	pub const AvailableBlockRatio: Perbill = Perbill::one();
-	pub const CreationFee: u64 = 2;
 }
 
 impl frame_system::Trait for Test {
-  type Origin = Origin;
-  type Index = u64;
-  type BlockNumber = BlockNumber;
-  type Call = ();
-  type Hash = H256;
-  type Hashing = ::sp_runtime::traits::BlakeTwo256;
-  type AccountId = AccountId;
-  type Lookup = IdentityLookup<Self::AccountId>;
-  type Header = Header;
-  type Event = TestEvent;
-  type BlockHashCount = BlockHashCount;
-  type MaximumBlockWeight = MaximumBlockWeight;
-  type MaximumBlockLength = MaximumBlockLength;
-  type AvailableBlockRatio = AvailableBlockRatio;
-  type Version = ();
-  type ModuleToIndex = ();
-  type AccountData = pallet_balances::AccountData<Balance>;
-  type OnNewAccount = ();
-  type OnKilledAccount = ();
+	type Origin = Origin;
+	type Call = ();
+	type Index = u64;
+	type BlockNumber = u64;
+	type Hash = H256;
+	type Hashing = BlakeTwo256;
+	type AccountId = u64;
+	type Lookup = IdentityLookup<Self::AccountId>;
+	type Header = Header;
+	type Event = TestEvent;
+	type BlockHashCount = BlockHashCount;
+	type MaximumBlockWeight = MaximumBlockWeight;
+	type DbWeight = ();
+	type BlockExecutionWeight = ();
+	type ExtrinsicBaseWeight = ();
+	type MaximumBlockLength = MaximumBlockLength;
+	type AvailableBlockRatio = AvailableBlockRatio;
+	type Version = ();
+	type ModuleToIndex = ();
+	type AccountData = pallet_balances::AccountData<u64>;
+	type OnNewAccount = ();
+	type OnKilledAccount = ();
 }
 
 parameter_types! {
@@ -361,6 +363,18 @@ fn without_did_should_not_pass_lock() {
 
     assert_noop!(DidModule::lock(Origin::signed(4), 100, 5), Error::<Test>::SuperiorNotExists);
 
+  });
+}
+#[test]
+fn should_pass_force_lock() {
+  new_test_ext().execute_with(|| {
+
+    prepare_dids_for_test();
+
+    let (user_key, _) = DidModule::identity(&2).unwrap();
+    assert_ok!(DidModule::force_lock(Origin::ROOT, user_key, 100));
+
+    assert_eq!(Balances::free_balance(&2), 8900);
   });
 }
 

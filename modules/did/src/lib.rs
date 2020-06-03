@@ -8,12 +8,12 @@ use codec::{Decode, Encode};
 use sp_std::vec::Vec;
 use frame_support::{
 	decl_event, decl_module, decl_storage, decl_error, ensure,
-	weights::{Weight, WeighData},
-	traits::{Currency, ReservableCurrency, ExistenceRequirement, Get},
+	weights::Weight,
+	traits::{Currency, ReservableCurrency, ExistenceRequirement},
 };
 use sp_runtime::{
 	RuntimeDebug, DispatchResult, Permill,
-	traits::{CheckedSub, CheckedAdd, CheckedDiv, CheckedMul, Hash, SaturatedConversion,}
+	traits::{Zero, CheckedSub, CheckedAdd, CheckedDiv, CheckedMul, Hash, SaturatedConversion,}
 };
 use frame_system::{self as system, ensure_root, ensure_signed};
 use sp_io::hashing::blake2_256;
@@ -398,6 +398,34 @@ decl_module! {
 		}
 
 		#[weight = 0]
+		pub fn force_lock(origin, user: T::Hash, value: T::Balance) {
+			ensure_root(origin)?;
+			ensure!(<Metadata<T>>::contains_key(&user), Error::<T>::DidNotExists);
+
+			let mut metadata = Self::metadata(&user);
+			let locked_funds = if let Some(locked_records) = metadata.locked_records {
+				locked_records.locked_funds + value
+			} else {
+				value
+			};
+			<pallet_balances::Module<T>>::reserve(&metadata.address, value)?;
+
+			let max_quota = Self::balance_to_u64(locked_funds) * 10;
+			let rewards_ratio = 20;
+
+			let locked_time = <pallet_timestamp::Module<T>>::get();
+			metadata.locked_records = Some(LockedRecords {
+				locked_funds,
+				rewards_ratio,
+				max_quota,
+				locked_time,
+				locked_period: Zero::zero(),
+			});
+
+			<Metadata<T>>::insert(user, metadata);
+		}
+
+		#[weight = 0]
 		pub fn unlock(origin, value: T::Balance) {
 			let sender = ensure_signed(origin)?;
 
@@ -495,7 +523,7 @@ decl_module! {
 			let sender = ensure_signed(origin)?;
 
 			if Self::genesis_account() == sender.clone() {
-				let (user_key, did) = Self::identity(&account).ok_or(Error::<T>::DidNotExists)?;
+				let (user_key, _did) = Self::identity(&account).ok_or(Error::<T>::DidNotExists)?;
 				let mut metadata = Self::metadata(&user_key);
 				metadata.creator = account.clone();
 				<Metadata<T>>::insert(user_key, metadata);
