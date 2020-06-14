@@ -7,7 +7,6 @@ members = [
 	"modules/did",
 	"modules/ads",
 	"runtime",
-	"transaction-factory",
 ]
 
 [profile.release]
