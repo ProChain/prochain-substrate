@@ -84,7 +84,7 @@ use impls::{CurrencyToVoteHandler, Author, TargetedFeeAdjustment};
 pub mod constants;
 use constants::{currency::*, time::*};
 
-mod oracle;
+// mod oracle;
 //mod prices;
 
 // Make the WASM binary available.
@@ -182,6 +182,17 @@ impl frame_system::Trait for Runtime {
 	type AccountData = pallet_balances::AccountData<Balance>;
 	type OnNewAccount = ();
 	type OnKilledAccount = ();
+}
+
+parameter_types! {
+	pub const MaximumWeight: Weight = 2_000_000;
+}
+
+impl pallet_scheduler::Trait for Runtime {
+	type Event = Event;
+	type Origin = Origin;
+	type Call = Call;
+	type MaximumWeight = MaximumWeight;
 }
 
 impl pallet_utility::Trait for Runtime {
@@ -698,15 +709,15 @@ impl did::Trait for Runtime {
 	type Event = Event;
 }
 
-use oracle::sr25519::AuthorityId as OracleId;
+// use oracle::sr25519::AuthorityId as OracleId;
 // We need to define the Transaction signer for that using the Key definition
 // type SubmitTransactionOracle = TransactionSubmitter<OracleId, Runtime, UncheckedExtrinsic>;
 
-impl oracle::Trait for Runtime {
-	type AuthorityId = OracleId;
-	type Event = Event;
-	type Call = Call;
-}
+// impl oracle::Trait for Runtime {
+// 	type AuthorityId = OracleId;
+// 	type Event = Event;
+// 	type Call = Call;
+// }
 
 impl ads::Trait for Runtime {
 	type Event = Event;
@@ -747,7 +758,7 @@ construct_runtime!(
 		Scheduler: pallet_scheduler::{Module, Call, Storage, Event<T>},
 
 		Did: did::{Module, Storage, Call, Config<T>, Event<T>},
-		Oracle: oracle::{Module, Storage, Call, Event<T>, ValidateUnsigned},
+		// Oracle: oracle::{Module, Storage, Call, Event<T>, ValidateUnsigned},
 		Ads: ads::{Module, Storage, Call, Config<T>, Event<T>},
 	}
 );
