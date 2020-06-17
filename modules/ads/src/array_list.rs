@@ -8,6 +8,10 @@ use frame_support::{
 pub struct ArrayList<Storage, Value, SizeStorage>(sp_std::marker::PhantomData<(Storage, Value, SizeStorage)>);
 
 impl<Storage, Value, SizeStorage> ArrayList<Storage, Value, SizeStorage> where Value: Parameter + Member + Copy ,Storage: StorageMap<u64, Value, Query=Option<Value>>, SizeStorage: StorageValue<u64> {
+    pub fn get(index: &u64)->Option<Value>{
+        Storage::get(&index)
+    }
+    
     pub fn add(value: &Value) -> bool {
         let index:u64 = match SizeStorage::try_get(){
             Ok(i)=> i,
@@ -26,11 +30,11 @@ impl<Storage, Value, SizeStorage> ArrayList<Storage, Value, SizeStorage> where V
             Ok(i)=>i,
             Err(e)=>0
         };
-        if size > 0u64 && *index > size - 1u64 {
+        if size > 0u64 && *index <= size - 1u64 {
             size = size.clone() - 1;
             let last: Value = Storage::get(size).unwrap(); //last one
             Storage::insert(&index, last);
-            Storage::take(&index);
+            Storage::take(&size);
             SizeStorage::put(size);
             return true;
         }

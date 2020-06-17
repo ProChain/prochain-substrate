@@ -274,9 +274,19 @@ impl<T: Trait> Module<T> {
         debug::info!("{:?}",ads_metadata.advertiser);
         ensure!(ads_metadata.active.is_some(),Error::<T>::NotActive);
         let index = ads_metadata.active.unwrap();
-        AdsActiveList::remove(&index);
-        ads_metadata.active = None;
-        <AdsRecords<T>>::insert(adid,ads_metadata);
+        //get last active ad index
+        let last_index = AdsActiveList::size().checked_sub(1).ok_or(Error::<T>::Overflow)?;
+        if let Some(last_adid) = AdsActiveList::get(&last_index){
+            if last_adid!=*adid{
+                let mut last_ads_metadata = Self::ads_records(last_adid);
+                last_ads_metadata.active = Some(index.clone());
+                <AdsRecords<T>>::insert(last_adid,last_ads_metadata);    
+            }
+            AdsActiveList::remove(&index);
+            ads_metadata.active = None;
+            <AdsRecords<T>>::insert(adid,ads_metadata);
+        }
+
         Ok(())
     }
 
