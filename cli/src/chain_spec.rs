@@ -518,7 +518,7 @@ pub fn prochain_testnet_config() -> ChainSpec {
 /// prochain mainnet config
 pub fn prochain_mainnet_config() -> ChainSpec {
     let boot_nodes = vec![
-        "/ip4/123.207.140.69/tcp/30333/p2p/12D3KooWSKWQUi3CwPw4Un2CQshz8uAGxtNfnkTi47sb3r4XbaF8".parse().unwrap(),
+        "/ip4/123.206.52.244/tcp/30333/p2p/12D3KooWSKWQUi3CwPw4Un2CQshz8uAGxtNfnkTi47sb3r4XbaF8".parse().unwrap(),
     ];
     // let boot_nodes = vec![];
     let properties = serde_json::from_str(PRA_PROPERTIES).unwrap();
