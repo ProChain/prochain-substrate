@@ -66,13 +66,11 @@ pallet-membership = { version = "2.0.0-rc3", default-features = false, git = "ht
 pallet-offences = { version = "2.0.0-rc3", default-features = false, git = "https://github.com/ProChain/substrate.git" }
 pallet-offences-benchmarking = { version = "2.0.0-rc3", git = "https://github.com/ProChain/substrate.git", default-features = false, optional = true }
 pallet-randomness-collective-flip = { version = "2.0.0-rc3", default-features = false, git = "https://github.com/ProChain/substrate.git" }
-pallet-recovery = { version = "2.0.0-rc3", default-features = false, git = "https://github.com/ProChain/substrate.git" }
 pallet-session = { version = "2.0.0-rc3", features = ["historical"], git = "https://github.com/ProChain/substrate.git", default-features = false }
 pallet-session-benchmarking = { version = "2.0.0-rc3", git = "https://github.com/ProChain/substrate.git", default-features = false, optional = true }
 pallet-staking = { version = "2.0.0-rc3", default-features = false, git = "https://github.com/ProChain/substrate.git" }
 pallet-staking-reward-curve = { version = "2.0.0-rc3", default-features = false, git = "https://github.com/ProChain/substrate.git" }
 pallet-scheduler = { version = "2.0.0-rc3", default-features = false, git = "https://github.com/ProChain/substrate.git" }
-pallet-society = { version = "2.0.0-rc3", default-features = false, git = "https://github.com/ProChain/substrate.git" }
 pallet-sudo = { version = "2.0.0-rc3", default-features = false, git = "https://github.com/ProChain/substrate.git" }
 pallet-timestamp = { version = "2.0.0-rc3", default-features = false, git = "https://github.com/ProChain/substrate.git" }
 pallet-treasury = { version = "2.0.0-rc3", default-features = false, git = "https://github.com/ProChain/substrate.git" }
