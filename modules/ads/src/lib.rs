@@ -206,7 +206,7 @@ decl_module! {
             let (contract_key, _) = <did::Module<T>>::identity(Self::contract()).ok_or(Error::<T>::ContractDidNotExists)?;
             ensure!(<did::Metadata<T>>::contains_key(user),<did::Error<T>>::DidNotExists);
             let (from_key, _) = <did::Module<T>>::identity(sender).ok_or(<did::Error<T>>::DidNotExists)?;
-			<did::Module<T>>::transfer_by_did(contract_key, user, value, "看广告收益".as_bytes().to_vec())?;
+			<did::Module<T>>::transfer_by_did(contract_key, user, value, "ads看广告收益".as_bytes().to_vec())?;
 			// update ads metadata
 			ads_metadata.spend_amount = spend;
 			<AdsRecords<T>>::insert(adid, ads_metadata);
