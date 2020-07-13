@@ -403,10 +403,12 @@ decl_module! {
 			ensure!(<Metadata<T>>::contains_key(&user), Error::<T>::DidNotExists);
 
 			let mut metadata = Self::metadata(&user);
-			let locked_funds = if let Some(locked_records) = metadata.locked_records {
-				locked_records.locked_funds + value
+			let reserved_balance = <pallet_balances::Module<T>>::reserved_balance(&metadata.address);
+			let locked_funds = reserved_balance + value;
+			let donate = if locked_funds >= Self::fee_to_previous() {
+				Self::fee_to_previous()
 			} else {
-				value
+				locked_funds
 			};
 			<pallet_balances::Module<T>>::reserve(&metadata.address, value)?;
 
@@ -414,6 +416,7 @@ decl_module! {
 			let rewards_ratio = 20;
 
 			let locked_time = <pallet_timestamp::Module<T>>::get();
+			metadata.donate = Some(donate);
 			metadata.locked_records = Some(LockedRecords {
 				locked_funds,
 				rewards_ratio,
