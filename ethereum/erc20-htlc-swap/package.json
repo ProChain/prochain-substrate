@@ -17,7 +17,7 @@
     "core-js": "^3.6.1",
     "css-loader": "^3.4.0",
     "fastclick": "^1.0.6",
-    "moment": "^2.24.0",
+    "moment": "^2.29.2",
     "px2rem-loader": "^0.1.9",
     "truffle-wallet-provider": "0.0.5",
     "vee-validate": "^3.2.1",
